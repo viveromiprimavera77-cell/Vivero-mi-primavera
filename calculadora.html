@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f8f3c">
+  <title>Calculadora de cantidad y costos | Mi Primavera</title>
+  <link rel="icon" href="assets/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="calculator-page">
+  <header class="calc-header">
+    <a href="./" class="calc-logo"><img src="assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></a>
+    <a href="./#catalogo" class="back-link">← Volver al catálogo</a>
+  </header>
+
+  <main class="calc-main">
+    <section class="calc-intro">
+      <span class="eyebrow">MI PRIMAVERA</span>
+      <h1>Calculadora de cantidad y costos</h1>
+      <p>Elegí la categoría, la planta y la presentación disponible. El cálculo es orientativo y el pedido se confirma por WhatsApp.</p>
+    </section>
+
+    <section class="public-calc-card">
+      <div class="public-form-grid">
+        <label>Categoría
+          <select id="calcCategory"></select>
+        </label>
+        <label>Planta
+          <select id="calcProduct"></select>
+        </label>
+        <label>Presentación disponible
+          <select id="calcVariant"></select>
+        </label>
+        <div class="calc-product-preview" id="calcProductPreview"></div>
+      </div>
+
+      <div id="linearFields" class="linear-box" hidden>
+        <div class="public-form-grid">
+          <label>Metros lineales a cubrir
+            <input id="calcLength" type="number" min="0.1" step="0.1" value="10">
+          </label>
+          <label>Distancia a usar entre plantas (cm)
+            <input id="calcSpacing" type="number" min="1" step="1">
+            <small id="spacingHelp"></small>
+          </label>
+        </div>
+      </div>
+
+      <div id="unitFields" class="public-form-grid" hidden>
+        <label>Cantidad
+          <input id="calcQuantityInput" type="number" min="1" step="1" value="1">
+        </label>
+      </div>
+
+      <div class="customer-result">
+        <article><span>Cantidad estimada</span><strong id="resultQty">0</strong></article>
+        <article><span>Precio por planta</span><strong id="resultUnitPrice">$0</strong></article>
+        <article class="highlight"><span>Total estimado</span><strong id="resultTotal">$0</strong></article>
+      </div>
+
+      <button id="continueOrderBtn" class="public-primary-btn" type="button">Continuar con solicitud de pedido</button>
+    </section>
+
+    <section id="orderFormSection" class="order-form-section" hidden>
+      <div class="order-summary" id="orderSummary"></div>
+      <form id="orderForm" class="public-order-form">
+        <div class="public-form-grid">
+          <label>Nombre y apellido
+            <input id="customerName" required>
+          </label>
+          <label>Código postal
+            <input id="customerPostal" required>
+          </label>
+          <label class="full">Dirección de envío
+            <input id="customerAddress" required>
+          </label>
+          <label class="full">Duda o aclaración general
+            <textarea id="customerQuestion" rows="4" placeholder="Opcional"></textarea>
+          </label>
+        </div>
+        <button id="confirmWhatsappBtn" class="whatsapp-order-btn" type="submit">Confirmar pedido por WhatsApp</button>
+        <p class="privacy-note">Tus datos serán enviados por WhatsApp para confirmar el pedido. La solicitud queda registrada como “pedido a confirmar” hasta que el vivero la confirme manualmente.</p>
+        <p id="orderMessage" class="order-message"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="calculator.js"></script>
+</body>
+</html>
