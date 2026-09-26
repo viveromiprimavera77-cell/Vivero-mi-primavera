@@ -3,34 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#153f24">
+  <meta name="theme-color" content="#0f7a34">
   <meta name="description" content="Mi Primavera Vivero. Plantas para cercos, jardines y espacios verdes.">
   <title>Mi Primavera | Vivero</title>
-  <link rel="icon" href="/assets/logo-mi-primavera.jpg">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="icon" href="assets/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
+  <div class="menu-backdrop" id="menuBackdrop"></div>
 
   <aside class="sidebar" id="sidebar">
-    <a href="#inicio" class="brand">
-      <img src="/assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+    <a href="#inicio" class="brand js-scroll">
+      <img src="assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
     </a>
 
     <nav class="side-nav" aria-label="Navegación principal">
-      <a href="#inicio" class="nav-main">Inicio</a>
+      <a href="#inicio" class="nav-main js-scroll">Inicio</a>
 
-      <details open class="nav-details">
+      <details open class="nav-details" id="categoryDetails">
         <summary>Categorías</summary>
         <div id="categoryNav" class="category-nav">
-          <span class="nav-loading">Cargando...</span>
+          <a class="category-link js-scroll" href="#catalogo">Ver todas</a>
+          <span class="nav-loading">Cargando categorías...</span>
         </div>
       </details>
 
-      <a href="#envios" class="nav-main">Envíos</a>
-      <a href="#nosotros" class="nav-main">Acerca de nosotros</a>
+      <a href="#envios" class="nav-main js-scroll">Envíos</a>
+      <a href="#nosotros" class="nav-main js-scroll">Acerca de nosotros</a>
     </nav>
 
     <div class="sidebar-bottom">
@@ -42,10 +44,17 @@
   <div class="page-shell">
     <main>
       <section id="inicio" class="hero">
+        <header class="site-header">
+          <a class="site-logo js-scroll" href="#inicio" aria-label="Ir al inicio">
+            <img src="assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+          </a>
+          <span class="site-header-line"></span>
+        </header>
+
         <div class="hero-media">
           <video id="heroVideo" autoplay muted loop playsinline preload="metadata"></video>
           <div id="heroFallback" class="hero-fallback">
-            <img src="/assets/logo-mi-primavera.jpg" alt="">
+            <img src="assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
           </div>
           <div class="hero-overlay"></div>
         </div>
@@ -55,7 +64,7 @@
           <h1 id="heroTitle">Naturaleza que transforma tu espacio</h1>
           <p id="heroLead">Plantas seleccionadas para cercos, jardines y proyectos verdes.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#catalogo">Ver plantas</a>
+            <a class="btn btn-primary js-scroll" href="#catalogo">Ver plantas</a>
             <a class="btn btn-ghost" id="heroWhatsapp" href="#" target="_blank" rel="noopener" hidden>Consultar por WhatsApp</a>
           </div>
         </div>
@@ -68,12 +77,12 @@
             <h2>Plantas destacadas</h2>
             <p>Algunas de las plantas principales del vivero.</p>
           </div>
-          <div class="carousel-controls">
-            <button id="featuredPrev" class="circle-btn" aria-label="Anterior">←</button>
-            <button id="featuredNext" class="circle-btn" aria-label="Siguiente">→</button>
+          <div class="swipe-hint" aria-hidden="true">
+            <span>Deslizá para ver más</span>
+            <span class="swipe-arrow">↔</span>
           </div>
         </div>
-        <div class="carousel" id="featured"></div>
+        <div class="carousel drag-scroll" id="featured"></div>
       </section>
 
       <section class="section" id="catalogo">
@@ -111,7 +120,7 @@
 
     <footer class="footer">
       <div class="footer-brand">
-        <img src="/assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+        <img src="assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
       </div>
       <div>
         <strong>Medios de pago</strong>
@@ -129,14 +138,17 @@
   </div>
 
   <a class="whatsapp-float" id="whatsappFloat" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp" hidden>
-    <span class="wa-icon">✆</span>
-    <span>WhatsApp</span>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M32 8C18.75 8 8 18.35 8 31.13c0 4.55 1.39 8.82 3.78 12.4L8.5 55.5l12.5-3.2A24.7 24.7 0 0 0 32 54.26c13.25 0 24-10.35 24-23.13S45.25 8 32 8Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M24.5 20.5c-1.35 0-2.4.65-3.05 1.9-.75 1.45-1.3 3.65.75 7.4 2.55 4.7 6.6 8.55 11.45 10.85 3.65 1.75 6 1.45 7.45.55 1.1-.7 2.05-2.05 2.35-3.35.2-.85-.1-1.35-.75-1.7l-5.1-2.4c-.55-.25-1-.15-1.35.3l-1.8 2.2c-.3.35-.65.45-1.05.25-2.25-1.05-4.2-2.55-5.8-4.4-1.25-1.45-2.15-2.85-2.75-4.2-.2-.45-.1-.8.2-1.1l1.8-1.9c.45-.45.55-.9.35-1.45l-1.8-5.05c-.2-.6-.45-.9-.9-.9Z" fill="currentColor"/>
+    </svg>
+    <span class="wa-tooltip">Escribinos por WhatsApp</span>
   </a>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/config.js"></script>
-  <script src="/app.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -80,3 +80,13 @@ No necesita build. Es un sitio estático.
 - `admin.js` — gestión de catálogo, ajustes y calculadora
 - `config.js` — URL + publishable key de Supabase
 - `assets/logo-mi-primavera.jpg` — logo
+
+
+## Ajustes visuales v2
+
+- Verdes más vivos.
+- Carrusel por deslizamiento/arrastre, sin flechas.
+- Botón flotante de WhatsApp circular con icono tipo app.
+- Navegación lateral corregida con scroll suave y menú móvil.
+- Logo visible en encabezado, menú lateral y pie de página.
+- Rutas de assets relativas para evitar problemas de visualización.
