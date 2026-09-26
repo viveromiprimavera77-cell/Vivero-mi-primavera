@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f24">
+  <meta name="description" content="Mi Primavera Vivero. Plantas para cercos, jardines y espacios verdes.">
+  <title>Mi Primavera | Vivero</title>
+  <link rel="icon" href="/assets/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
+    <a href="#inicio" class="brand">
+      <img src="/assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+    </a>
+
+    <nav class="side-nav" aria-label="Navegación principal">
+      <a href="#inicio" class="nav-main">Inicio</a>
+
+      <details open class="nav-details">
+        <summary>Categorías</summary>
+        <div id="categoryNav" class="category-nav">
+          <span class="nav-loading">Cargando...</span>
+        </div>
+      </details>
+
+      <a href="#envios" class="nav-main">Envíos</a>
+      <a href="#nosotros" class="nav-main">Acerca de nosotros</a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <span>Mi Primavera</span>
+      <small>Naturaleza que transforma tu espacio</small>
+    </div>
+  </aside>
+
+  <div class="page-shell">
+    <main>
+      <section id="inicio" class="hero">
+        <div class="hero-media">
+          <video id="heroVideo" autoplay muted loop playsinline preload="metadata"></video>
+          <div id="heroFallback" class="hero-fallback">
+            <img src="/assets/logo-mi-primavera.jpg" alt="">
+          </div>
+          <div class="hero-overlay"></div>
+        </div>
+
+        <div class="hero-content">
+          <span class="eyebrow">VIVERO · MI PRIMAVERA</span>
+          <h1 id="heroTitle">Naturaleza que transforma tu espacio</h1>
+          <p id="heroLead">Plantas seleccionadas para cercos, jardines y proyectos verdes.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#catalogo">Ver plantas</a>
+            <a class="btn btn-ghost" id="heroWhatsapp" href="#" target="_blank" rel="noopener" hidden>Consultar por WhatsApp</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-soft" id="destacadas">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">SELECCIÓN</span>
+            <h2>Plantas destacadas</h2>
+            <p>Algunas de las plantas principales del vivero.</p>
+          </div>
+          <div class="carousel-controls">
+            <button id="featuredPrev" class="circle-btn" aria-label="Anterior">←</button>
+            <button id="featuredNext" class="circle-btn" aria-label="Siguiente">→</button>
+          </div>
+        </div>
+        <div class="carousel" id="featured"></div>
+      </section>
+
+      <section class="section" id="catalogo">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">CATÁLOGO</span>
+            <h2>Plantas por categoría</h2>
+            <p>Explorá el catálogo y consultanos por disponibilidad y entrega.</p>
+          </div>
+        </div>
+        <div id="categories"></div>
+      </section>
+
+      <section class="section info-section" id="envios">
+        <div class="info-kicker">
+          <span class="eyebrow">ENTREGAS</span>
+          <h2 id="shippingTitle">Envíos</h2>
+        </div>
+        <div class="info-copy">
+          <p id="shippingText">Realizamos entregas coordinadas. Consultanos por cobertura, costo y tiempos de entrega.</p>
+          <a class="text-link" id="shippingWhatsapp" href="#" target="_blank" rel="noopener" hidden>Consultar entrega →</a>
+        </div>
+      </section>
+
+      <section class="section info-section section-soft" id="nosotros">
+        <div class="info-kicker">
+          <span class="eyebrow">MI PRIMAVERA</span>
+          <h2 id="aboutTitle">Acerca de nosotros</h2>
+        </div>
+        <div class="info-copy">
+          <p id="aboutText">En Mi Primavera seleccionamos plantas para cercos, jardines y espacios verdes, con atención personalizada para ayudarte a elegir la mejor opción para cada proyecto.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <img src="/assets/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+      </div>
+      <div>
+        <strong>Medios de pago</strong>
+        <div class="payment-list">
+          <span>Efectivo</span>
+          <span>Tarjeta</span>
+          <span>Mercado Pago</span>
+        </div>
+      </div>
+      <div>
+        <strong>Contacto</strong>
+        <p>Consultas, pedidos y coordinación de entregas por WhatsApp.</p>
+      </div>
+    </footer>
+  </div>
+
+  <a class="whatsapp-float" id="whatsappFloat" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp" hidden>
+    <span class="wa-icon">✆</span>
+    <span>WhatsApp</span>
+  </a>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

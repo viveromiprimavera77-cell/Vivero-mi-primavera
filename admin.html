@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f24">
+  <title>Administración | Mi Primavera</title>
+  <link rel="icon" href="/assets/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header">
+      <div class="admin-brand">
+        <img src="/assets/logo-mi-primavera.jpg" alt="Mi Primavera">
+        <div>
+          <span>MI PRIMAVERA</span>
+          <h1>Panel de administración</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="link-btn" href="/" target="_blank">Ver web</a>
+        <button id="logoutBtn" class="secondary-btn" hidden>Salir</button>
+      </div>
+    </header>
+
+    <section id="loginView" class="login-card">
+      <div>
+        <span class="eyebrow">ACCESO PRIVADO</span>
+        <h2>Ingresar al panel</h2>
+        <p>Usá el usuario administrador creado en Supabase.</p>
+      </div>
+      <form id="loginForm">
+        <label>Email
+          <input type="email" id="loginEmail" autocomplete="email" required>
+        </label>
+        <label>Contraseña
+          <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </label>
+        <button class="primary-btn" type="submit">Ingresar</button>
+        <p id="loginMessage" class="form-message"></p>
+      </form>
+    </section>
+
+    <div id="dashboard" hidden>
+      <section class="stats-grid">
+        <article class="stat-card">
+          <span>Plantas activas</span>
+          <strong id="statProducts">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Categorías</span>
+          <strong id="statCategories">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Consultar disponibilidad</span>
+          <strong id="statConsult">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Margen promedio</span>
+          <strong id="statMargin">0%</strong>
+        </article>
+      </section>
+
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="productsTab">Plantas</button>
+        <button class="tab-btn" data-tab="categoriesTab">Categorías</button>
+        <button class="tab-btn" data-tab="settingsTab">Sitio</button>
+        <button class="tab-btn" data-tab="calculatorTab">Calculadora</button>
+      </nav>
+
+      <section id="productsTab" class="tab-panel active">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">CATÁLOGO</span>
+              <h2 id="productFormTitle">Agregar planta</h2>
+            </div>
+            <button id="newProductBtn" class="secondary-btn" type="button">Nueva planta</button>
+          </div>
+
+          <form id="productForm" class="form-grid">
+            <input type="hidden" id="productId">
+
+            <label>Nombre
+              <input id="productName" required>
+            </label>
+
+            <label>Categoría
+              <select id="productCategory" required></select>
+            </label>
+
+            <label>Precio de venta
+              <input id="productPrice" type="number" min="0" step="0.01" required>
+            </label>
+
+            <label>Costo
+              <input id="productCost" type="number" min="0" step="0.01" required>
+            </label>
+
+            <label>Disponibilidad
+              <select id="productAvailability">
+                <option value="in_stock">🟢 En stock</option>
+                <option value="consult">Consultar disponibilidad</option>
+              </select>
+            </label>
+
+            <label>Orden
+              <input id="productOrder" type="number" value="0" step="1">
+            </label>
+
+            <label>Presentación / maceta
+              <input id="productPot" placeholder="Ej.: 10 L">
+            </label>
+
+            <label>Altura
+              <input id="productHeight" placeholder="Ej.: 80–100 cm">
+            </label>
+
+            <label class="wide">Descripción
+              <textarea id="productDescription" rows="4"></textarea>
+            </label>
+
+            <label class="wide">Foto de la planta
+              <input id="productImage" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+              <small>Se sube directamente al almacenamiento de Supabase.</small>
+            </label>
+
+            <div class="wide toggles">
+              <label class="check-label"><input id="productFeatured" type="checkbox"> Mostrar como destacada</label>
+              <label class="check-label"><input id="productActive" type="checkbox" checked> Visible en la web</label>
+            </div>
+
+            <div class="wide form-actions">
+              <button class="primary-btn" type="submit">Guardar planta</button>
+              <button id="cancelProductEdit" class="secondary-btn" type="button" hidden>Cancelar edición</button>
+            </div>
+            <p id="productMessage" class="form-message wide"></p>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">PRODUCTOS</span>
+              <h2>Plantas cargadas</h2>
+            </div>
+            <input id="productSearch" class="search-input" placeholder="Buscar planta...">
+          </div>
+          <div id="productList" class="item-list"></div>
+        </div>
+      </section>
+
+      <section id="categoriesTab" class="tab-panel">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">ORGANIZACIÓN</span>
+              <h2 id="categoryFormTitle">Agregar categoría</h2>
+            </div>
+            <button id="newCategoryBtn" class="secondary-btn" type="button">Nueva categoría</button>
+          </div>
+
+          <form id="categoryForm" class="form-grid">
+            <input type="hidden" id="categoryId">
+            <label>Nombre
+              <input id="categoryName" required>
+            </label>
+            <label>Orden
+              <input id="categoryOrder" type="number" value="0" step="1">
+            </label>
+            <label class="wide">Descripción general
+              <textarea id="categoryDescription" rows="4"></textarea>
+            </label>
+            <div class="wide">
+              <label class="check-label"><input id="categoryActive" type="checkbox" checked> Visible en la web</label>
+            </div>
+            <div class="wide form-actions">
+              <button class="primary-btn" type="submit">Guardar categoría</button>
+              <button id="cancelCategoryEdit" class="secondary-btn" type="button" hidden>Cancelar edición</button>
+            </div>
+            <p id="categoryMessage" class="form-message wide"></p>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Categorías</h2>
+          <div id="categoryList" class="item-list"></div>
+        </div>
+      </section>
+
+      <section id="settingsTab" class="tab-panel">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">CONTENIDO</span>
+              <h2>Configuración del sitio</h2>
+            </div>
+          </div>
+
+          <form id="settingsForm" class="form-grid">
+            <label>Nombre del vivero
+              <input id="settingName">
+            </label>
+            <label>Frase principal
+              <input id="settingTagline">
+            </label>
+            <label>WhatsApp
+              <input id="settingWhatsapp" placeholder="Código de país + número, sin +">
+              <small>Ej.: 54911...</small>
+            </label>
+            <label>Título envíos
+              <input id="settingShippingTitle">
+            </label>
+            <label class="wide">Texto envíos
+              <textarea id="settingShippingText" rows="4"></textarea>
+            </label>
+            <label>Instagram
+              <input id="settingInstagram" placeholder="https://...">
+            </label>
+            <label>Facebook
+              <input id="settingFacebook" placeholder="https://...">
+            </label>
+            <label>Title acerca de nosotros
+              <input id="settingAboutTitle">
+            </label>
+            <label class="wide">Acerca de nosotros
+              <textarea id="settingAboutText" rows="5"></textarea>
+            </label>
+            <label class="wide">Video principal
+              <input id="heroVideoFile" type="file" accept="video/mp4,video/webm">
+              <small>MP4 o WebM. El panel lo guarda en Supabase Storage.</small>
+            </label>
+            <div class="wide current-media" id="currentVideoWrap" hidden>
+              <span>Video actual:</span>
+              <a id="currentVideoLink" href="#" target="_blank" rel="noopener">abrir</a>
+              <button id="removeVideoBtn" class="danger-link" type="button">Quitar video</button>
+            </div>
+            <div class="wide">
+              <button class="primary-btn" type="submit">Guardar configuración</button>
+            </div>
+            <p id="settingsMessage" class="form-message wide"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="calculatorTab" class="tab-panel">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">RENTABILIDAD</span>
+              <h2>Calculadora de ganancia</h2>
+              <p>Adaptada a una venta de vivero sin necesidad de cargar stock exacto.</p>
+            </div>
+          </div>
+
+          <div class="calc-grid">
+            <label>Costo de la planta
+              <input class="calc-input" id="calcPlant" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Maceta, tierra e insumos
+              <input class="calc-input" id="calcInputs" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Traslado desde proveedor
+              <input class="calc-input" id="calcSupplierTransport" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Entrega absorbida al cliente
+              <input class="calc-input" id="calcDelivery" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Otros gastos
+              <input class="calc-input" id="calcOther" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Comisión de cobro %
+              <input class="calc-input" id="calcFee" type="number" min="0" max="99" step="0.1" value="0">
+            </label>
+            <label>Precio de venta
+              <input class="calc-input" id="calcSale" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>Margen objetivo %
+              <input class="calc-input" id="calcTargetMargin" type="number" min="0" max="95" step="0.1" value="30">
+            </label>
+          </div>
+
+          <div class="calc-results">
+            <article><span>Costo base</span><strong id="calcBaseResult">$0</strong></article>
+            <article><span>Comisión estimada</span><strong id="calcFeeResult">$0</strong></article>
+            <article><span>Ganancia actual</span><strong id="calcProfitResult">$0</strong></article>
+            <article><span>Margen actual</span><strong id="calcMarginResult">0%</strong></article>
+            <article><span>Markup</span><strong id="calcMarkupResult">0%</strong></article>
+            <article class="highlight"><span>Precio sugerido</span><strong id="calcSuggestedResult">$0</strong></article>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="adminToast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>
