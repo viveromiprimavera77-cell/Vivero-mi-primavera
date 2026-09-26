@@ -66,8 +66,8 @@
   function addVariantRow(v={}){
     const div=document.createElement("div");div.className="variant-row";div.dataset.variantId=v.id||"";
     div.innerHTML=`
-      <label>Presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: 10 L"></label>
-      <label>Litros<input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}"></label>
+      <label>Tipo de presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: Maceta soplada, Terrón"></label>
+      <label>Litros<input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 3, 10, 15"></label>
       <label>Precio<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
       <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
       <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>

@@ -162,3 +162,62 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.05;color:var(
   .plant-grid{grid-template-columns:1fr}.public-form-grid,.customer-result{grid-template-columns:1fr}.public-form-grid .full{grid-column:auto}
   .calc-header{padding:14px 16px}.calc-logo img{width:120px}.calc-main{padding:12px 16px 50px}.public-calc-card,.order-form-section{padding:18px}
 }
+
+
+/* v4: selector de presentación/litros */
+.variant-selector{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.option-row{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:start;margin:9px 0}
+.option-label{font-size:.8rem;font-weight:900;color:var(--green-900);padding-top:7px}
+.presentation-options,.liters-options{display:flex;gap:7px;flex-wrap:wrap}
+.option-chip{border:1px solid #b9d9b3;background:#fff;color:var(--green-900);border-radius:999px;padding:7px 10px;font-size:.8rem;font-weight:850;cursor:pointer}
+.option-chip.active{background:var(--green-800);border-color:var(--green-800);color:#fff}
+.option-chip.unavailable,.option-chip:disabled{opacity:.48;cursor:not-allowed;text-decoration:line-through}
+.empty-variants{color:var(--muted);font-size:.85rem}
+
+/* v4: carrito persistente */
+.cart-button{position:fixed;right:22px;top:20px;z-index:96;width:56px;height:56px;border:0;border-radius:50%;background:#fff;color:var(--green-900);display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.2);cursor:pointer}
+.cart-button svg{width:29px;height:29px}
+.cart-badge{position:absolute;right:-2px;top:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#ef4b3f;color:#fff;font-size:.72rem;font-weight:950;display:grid;place-items:center;border:2px solid #fff}
+.cart-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:97;opacity:0;pointer-events:none;transition:.2s}
+.cart-backdrop.show{opacity:1;pointer-events:auto}
+.cart-drawer{position:fixed;z-index:98;right:0;top:0;bottom:0;width:min(420px,92vw);background:#fff;box-shadow:-18px 0 50px rgba(0,0,0,.18);transform:translateX(105%);transition:.24s;display:flex;flex-direction:column}
+.cart-drawer.open{transform:translateX(0)}
+.cart-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;padding:22px;border-bottom:1px solid var(--line)}
+.cart-drawer-head h2{margin:.15em 0 0;font-size:2rem}.cart-eyebrow{font-size:.7rem;letter-spacing:.18em;color:var(--green-700);font-weight:900}
+.cart-close{border:0;background:#f1f6ef;width:38px;height:38px;border-radius:50%;font-size:1.5rem;cursor:pointer;color:var(--green-900)}
+.cart-drawer-items{padding:12px 20px;overflow:auto;flex:1}
+.cart-mini-item{display:grid;grid-template-columns:62px 1fr auto;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.cart-mini-item img,.cart-mini-placeholder{width:62px;height:62px;border-radius:10px;object-fit:cover;background:#eef7ea;display:grid;place-items:center;color:var(--green-800);font-weight:900}
+.cart-mini-copy strong,.cart-mini-copy span{display:block}.cart-mini-copy span{font-size:.8rem;color:var(--muted);margin-top:3px}
+.cart-mini-remove{border:0;background:transparent;color:#9e3434;font-size:1.25rem;cursor:pointer}
+.cart-empty{padding:24px;text-align:center;color:var(--muted)}
+.cart-drawer-bottom{padding:18px 20px 22px;border-top:1px solid var(--line);display:grid;gap:9px}
+.cart-drawer-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.cart-drawer-total strong{font-size:1.35rem;color:var(--green-900)}
+.cart-primary,.cart-secondary{border-radius:999px;padding:13px 17px;font-weight:900;cursor:pointer}
+.cart-primary{border:0;background:var(--green-800);color:#fff}.cart-primary:disabled{opacity:.45}.cart-secondary{border:1px solid var(--line);background:#fff;color:var(--green-900)}
+body.cart-open{overflow:hidden}
+
+/* v4: agregado y checkout */
+.added-choice{margin-top:18px;background:#edf8e9;border:1px solid #cbe5c3;border-radius:14px;padding:16px}
+.added-choice strong{display:block;margin-bottom:12px}.added-choice>div{display:flex;gap:9px;flex-wrap:wrap}
+.public-secondary-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#fff;color:var(--green-900);border-radius:999px;padding:13px 18px;font-weight:900;text-decoration:none;cursor:pointer}
+.checkout-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:16px}.checkout-heading h2{font-size:2rem;margin:.15em 0}
+.danger-outline{border:1px solid #e4baba;background:#fff;color:#9c3030;border-radius:999px;padding:10px 13px;font-weight:850;cursor:pointer}
+.checkout-items{border-top:1px solid var(--line)}
+.checkout-item{display:grid;grid-template-columns:74px minmax(0,1fr) 100px 115px auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.checkout-item img,.checkout-placeholder{width:74px;height:74px;object-fit:cover;border-radius:12px;background:#edf7e9;display:grid;place-items:center;color:var(--green-800);font-weight:900}
+.checkout-item-copy strong,.checkout-item-copy span{display:block}.checkout-item-copy span{font-size:.82rem;color:var(--muted);margin-top:3px}
+.checkout-item label{font-size:.75rem;font-weight:800}.checkout-item label input{width:100%;margin-top:5px;padding:9px;border:1px solid var(--line);border-radius:9px}
+.checkout-subtotal{color:var(--green-900)}
+.checkout-remove{border:0;background:transparent;color:#9d3030;font-weight:850;cursor:pointer}
+.checkout-total{display:flex;justify-content:flex-end;gap:28px;padding:18px 0;font-size:1.1rem}.checkout-total strong{font-size:1.35rem;color:var(--green-900)}
+.checkout-actions{display:flex;justify-content:flex-end;margin-bottom:24px}.public-order-form{border-top:1px solid var(--line);padding-top:20px}.public-order-form h3{font-size:1.6rem;margin-top:0}
+
+@media(max-width:700px){
+  .cart-button{right:14px;top:14px;width:50px;height:50px}
+  .option-row{grid-template-columns:1fr;gap:5px}
+  .checkout-item{grid-template-columns:60px 1fr;align-items:start}
+  .checkout-item img,.checkout-placeholder{width:60px;height:60px}
+  .checkout-item label,.checkout-subtotal,.checkout-remove{grid-column:2}
+  .checkout-heading{align-items:flex-start;flex-direction:column}
+}
