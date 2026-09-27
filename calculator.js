@@ -142,7 +142,11 @@
     $('checkoutItems').innerHTML=items.length?items.map(x=>`
       <div class="checkout-item" data-cart-id="${x.id}">
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
-        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}</div>
+        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}
+          <label class="checkout-variant-label">Litros / presentación
+            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${v.liters?`${Number(v.liters).toLocaleString('es-AR')} L · `:''}${v.label} · ${money(v.price)}</option>`).join('')}</select>
+          </label>
+        </div>
         <label>Cantidad<input class="checkout-qty" type="number" min="1" value="${x.quantity}" data-qty-id="${x.id}"></label>
         <strong class="checkout-subtotal">${money(Number(x.unit_price)*Number(x.quantity))}</strong>
         <button class="checkout-remove" type="button" data-remove-id="${x.id}">Eliminar</button>
@@ -184,6 +188,14 @@
   $('clearCartBtn').addEventListener('click',()=>{if(confirm('¿Eliminar todos los artículos del carrito?')){window.ViveroCart.clear();renderCheckout()}});
   window.addEventListener('viverocartchange',renderCheckout);
   $('checkoutItems').addEventListener('input',e=>{if(e.target.matches('.checkout-qty'))window.ViveroCart.updateQty(e.target.dataset.qtyId,e.target.value)});
+  $('checkoutItems').addEventListener('change',e=>{
+    if(!e.target.matches('.checkout-variant'))return;
+    const item=window.ViveroCart.get().find(x=>x.id===e.target.dataset.variantCartId);
+    const v=variants.find(x=>x.id===e.target.value);
+    if(!item||!v)return;
+    window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,unit_price:Number(v.price)});
+    renderCheckout();
+  });
   $('checkoutItems').addEventListener('click',e=>{if(e.target.dataset.removeId){window.ViveroCart.remove(e.target.dataset.removeId);renderCheckout()}});
 
   $('orderForm').addEventListener('submit',async e=>{

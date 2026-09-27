@@ -33,3 +33,9 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .variant-closure-title{grid-column:1/-1;font-size:.78rem;font-weight:900;color:var(--green);margin-bottom:-2px}
 @media(max-width:900px){.spacing-admin-grid,.variant-main-grid,.variant-closure-grid{grid-template-columns:1fr 1fr}.variant-closure-title{grid-column:1/-1}}
 @media(max-width:540px){.spacing-admin-grid,.variant-main-grid,.variant-closure-grid{grid-template-columns:1fr}}
+
+
+/* v6 panel compacto */
+.compact-stats{grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px}.compact-stats .stat-card{padding:13px 15px;border-radius:13px}.compact-stats .stat-card span{font-size:.75rem}.compact-stats .stat-card strong{font-size:1.3rem;margin-top:4px}
+.collapsible-order>summary{list-style:none;cursor:pointer}.collapsible-order>summary::-webkit-details-marker{display:none}.order-summary-right{display:flex;align-items:center;gap:10px}.order-chevron{font-size:1.2rem;color:var(--green);transition:transform .2s}.collapsible-order[open] .order-chevron{transform:rotate(180deg)}.collapsible-order:not([open]) .order-head{border-bottom:0}.collapsible-order .order-body{border-top:1px solid var(--line)}
+@media(max-width:700px){.compact-stats{grid-template-columns:1fr 1fr 1fr;gap:8px}.compact-stats .stat-card{padding:10px}.compact-stats .stat-card span{font-size:.66rem}.compact-stats .stat-card strong{font-size:1.1rem}}

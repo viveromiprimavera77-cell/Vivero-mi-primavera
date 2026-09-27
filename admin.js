@@ -45,12 +45,9 @@
   }
 
   function renderStats(){
-    $("statProducts").textContent=products.filter(p=>p.active).length;
-    $("statCategories").textContent=categories.filter(c=>c.active).length;
     $("statPending").textContent=orders.filter(o=>o.status==="pending_confirmation").length;
-    const dispatched=orders.filter(o=>o.status==="dispatched");
-    const sales=dispatched.reduce((sum,o)=>sum+orderTotals(o.id).sales,0);
-    $("statSales").textContent=money(sales);
+    $("statConfirmed").textContent=orders.filter(o=>o.status==="confirmed").length;
+    $("statDispatched").textContent=orders.filter(o=>o.status==="dispatched").length;
   }
   function renderCategoryChoices(selected={},spacingMap={}){
     $("productCategoryChoices").innerHTML=categories.length?categories.map(c=>`
@@ -189,7 +186,7 @@
     const list=products.filter(p=>!term||p.name.toLowerCase().includes(term));
     $("productList").innerHTML=list.length?list.map(p=>{
       const cs=assocs.filter(a=>a.product_id===p.id).map(a=>categories.find(c=>c.id===a.category_id)?.name).filter(Boolean).join(", ");
-      const vs=variants.filter(v=>v.product_id===p.id).map(v=>v.label).join(", ");
+      const vs=variants.filter(v=>v.product_id===p.id).map(v=>`${v.label}${v.liters?` ${Number(v.liters).toLocaleString("es-AR")} L`:""}`).join(", ");
       return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
     }).join(""):`<p class="form-message">No hay plantas.</p>`;
   }
@@ -245,42 +242,24 @@
   function renderOrders(){
     $("orderList").innerHTML=orders.length?orders.map(o=>{
       const items=orderItems.filter(i=>i.order_id===o.id),t=orderTotals(o.id);
-      return `<article class="order-card" data-order="${o.id}">
-        <div class="order-head"><div><div class="order-code">${esc(o.order_code)}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s)</div></div><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span></div>
+      return `<details class="order-card collapsible-order" data-order="${o.id}">
+        <summary class="order-head">
+          <div><div class="order-code">${esc(o.order_code)}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s) · ${money(t.sales)}</div></div>
+          <div class="order-summary-right"><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span><span class="order-chevron">⌄</span></div>
+        </summary>
         <div class="order-body">
           <div class="order-customer"><div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div><div><span>Dirección</span><strong>${esc(o.shipping_address)}</strong></div><div><span>CP</span><strong>${esc(o.postal_code)}</strong></div></div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
-          <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}">
-            <label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"></label>
-            <label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label>
-            <label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label>
-            <label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label>
-            <button class="small-btn danger" data-delete-item="${i.id}">Quitar</button>
-          </div>`).join("")}</div>
+          <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"></label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>
           <div class="order-total-row"><span>Venta: ${money(t.sales)}</span><span>Costo: ${money(t.cost)}</span><span>Ganancia: ${money(t.profit)}</span></div>
           <label>Otros costos del pedido<input class="order-extra-cost" type="number" min="0" step="0.01" value="${o.extra_cost||0}"></label>
-          <div class="add-item-box"><strong>Agregar ítem</strong><div class="add-item-grid">
-            <label>Producto / presentación<select class="add-catalog-variant">${catalogOptions()}</select></label>
-            <label>Cant.<input class="add-qty" type="number" min="1" value="1"></label>
-            <label>Precio<input class="add-price" type="number" min="0" value="0"></label>
-            <label>Costo<input class="add-cost" type="number" min="0" value="0"></label>
-            <button class="small-btn" data-add-item="${o.id}">Agregar</button>
-          </div><label class="custom-name-wrap">Nombre personalizado<input class="add-custom-name" placeholder="Ej.: Tierra abonada"></label></div>
-          <div class="order-actions">
-            <button class="small-btn" data-save-order="${o.id}">Guardar cambios</button>
-            ${o.status==="pending_confirmation"?`<button class="status-btn confirm" data-confirm-order="${o.id}">Confirmar pedido</button>`:""}
-            ${o.status==="confirmed"?`<button class="status-btn dispatch" data-dispatch-order="${o.id}">Pedido despachado</button>`:""}
-            ${o.status!=="dispatched"&&o.status!=="cancelled"?`<button class="status-btn cancel" data-cancel-order="${o.id}">Cancelar</button>`:""}
-          </div>
+          <div class="add-item-box"><strong>Agregar ítem</strong><div class="add-item-grid"><label>Producto / presentación<select class="add-catalog-variant">${catalogOptions()}</select></label><label>Cant.<input class="add-qty" type="number" min="1" value="1"></label><label>Precio<input class="add-price" type="number" min="0" value="0"></label><label>Costo<input class="add-cost" type="number" min="0" value="0"></label><button class="small-btn" data-add-item="${o.id}">Agregar</button></div><label class="custom-name-wrap">Nombre personalizado<input class="add-custom-name" placeholder="Ej.: Tierra abonada"></label></div>
+          <div class="order-actions"><button class="small-btn" data-save-order="${o.id}">Guardar cambios</button>${o.status==="pending_confirmation"?`<button class="status-btn confirm" data-confirm-order="${o.id}">Confirmar pedido</button>`:""}${o.status==="confirmed"?`<button class="status-btn dispatch" data-dispatch-order="${o.id}">Pedido despachado</button>`:""}${o.status!=="dispatched"&&o.status!=="cancelled"?`<button class="status-btn cancel" data-cancel-order="${o.id}">Cancelar</button>`:""}</div>
         </div>
-      </article>`;
+      </details>`;
     }).join(""):`<p class="form-message">Todavía no hay pedidos.</p>`;
 
-    document.querySelectorAll(".add-catalog-variant").forEach(sel=>sel.addEventListener("change",()=>{
-      const card=sel.closest(".order-card"),v=variants.find(x=>x.id===sel.value),p=v?products.find(x=>x.id===v.product_id):null;
-      card.querySelector(".add-price").value=v?.price||0;card.querySelector(".add-cost").value=v?.cost||0;card.querySelector(".custom-name-wrap").hidden=!!v;
-      if(!v)card.querySelector(".add-custom-name").value="";
-    }));
+    document.querySelectorAll(".add-catalog-variant").forEach(sel=>sel.addEventListener("change",()=>{const card=sel.closest(".order-card"),v=variants.find(x=>x.id===sel.value),p=v?products.find(x=>x.id===v.product_id):null;card.querySelector(".add-price").value=v?.price||0;card.querySelector(".add-cost").value=v?.cost||0;card.querySelector(".custom-name-wrap").hidden=!!v;if(!v)card.querySelector(".add-custom-name").value=""}));
     const dispatched=orders.filter(o=>o.status==="dispatched"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
     $("summaryDispatched").textContent=dispatched.length;$("summarySales").textContent=money(tot.sales);$("summaryCosts").textContent=money(tot.cost);$("summaryProfit").textContent=money(tot.profit);
   }

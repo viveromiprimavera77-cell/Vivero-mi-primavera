@@ -51,6 +51,13 @@
     save(items);
   }
 
+  function update(id, patch) {
+    const items = load();
+    const item = items.find(x => x.id === id);
+    if (item) Object.assign(item, patch || {});
+    save(items);
+  }
+
   function remove(id) {
     save(load().filter(x => x.id !== id));
   }
@@ -141,6 +148,6 @@
     document.getElementById("cartCheckout").disabled = !items.length;
   }
 
-  window.ViveroCart = { get, add, updateQty, remove, clear, total, count, open, close, render };
+  window.ViveroCart = { get, add, updateQty, update, remove, clear, total, count, open, close, render };
   document.addEventListener("DOMContentLoaded", render);
 })();

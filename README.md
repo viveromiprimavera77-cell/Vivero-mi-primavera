@@ -1,21 +1,15 @@
-# Mi Primavera Vivero — v5
+# Mi Primavera Vivero — v6
 
-Cambios de esta versión:
-- selector público de litros corregido: muestra todas las opciones en stock;
-- al elegir litros cambia automáticamente la presentación, el precio y el enlace a la calculadora;
-- la calculadora muestra todas las combinaciones de litros/presentación disponibles;
-- 3 distancias recomendadas configurables por planta;
-- opción “Otra distancia” con advertencia y confirmación;
-- tiempo estimado de cierre configurable en meses para cada combinación de litros y cada una de las 3 distancias;
-- aclaración pública de que el tiempo de cierre es estimativo;
-- nuevos datos destacados editables por planta: altura máxima, tiempo hasta desarrollo máximo y podas anuales;
-- carrito y pedidos múltiples conservados.
+Cambios principales:
+- catálogo: muestra todas las opciones de litros realmente guardadas en Supabase; al tocar un litro cambia presentación y precio;
+- encabezado: buscador funcional en tiempo real en lugar de “Plantas destacadas”;
+- catálogo: selector desplegable para saltar rápidamente a una categoría;
+- botón flotante para volver al inicio;
+- menú lateral: sección “Contactanos” con viveromiprimavera77@gmail.com;
+- panel: indicadores compactos solo de pedidos a confirmar, confirmados y despachados;
+- pedidos del panel: ahora son desplegables/contraíbles;
+- el listado de plantas del panel muestra cada presentación junto con sus litros guardados.
 
-## Cómo cargar varias opciones
-En el panel, dentro de una planta, cada fila de “Opciones de venta” representa una combinación:
-- Maceta soplada | 5 L | precio/costo
-- Maceta soplada | 10 L | precio/costo
-- Maceta soplada | 15 L | precio/costo
-- Terrón | 10 L | precio/costo
+IMPORTANTE: si una planta muestra solamente 15 L en la web, es porque Supabase tiene solamente una fila guardada para esa planta. Para mostrar 5 L, 10 L y 15 L deben existir tres filas separadas en “Opciones de venta: presentación + litros” y luego tocar “Guardar planta”.
 
-Usá “+ Agregar otra opción de litros” para crear todas las combinaciones que quieras.
+- en el resumen del pedido también se puede cambiar los litros/presentación de cada artículo antes de confirmar.

@@ -23,6 +23,13 @@
       </details>
       <a href="#envios" class="nav-main">Envíos</a>
       <a href="#nosotros" class="nav-main">Acerca de nosotros</a>
+      <details class="nav-details contact-details">
+        <summary>Contactanos</summary>
+        <div class="contact-menu-content">
+          <span>Email</span>
+          <a href="mailto:viveromiprimavera77@gmail.com">viveromiprimavera77@gmail.com</a>
+        </div>
+      </details>
     </nav>
     <div class="sidebar-bottom"><span>Mi Primavera</span><small>Naturaleza que transforma tu espacio</small></div>
   </aside>
@@ -45,9 +52,17 @@
           <span class="eyebrow">VIVERO · MI PRIMAVERA</span>
           <h1 id="heroTitle">Naturaleza que transforma tu espacio</h1>
           <p>Plantas seleccionadas para cercos, jardines y proyectos verdes.</p>
+          <div class="hero-search-wrap">
+            <label class="hero-search-label" for="plantSearch">Buscar plantas o productos</label>
+            <div class="hero-search-box">
+              <span aria-hidden="true">⌕</span>
+              <input id="plantSearch" type="search" placeholder="Ej.: oleo, ligustrina, tierra..." autocomplete="off">
+              <button id="clearPlantSearch" type="button" aria-label="Limpiar búsqueda" hidden>×</button>
+            </div>
+            <small id="searchStatus">Escribí para filtrar el catálogo automáticamente.</small>
+          </div>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#destacadas">Plantas destacadas</a>
-            <a class="btn btn-ghost" href="#catalogo">Ver catálogo</a>
+            <a class="btn btn-ghost" href="#catalogo">Ver catálogo completo</a>
           </div>
         </div>
       </section>
@@ -61,9 +76,13 @@
       </section>
 
       <section class="section" id="catalogo">
-        <div class="section-heading">
+        <div class="section-heading catalog-heading">
           <div><span class="eyebrow">CATÁLOGO</span><h2>Plantas por categoría</h2><p>Elegí presentación y litros para ver el precio correspondiente.</p></div>
+          <label class="category-jump">Ir a una categoría
+            <select id="categoryJump"><option value="">Todas las categorías</option></select>
+          </label>
         </div>
+        <div id="catalogEmptySearch" class="empty-state" hidden>No encontramos plantas o productos con esa búsqueda.</div>
         <div id="categories"></div>
       </section>
 
@@ -89,6 +108,7 @@
     <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8C18.75 8 8 18.35 8 31.13c0 4.55 1.39 8.82 3.78 12.4L8.5 55.5l12.5-3.2A24.7 24.7 0 0 0 32 54.26c13.25 0 24-10.35 24-23.13S45.25 8 32 8Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24.5 20.5c-1.35 0-2.4.65-3.05 1.9-.75 1.45-1.3 3.65.75 7.4 2.55 4.7 6.6 8.55 11.45 10.85 3.65 1.75 6 1.45 7.45.55 1.1-.7 2.05-2.05 2.35-3.35.2-.85-.1-1.35-.75-1.7l-5.1-2.4c-.55-.25-1-.15-1.35.3l-1.8 2.2c-.3.35-.65.45-1.05.25-2.25-1.05-4.2-2.55-5.8-4.4-1.25-1.45-2.15-2.85-2.75-4.2-.2-.45-.1-.8.2-1.1l1.8-1.9c.45-.45.55-.9.35-1.45l-1.8-5.05c-.2-.6-.45-.9-.9-.9Z" fill="currentColor"/></svg>
   </a>
 
+  <button class="back-to-top" id="backToTop" type="button" aria-label="Volver al inicio">↑</button>
   <div id="toast" class="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
