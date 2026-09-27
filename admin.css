@@ -47,3 +47,8 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 @media(max-width:540px){.variant-main-grid{grid-template-columns:1fr!important}}
 
 .selector-priority-box{border:1px solid #cfe4c9;background:#f4faf1;border-radius:13px;padding:14px}.selector-priority-box small{display:block;margin-top:7px;color:var(--muted);line-height:1.45}.optional-tag{font-size:.68rem;font-weight:650;color:var(--muted)}
+
+/* v9: datos de contacto de pedidos */
+.inline-cp{font-size:.78rem;color:var(--muted);font-weight:700}
+.whatsapp-customer-link{display:inline-flex;align-items:center;margin-top:7px;padding:7px 10px;border-radius:999px;background:#25D366;color:#fff;text-decoration:none;font-size:.78rem;font-weight:900}
+.whatsapp-customer-link:hover{filter:brightness(.96)}

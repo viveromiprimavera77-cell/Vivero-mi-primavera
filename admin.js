@@ -245,6 +245,10 @@
   });
   $("newCategoryBtn").addEventListener("click",resetCategoryForm);$("cancelCategoryEdit").addEventListener("click",resetCategoryForm);
 
+  function customerWhatsappLink(phone){
+    const digits=String(phone||"").replace(/\D/g,"");
+    return digits?`https://wa.me/${digits}`:"";
+  }
   function statusLabel(s){return s==="pending_confirmation"?"Pedido a confirmar":s==="confirmed"?"Confirmado":s==="dispatched"?"Despachado":"Cancelado"}
   function statusClass(s){return s==="pending_confirmation"?"pending":s==="confirmed"?"confirmed":s==="dispatched"?"dispatched":"cancelled"}
   function orderTotals(orderId){
@@ -267,7 +271,11 @@
           <div class="order-summary-right"><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span><span class="order-chevron">⌄</span></div>
         </summary>
         <div class="order-body">
-          <div class="order-customer"><div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div><div><span>Dirección</span><strong>${esc(o.shipping_address)}</strong></div><div><span>CP</span><strong>${esc(o.postal_code)}</strong></div></div>
+          <div class="order-customer">
+            <div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div>
+            <div><span>Dirección</span><strong>${esc(o.shipping_address)} <small class="inline-cp">· CP ${esc(o.postal_code)}</small></strong></div>
+            <div><span>Teléfono</span><strong>${esc(o.phone||"Sin teléfono")}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
+          </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
           <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"></label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>
           <div class="order-total-row"><span>Venta: ${money(t.sales)}</span><span>Costo: ${money(t.cost)}</span><span>Ganancia: ${money(t.profit)}</span></div>
@@ -279,7 +287,7 @@
     }).join(""):`<p class="form-message">Todavía no hay pedidos.</p>`;
 
     document.querySelectorAll(".add-catalog-variant").forEach(sel=>sel.addEventListener("change",()=>{const card=sel.closest(".order-card"),v=variants.find(x=>x.id===sel.value),p=v?products.find(x=>x.id===v.product_id):null;card.querySelector(".add-price").value=v?.price||0;card.querySelector(".add-cost").value=v?.cost||0;card.querySelector(".custom-name-wrap").hidden=!!v;if(!v)card.querySelector(".add-custom-name").value=""}));
-    const dispatched=orders.filter(o=>o.status==="dispatched"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
+    const dispatched=orders.filter(o=>o.status==="dispatched" && o.status!=="cancelled"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
     $("summaryDispatched").textContent=dispatched.length;$("summarySales").textContent=money(tot.sales);$("summaryCosts").textContent=money(tot.cost);$("summaryProfit").textContent=money(tot.profit);
   }
 
@@ -308,7 +316,7 @@
     }
     const status=e.target.dataset.confirmOrder?"confirmed":e.target.dataset.dispatchOrder?"dispatched":e.target.dataset.cancelOrder?"cancelled":null;
     if(status){
-      const patch={status,updated_at:new Date().toISOString()};if(status==="confirmed")patch.confirmed_at=new Date().toISOString();if(status==="dispatched")patch.dispatched_at=new Date().toISOString();
+      const patch={status,updated_at:new Date().toISOString()};if(status==="confirmed")patch.confirmed_at=new Date().toISOString();if(status==="dispatched")patch.dispatched_at=new Date().toISOString();if(status==="cancelled")patch.dispatched_at=null;
       const {error}=await db.from("orders").update(patch).eq("id",orderId);if(error)return toast(error.message);await loadAll();toast(status==="dispatched"?"Pedido marcado como despachado":"Estado actualizado");
     }
   });

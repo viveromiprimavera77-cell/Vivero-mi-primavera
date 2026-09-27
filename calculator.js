@@ -223,12 +223,12 @@
     const btn=$('confirmWhatsappBtn');btn.disabled=true;$('orderMessage').textContent='Registrando solicitud...';
     try{
       const payload=cart.map(x=>({product_id:x.product_id,variant_id:x.variant_id,category_id:x.category_id,quantity:Number(x.quantity),length_m:x.length_m||null,spacing_cm:x.spacing_cm||null}));
-      const {data,error}=await db.rpc('create_cart_order',{p_customer_name:$('customerName').value.trim(),p_shipping_address:$('customerAddress').value.trim(),p_postal_code:$('customerPostal').value.trim(),p_general_question:$('customerQuestion').value.trim(),p_items:payload});
+      const {data,error}=await db.rpc('create_cart_order',{p_customer_name:$('customerName').value.trim(),p_phone:$('customerPhone').value.trim(),p_shipping_address:$('customerAddress').value.trim(),p_postal_code:$('customerPostal').value.trim(),p_general_question:$('customerQuestion').value.trim(),p_items:payload});
       if(error)throw error;
       const order=Array.isArray(data)?data[0]:data,code=order.order_code;
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,'',
-        `Cliente: ${$('customerName').value.trim()}`,`Dirección: ${$('customerAddress').value.trim()}`,`CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
+        `Cliente: ${$('customerName').value.trim()}`,`Teléfono: ${$('customerPhone').value.trim()}`,`Dirección: ${$('customerAddress').value.trim()} · CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
         ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null

@@ -1,14 +1,16 @@
-# Mi Primavera Vivero — v8
+# Mi Primavera Vivero — v9
 
-Cambios principales:
-- nuevo selector **Priorizar altura en el catálogo** por planta;
-- si está activado, el cliente elige altura y cambian automáticamente presentación, litros (si existen) y precio;
-- si no hay litros en ninguna opción pero sí hay alturas, la web cambia automáticamente a selector de altura;
-- en casos mixtos, el tilde Priorizar altura decide que la altura sea la variable principal;
-- si está desactivado y hay litros, el comportamiento por defecto sigue priorizando litros;
-- admite casos mixtos: por ejemplo 2 m en envase de 10 L y 6 m en terrón;
-- la calculadora y el resumen respetan la misma prioridad;
-- el panel exige que todas las opciones tengan altura cuando se activa Priorizar altura;
-- las etiquetas de tiempo de cierre muestran distancia, litros y altura cuando corresponda.
+Cambios de esta versión:
+- se agregó **Teléfono / WhatsApp** al formulario de confirmación;
+- el teléfono queda guardado con el pedido en Supabase;
+- en el panel, cada pedido muestra Dirección + Código Postal y debajo/como siguiente dato el Teléfono;
+- botón **Ver en WhatsApp** para abrir directamente el chat del cliente;
+- pedidos cancelados quedan excluidos del acumulado de ventas/ganancias;
+- el pie de página ahora muestra **Efectivo · Transferencias · Mercado Pago**;
+- la flecha para volver al inicio ahora queda centrada en la parte inferior.
 
-Supabase ya fue actualizado con `prioritize_height`. La planta actual llamada Palmera quedó marcada para priorizar altura.
+## Backend
+Supabase ya fue actualizado con la columna `orders.phone` y una nueva versión de `create_cart_order` que recibe `p_phone`.
+
+## Subida
+Reemplazá los archivos del repositorio por los de este ZIP. Vercel debería desplegar automáticamente.

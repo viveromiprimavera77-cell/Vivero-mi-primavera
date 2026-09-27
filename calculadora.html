@@ -91,8 +91,12 @@
         <h3>Datos para confirmar el pedido</h3>
         <div class="public-form-grid">
           <label>Nombre y apellido<input id="customerName" required></label>
+          <label>Teléfono / WhatsApp
+            <input id="customerPhone" type="tel" required placeholder="Ej.: 54911...">
+            <small>Ingresalo con código de país y área para poder contactarte por WhatsApp.</small>
+          </label>
+          <label>Dirección de envío<input id="customerAddress" required></label>
           <label>Código postal<input id="customerPostal" required></label>
-          <label class="full">Dirección de envío<input id="customerAddress" required></label>
           <label class="full">Duda o aclaración general<textarea id="customerQuestion" rows="4" placeholder="Opcional"></textarea></label>
         </div>
         <button id="confirmWhatsappBtn" class="whatsapp-order-btn" type="submit">Confirmar pedido por WhatsApp</button>
