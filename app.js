@@ -24,19 +24,49 @@
     const rows=[p.max_height?`<div><span>Altura máxima</span><strong>${esc(p.max_height)}</strong></div>`:"",p.maturity_time?`<div><span>Desarrollo máximo</span><strong>${esc(p.maturity_time)}</strong></div>`:"",p.pruning_per_year?`<div><span>Podas anuales</span><strong>${esc(p.pruning_per_year)}</strong></div>`:""].filter(Boolean);
     return rows.length?`<div class="plant-highlights">${rows.join("")}</div>`:"";
   }
-  function sortedVariants(list){return [...list].sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)||String(a.label).localeCompare(String(b.label),"es"))}
+  function numericFromText(value){
+    const m=String(value||"").replace(",",".").match(/\d+(?:\.\d+)?/);
+    return m?Number(m[0]):999999;
+  }
+  function sortedVariants(list,prioritizeHeight=false){
+    return [...list].sort((a,b)=>{
+      if(prioritizeHeight){
+        const h=numericFromText(a.height)-numericFromText(b.height);
+        if(h!==0)return h;
+      }else{
+        const l=Number(a.liters??999999)-Number(b.liters??999999);
+        if(l!==0)return l;
+      }
+      return String(a.label).localeCompare(String(b.label),"es");
+    });
+  }
+  function presentationText(v){
+    if(!v)return "—";
+    return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}`;
+  }
   function selectorHtml(p,pvars,categoryId){
-    const available=sortedVariants(pvars.filter(v=>v.active&&v.availability==="in_stock"));
+    const rawAvailable=pvars.filter(v=>v.active&&v.availability==="in_stock");
+    const autoHeight=rawAvailable.length>0 && rawAvailable.every(v=>!v.liters) && rawAvailable.some(v=>v.height);
+    const priority=!!p.prioritize_height || autoHeight;
+    const available=sortedVariants(rawAvailable,priority);
     if(!available.length)return `<div class="variant-selector empty-variants">Consultar disponibilidad de presentaciones.</div>`;
-    const counts={};available.forEach(v=>{const k=String(v.liters??"none");counts[k]=(counts[k]||0)+1});
-    return `<div class="variant-selector" data-product="${p.id}" data-category="${categoryId}">
-      <div class="selector-title">Seleccioná los litros</div>
-      <div class="liters-options">${available.map((v,i)=>{const liter=v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única";const duplicate=counts[String(v.liters??"none")]>1;return `<button type="button" class="option-chip liter-chip ${i===0?"active":""}" data-variant="${v.id}">${liter}${duplicate?` · ${esc(v.label)}`:""}</button>`}).join("")}</div>
-      <div class="selected-presentation-line"><span>Presentación</span><strong class="selected-presentation">${esc(available[0].label)}</strong></div>
+    const keyOf=v=>priority?String(v.height||"").trim().toLowerCase():String(v.liters??"none");
+    const counts={};available.forEach(v=>{const k=keyOf(v);counts[k]=(counts[k]||0)+1});
+    const title=priority?"Elegí la altura":"Seleccioná los litros";
+    const buttons=available.map((v,i)=>{
+      let main=priority?(v.height||"Sin altura"):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única");
+      const duplicate=counts[keyOf(v)]>1;
+      if(duplicate)main+=` · ${presentationText(v)}`;
+      return `<button type="button" class="option-chip liter-chip ${i===0?"active":""}" data-variant="${v.id}">${esc(main)}</button>`;
+    }).join("");
+    return `<div class="variant-selector" data-product="${p.id}" data-category="${categoryId}" data-priority="${priority?"height":"liters"}">
+      <div class="selector-title">${title}</div>
+      <div class="liters-options">${buttons}</div>
+      <div class="selected-presentation-line"><span>Presentación</span><strong class="selected-presentation">${esc(presentationText(available[0]))}</strong></div>
     </div>`;
   }
   function card(p,assoc,variants){
-    const pvars=sortedVariants(variants.filter(v=>v.product_id===p.id&&v.active)),available=pvars.filter(v=>v.availability==="in_stock"),initial=available[0]||pvars[0]||null;
+    const pvars=sortedVariants(variants.filter(v=>v.product_id===p.id&&v.active),!!p.prioritize_height),available=pvars.filter(v=>v.availability==="in_stock"),initial=available[0]||pvars[0]||null;
     const searchText=normalize([p.name,p.description,p.max_height,p.maturity_time,p.pruning_per_year].filter(Boolean).join(" "));
     return `<article class="plant-card" id="planta-${esc(p.slug)}" data-product-card="${p.id}" data-search="${esc(searchText)}">
       ${photoCarousel(p)}<div class="plant-body"><h3>${esc(p.name)}</h3><p>${esc(p.description||"")}</p>${highlights(p)}${selectorHtml(p,pvars,assoc.category_id)}
@@ -46,8 +76,17 @@
   }
   function setupVariantSelectors(variants){
     document.querySelectorAll(".variant-selector[data-product]").forEach(box=>{
-      const pid=box.dataset.product,cid=box.dataset.category,all=variants.filter(v=>v.product_id===pid&&v.active),card=box.closest(".plant-card"),price=card.querySelector(".dynamic-price"),status=card.querySelector(".status"),pres=box.querySelector(".selected-presentation"),extra=box.querySelector(".selected-extra"),calc=card.querySelector(".calc-open-link");
-      box.addEventListener("click",e=>{const b=e.target.closest(".liter-chip");if(!b)return;const v=all.find(x=>x.id===b.dataset.variant);if(!v)return;box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));pres.textContent=v.label;price.textContent=money(v.price);status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";status.classList.toggle("status-stock",v.availability==="in_stock");calc.href=`calculadora.html?category=${cid}&product=${pid}&variant=${v.id}`});
+      const pid=box.dataset.product,cid=box.dataset.category,all=variants.filter(v=>v.product_id===pid&&v.active),card=box.closest(".plant-card"),price=card.querySelector(".dynamic-price"),status=card.querySelector(".status"),pres=box.querySelector(".selected-presentation"),calc=card.querySelector(".calc-open-link");
+      box.addEventListener("click",e=>{
+        const b=e.target.closest(".liter-chip");if(!b)return;
+        const v=all.find(x=>x.id===b.dataset.variant);if(!v)return;
+        box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));
+        pres.textContent=presentationText(v);
+        price.textContent=money(v.price);
+        status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";
+        status.classList.toggle("status-stock",v.availability==="in_stock");
+        calc.href=`calculadora.html?category=${cid}&product=${pid}&variant=${v.id}`;
+      });
     });
   }
   function applySearch(){

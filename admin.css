@@ -45,3 +45,5 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .category-choice{grid-template-columns:auto 1fr!important}
 @media(max-width:900px){.variant-main-grid{grid-template-columns:1fr 1fr!important}}
 @media(max-width:540px){.variant-main-grid{grid-template-columns:1fr!important}}
+
+.selector-priority-box{border:1px solid #cfe4c9;background:#f4faf1;border-radius:13px;padding:14px}.selector-priority-box small{display:block;margin-top:7px;color:var(--muted);line-height:1.45}.optional-tag{font-size:.68rem;font-weight:650;color:var(--muted)}

@@ -1,13 +1,14 @@
-# Mi Primavera Vivero — v7
+# Mi Primavera Vivero — v8
 
-Cambios:
-- corrige el error de opciones duplicadas cuando una presentación no usa litros;
-- cada opción de venta puede tener **litros opcionales** y **altura opcional**;
-- permite, por ejemplo, Terrón · 1,50 m y Terrón · 2,00 m con precios distintos;
-- las distancias recomendadas ahora son opcionales;
-- si no se carga un dato, no se muestra al público;
-- los tiempos de cierre pueden dejarse vacíos cuando no aplican;
-- en el panel, cada campo de tiempo de cierre muestra entre paréntesis la distancia configurada y los litros de esa opción para facilitar la carga;
-- catálogo, calculadora, carrito, resumen y WhatsApp muestran la altura cuando corresponde.
+Cambios principales:
+- nuevo selector **Priorizar altura en el catálogo** por planta;
+- si está activado, el cliente elige altura y cambian automáticamente presentación, litros (si existen) y precio;
+- si no hay litros en ninguna opción pero sí hay alturas, la web cambia automáticamente a selector de altura;
+- en casos mixtos, el tilde Priorizar altura decide que la altura sea la variable principal;
+- si está desactivado y hay litros, el comportamiento por defecto sigue priorizando litros;
+- admite casos mixtos: por ejemplo 2 m en envase de 10 L y 6 m en terrón;
+- la calculadora y el resumen respetan la misma prioridad;
+- el panel exige que todas las opciones tengan altura cuando se activa Priorizar altura;
+- las etiquetas de tiempo de cierre muestran distancia, litros y altura cuando corresponda.
 
-Supabase ya fue actualizado para soportar altura por opción de venta y evitar el conflicto de clave única.
+Supabase ya fue actualizado con `prioritize_height`. La planta actual llamada Palmera quedó marcada para priorizar altura.

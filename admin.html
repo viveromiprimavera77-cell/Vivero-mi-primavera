@@ -89,11 +89,16 @@
             </fieldset>
 
             <fieldset class="wide field-box">
-              <legend>Opciones de venta: presentación + litros</legend>
+              <legend>Opciones de venta: presentación + litros/altura</legend>
               <p class="field-help">Cada fila es una opción vendible. Podés usar litros, altura, o ambos. Ejemplos: “Maceta soplada · 10 L” o “Terrón · 1,80 m”. Si un dato no aplica, dejalo vacío. Para cercos también podés indicar el tiempo estimado de cierre para cada distancia recomendada.</p>
               <div id="variantRows" class="variant-rows"></div>
-              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción de litros</button>
+              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción</button>
             </fieldset>
+
+            <div class="wide selector-priority-box">
+              <label class="check-label"><input id="productPrioritizeHeight" type="checkbox"> <strong>Priorizar altura en el catálogo</strong></label>
+              <small>Activá esta opción cuando haya opciones mixtas y quieras que el cliente elija primero la altura. Si ninguna opción tiene litros y sí tienen altura, la web prioriza altura automáticamente; en los demás casos, por defecto prioriza litros.</small>
+            </div>
 
             <div class="wide toggles">
               <label class="check-label"><input id="productFeatured" type="checkbox"> Mostrar como destacada</label>

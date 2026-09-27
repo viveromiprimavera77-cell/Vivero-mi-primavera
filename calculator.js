@@ -5,6 +5,17 @@
   const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
   let cats=[],products=[],assocs=[],variants=[],settings={};
   let current={},selectedSpacing=null,customApproved=false,customMode=false;
+  function numericFromText(value){const m=String(value||'').replace(',','.').match(/\d+(?:\.\d+)?/);return m?Number(m[0]):999999}
+  function presentationText(v){return v?`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString('es-AR')} L`:''}`:'—'}
+  function prioritizesHeight(product,list){return !!product?.prioritize_height || (list?.length>0 && list.every(v=>!v.liters) && list.some(v=>v.height))}
+  function optionText(v,p){
+    if(!v)return '';
+    if(prioritizesHeight(p, variants.filter(x=>x.product_id===p?.id&&x.active&&x.availability==='in_stock'))){
+      return `${v.height||'Sin altura'} — ${presentationText(v)} — ${money(v.price)}`;
+    }
+    const size=v.liters?`${Number(v.liters).toLocaleString('es-AR')} L`:v.height?`Alt. ${v.height}`:'Opción única';
+    return `${size} — ${v.label} — ${money(v.price)}`;
+  }
 
   async function load(){
     const [cr,pr,ar,vr,sr]=await Promise.all([
@@ -35,18 +46,25 @@
     return products.filter(p=>ids.includes(p.id));
   }
   function variantsForProduct(){
-    return variants.filter(v=>v.product_id===$('calcProduct').value&&v.active&&v.availability==='in_stock')
-      .sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)||String(a.height||'').localeCompare(String(b.height||''),'es')||String(a.label).localeCompare(String(b.label),'es'));
+    const product=products.find(p=>p.id===$('calcProduct').value);
+    const base=variants.filter(v=>v.product_id===$('calcProduct').value&&v.active&&v.availability==='in_stock');
+    const priority=prioritizesHeight(product,base);
+    return base.sort((a,b)=>{
+      if(priority){
+        const h=numericFromText(a.height)-numericFromText(b.height);if(h!==0)return h;
+      }else{
+        const l=Number(a.liters??999999)-Number(b.liters??999999);if(l!==0)return l;
+      }
+      return String(a.label).localeCompare(String(b.label),'es');
+    });
   }
   function renderCategories(){$('calcCategory').innerHTML=cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
   function renderProducts(){$('calcProduct').innerHTML=productListForCategory().map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
   function renderVariants(){
     const list=variantsForProduct();
-    $('calcVariant').innerHTML=list.length?list.map(v=>{
-      const size=v.liters?`${Number(v.liters).toLocaleString('es-AR')} L`:v.height?`Alt. ${v.height}`:'Opción única';
-      const extra=v.liters&&v.height?` · Alt. ${v.height}`:'';
-      return `<option value="${v.id}">${size}${extra} — ${v.label} — ${money(v.price)}</option>`;
-    }).join(''):`<option value="">Sin opciones en stock</option>`;
+    const product=products.find(p=>p.id===$('calcProduct').value);
+    $('calcVariantLabel').textContent=prioritizesHeight(product,list)?'Altura / opción disponible':'Litros / opción disponible';
+    $('calcVariant').innerHTML=list.length?list.map(v=>`<option value="${v.id}">${optionText(v,product)}</option>`).join(''):`<option value="">Sin opciones en stock</option>`;
     $('addToCartBtn').disabled=!list.length;
   }
 
@@ -105,8 +123,8 @@
     if(product){
       $('calcProductPreview').innerHTML=`${product.image_url?`<img src="${product.image_url}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
     }
-    $('selectedPresentation').textContent=variant?.label||'—';
-    $('selectedOptionPrice').textContent=variant?`${variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${variant.height?`Alt. ${variant.height} · `:''}${money(variant.price)}`:'—';
+    $('selectedPresentation').textContent=presentationText(variant);
+    $('selectedOptionPrice').textContent=variant?`${prioritizesHeight(product,variantsForProduct())&&variant.height?`Alt. ${variant.height} · `:''}${!prioritizesHeight(product,variantsForProduct())&&variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`:'—';
 
     let qty=0,spacing=null;
     if(linear){
@@ -145,7 +163,7 @@
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
         <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}
           <label class="checkout-variant-label">Litros / presentación
-            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${v.liters?`${Number(v.liters).toLocaleString('es-AR')} L · `:''}${v.height?`Alt. ${v.height} · `:''}${v.label} · ${money(v.price)}</option>`).join('')}</select>
+            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>{const p=products.find(p=>p.id===x.product_id);const list=variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock');return prioritizesHeight(p,list)?(numericFromText(a.height)-numericFromText(b.height)):(Number(a.liters??999999)-Number(b.liters??999999))}).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${optionText(v,products.find(p=>p.id===x.product_id))}</option>`).join('')}</select>
           </label>
         </div>
         <label>Cantidad<input class="checkout-qty" type="number" min="1" value="${x.quantity}" data-qty-id="${x.id}"></label>

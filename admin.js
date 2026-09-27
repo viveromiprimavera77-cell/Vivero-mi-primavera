@@ -60,9 +60,11 @@
   function spacingCaption(index,row){
     const spacing=$("productSpacing"+index)?.value?.trim();
     const liters=row?.querySelector(".v-liters")?.value?.trim();
+    const height=row?.querySelector(".v-height")?.value?.trim();
     const parts=[];
     if(spacing)parts.push(`${spacing} cm`);
     if(liters)parts.push(`${liters} L`);
+    if(height)parts.push(`Alt. ${height}`);
     return parts.length?` (${parts.join(" · ")})`:"";
   }
   function updateClosureLabels(row){
@@ -101,6 +103,7 @@
       else toast("La planta debe tener al menos una opción de venta.");
     });
     div.querySelector(".v-liters").addEventListener("input",()=>updateClosureLabels(div));
+    div.querySelector(".v-height").addEventListener("input",()=>updateClosureLabels(div));
     $("variantRows").appendChild(div);
     updateClosureLabels(div);
   }
@@ -143,6 +146,7 @@
       if(!name||!slug)throw new Error("Ingresá un nombre válido.");
       if(!catMap.length)throw new Error("Elegí al menos una categoría.");
       if(!vrows.length)throw new Error("Agregá al menos una presentación.");
+      if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height))throw new Error("Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.");
       const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
       if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
       let main=$("currentMainImage").value||null,integrated=$("currentIntegratedImage").value||null,info=$("currentInfoImage").value||null;
@@ -156,6 +160,7 @@
         max_height:$("productMaxHeight").value.trim()||null,
         maturity_time:$("productMaturityTime").value.trim()||null,
         pruning_per_year:$("productPruningPerYear").value.trim()||null,
+        prioritize_height:$("productPrioritizeHeight").checked,
         spacing_1_cm:$("productSpacing1").value?Number($("productSpacing1").value):null,
         spacing_2_cm:$("productSpacing2").value?Number($("productSpacing2").value):null,
         spacing_3_cm:$("productSpacing3").value?Number($("productSpacing3").value):null,
@@ -189,7 +194,7 @@
   function resetProductForm(){
     $("productForm").reset();$("productId").value="";$("currentMainImage").value="";$("currentIntegratedImage").value="";$("currentInfoImage").value="";
     $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
-    $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";
+    $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";$("productPrioritizeHeight").checked=false;
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";$("cancelProductEdit").hidden=true;
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
@@ -201,7 +206,7 @@
     $("productList").innerHTML=list.length?list.map(p=>{
       const cs=assocs.filter(a=>a.product_id===p.id).map(a=>categories.find(c=>c.id===a.category_id)?.name).filter(Boolean).join(", ");
       const vs=variants.filter(v=>v.product_id===p.id).map(v=>`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""}`).join(", ");
-      return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
+      return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · selector: ${p.prioritize_height?"altura":"litros"} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
     }).join(""):`<p class="form-message">No hay plantas.</p>`;
   }
   $("productSearch").addEventListener("input",renderProducts);
@@ -210,7 +215,7 @@
     if(edit){
       const p=products.find(x=>x.id===edit);if(!p)return;
       $("productId").value=p.id;$("productName").value=p.name;$("productDescription").value=p.description||"";$("productOrder").value=p.sort_order;$("productFeatured").checked=p.featured;$("productActive").checked=p.active;
-      $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";
+      $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";$("productPrioritizeHeight").checked=!!p.prioritize_height;
       $("productSpacing1").value=p.spacing_1_cm||"";$("productSpacing2").value=p.spacing_2_cm||"";$("productSpacing3").value=p.spacing_3_cm||"";
       $("currentMainImage").value=p.image_url||"";$("currentIntegratedImage").value=p.integrated_image_url||"";$("currentInfoImage").value=p.info_image_url||"";
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
