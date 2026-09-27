@@ -49,17 +49,33 @@
     $("statConfirmed").textContent=orders.filter(o=>o.status==="confirmed").length;
     $("statDispatched").textContent=orders.filter(o=>o.status==="dispatched").length;
   }
-  function renderCategoryChoices(selected={},spacingMap={}){
+  function renderCategoryChoices(selected={}){
     $("productCategoryChoices").innerHTML=categories.length?categories.map(c=>`
       <label class="category-choice">
         <input type="checkbox" class="pc-check" value="${c.id}" ${selected[c.id]?"checked":""}>
-        <span>${esc(c.name)}${c.calculation_mode==="linear"?" · lineal":""}</span>
-        <span class="spacing-wrap" ${c.calculation_mode==="linear"?"":"hidden"}>
-          <input type="number" min="1" step="1" class="pc-spacing" data-category="${c.id}" value="${spacingMap[c.id]??70}">
-          <small>cm recomendados</small>
-        </span>
+        <span>${esc(c.name)}${c.calculation_mode==="linear"?" · cálculo por metros lineales":""}</span>
       </label>`).join(""):`<p class="form-message">Primero creá una categoría.</p>`;
   }
+
+  function spacingCaption(index,row){
+    const spacing=$("productSpacing"+index)?.value?.trim();
+    const liters=row?.querySelector(".v-liters")?.value?.trim();
+    const parts=[];
+    if(spacing)parts.push(`${spacing} cm`);
+    if(liters)parts.push(`${liters} L`);
+    return parts.length?` (${parts.join(" · ")})`:"";
+  }
+  function updateClosureLabels(row){
+    if(!row)return;
+    [1,2,3].forEach(i=>{
+      const label=row.querySelector(`.closure-label-${i}`);
+      if(label)label.textContent=`Para distancia ${i}${spacingCaption(i,row)}`;
+    });
+  }
+  function updateAllClosureLabels(){
+    [...$("variantRows").children].forEach(updateClosureLabels);
+  }
+
   function addVariantRow(v={}){
     const div=document.createElement("div");
     div.className="variant-row";
@@ -67,33 +83,30 @@
     div.innerHTML=`
       <div class="variant-main-grid">
         <label>Tipo de presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: Maceta soplada, Terrón"></label>
-        <label>Litros<input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 5"></label>
+        <label>Litros <span class="optional-tag">opcional</span><input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 10"></label>
+        <label>Altura <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="Ej.: 1,80 m"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
       <div class="variant-closure-grid">
-        <div class="variant-closure-title">Tiempo estimado de cierre (meses) según cada distancia recomendada</div>
-        <label>Para distancia 1<input class="v-close-1" type="number" min="1" step="1" value="${v.closure_months_1??""}" placeholder="Meses"></label>
-        <label>Para distancia 2<input class="v-close-2" type="number" min="1" step="1" value="${v.closure_months_2??""}" placeholder="Meses"></label>
-        <label>Para distancia 3<input class="v-close-3" type="number" min="1" step="1" value="${v.closure_months_3??""}" placeholder="Meses"></label>
+        <div class="variant-closure-title">Tiempo estimado de cierre (meses), solo si aplica</div>
+        <label><span class="closure-label-1">Para distancia 1</span><input class="v-close-1" type="number" min="1" step="1" value="${v.closure_months_1??""}" placeholder="Meses"></label>
+        <label><span class="closure-label-2">Para distancia 2</span><input class="v-close-2" type="number" min="1" step="1" value="${v.closure_months_2??""}" placeholder="Meses"></label>
+        <label><span class="closure-label-3">Para distancia 3</span><input class="v-close-3" type="number" min="1" step="1" value="${v.closure_months_3??""}" placeholder="Meses"></label>
       </div>`;
     div.querySelector(".variant-remove").addEventListener("click",()=>{
       if($("variantRows").children.length>1)div.remove();
       else toast("La planta debe tener al menos una opción de venta.");
     });
+    div.querySelector(".v-liters").addEventListener("input",()=>updateClosureLabels(div));
     $("variantRows").appendChild(div);
+    updateClosureLabels(div);
   }
   $("addVariantBtn").addEventListener("click",()=>{
-    const rows=[...$("variantRows").children];
-    const last=rows.at(-1);
-    addVariantRow({
-      label:last?.querySelector(".v-label")?.value||"",
-      closure_months_1:last?.querySelector(".v-close-1")?.value||"",
-      closure_months_2:last?.querySelector(".v-close-2")?.value||"",
-      closure_months_3:last?.querySelector(".v-close-3")?.value||""
-    });
+    const rows=[...$("variantRows").children],last=rows.at(-1);
+    addVariantRow({label:last?.querySelector(".v-label")?.value||""});
   });
 
   async function uploadImage(file,slug,type){
@@ -107,6 +120,7 @@
       id:row.dataset.variantId||null,
       label:row.querySelector(".v-label").value.trim(),
       liters:row.querySelector(".v-liters").value?Number(row.querySelector(".v-liters").value):null,
+      height:row.querySelector(".v-height").value.trim()||null,
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
       availability:row.querySelector(".v-availability").value,
@@ -117,11 +131,9 @@
     })).filter(v=>v.label);
   }
   function gatherCategoryMap(){
-    return [...document.querySelectorAll(".pc-check:checked")].map((ch,i)=>{
-      const c=categories.find(x=>x.id===ch.value);
-      const spacing=c?.calculation_mode==="linear"?Number(document.querySelector(`.pc-spacing[data-category="${ch.value}"]`).value||70):null;
-      return {category_id:ch.value,recommended_spacing_cm:spacing,sort_order:i};
-    });
+    return [...document.querySelectorAll(".pc-check:checked")].map((ch,i)=>({
+      category_id:ch.value,recommended_spacing_cm:null,sort_order:i
+    }));
   }
 
   $("productForm").addEventListener("submit",async e=>{
@@ -131,6 +143,8 @@
       if(!name||!slug)throw new Error("Ingresá un nombre válido.");
       if(!catMap.length)throw new Error("Elegí al menos una categoría.");
       if(!vrows.length)throw new Error("Agregá al menos una presentación.");
+      const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
+      if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
       let main=$("currentMainImage").value||null,integrated=$("currentIntegratedImage").value||null,info=$("currentInfoImage").value||null;
       const files=[["productImageMain","main"],["productImageIntegrated","integrated"],["productImageInfo","info"]];
       for(const [id,type] of files){
@@ -142,9 +156,9 @@
         max_height:$("productMaxHeight").value.trim()||null,
         maturity_time:$("productMaturityTime").value.trim()||null,
         pruning_per_year:$("productPruningPerYear").value.trim()||null,
-        spacing_1_cm:Number($("productSpacing1").value||50),
-        spacing_2_cm:Number($("productSpacing2").value||70),
-        spacing_3_cm:Number($("productSpacing3").value||80),
+        spacing_1_cm:$("productSpacing1").value?Number($("productSpacing1").value):null,
+        spacing_2_cm:$("productSpacing2").value?Number($("productSpacing2").value):null,
+        spacing_3_cm:$("productSpacing3").value?Number($("productSpacing3").value):null,
         featured:$("productFeatured").checked,sort_order:Number($("productOrder").value||0),active:$("productActive").checked,updated_at:new Date().toISOString()
       };
       let product;
@@ -158,7 +172,7 @@
 
       const existing=variants.filter(v=>v.product_id===product.id),keep=[];
       for(const v of vrows){
-        const vp={product_id:product.id,label:v.label,liters:v.liters,price:v.price,cost:v.cost,availability:v.availability,
+        const vp={product_id:product.id,label:v.label,liters:v.liters,height:v.height,price:v.price,cost:v.cost,availability:v.availability,
           closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
           active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
         if(v.id){
@@ -176,7 +190,7 @@
     $("productForm").reset();$("productId").value="";$("currentMainImage").value="";$("currentIntegratedImage").value="";$("currentInfoImage").value="";
     $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
     $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";
-    $("productSpacing1").value=50;$("productSpacing2").value=70;$("productSpacing3").value=80;
+    $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";$("cancelProductEdit").hidden=true;
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
   }
@@ -186,7 +200,7 @@
     const list=products.filter(p=>!term||p.name.toLowerCase().includes(term));
     $("productList").innerHTML=list.length?list.map(p=>{
       const cs=assocs.filter(a=>a.product_id===p.id).map(a=>categories.find(c=>c.id===a.category_id)?.name).filter(Boolean).join(", ");
-      const vs=variants.filter(v=>v.product_id===p.id).map(v=>`${v.label}${v.liters?` ${Number(v.liters).toLocaleString("es-AR")} L`:""}`).join(", ");
+      const vs=variants.filter(v=>v.product_id===p.id).map(v=>`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""}`).join(", ");
       return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
     }).join(""):`<p class="form-message">No hay plantas.</p>`;
   }
@@ -197,11 +211,11 @@
       const p=products.find(x=>x.id===edit);if(!p)return;
       $("productId").value=p.id;$("productName").value=p.name;$("productDescription").value=p.description||"";$("productOrder").value=p.sort_order;$("productFeatured").checked=p.featured;$("productActive").checked=p.active;
       $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";
-      $("productSpacing1").value=p.spacing_1_cm||50;$("productSpacing2").value=p.spacing_2_cm||70;$("productSpacing3").value=p.spacing_3_cm||80;
+      $("productSpacing1").value=p.spacing_1_cm||"";$("productSpacing2").value=p.spacing_2_cm||"";$("productSpacing3").value=p.spacing_3_cm||"";
       $("currentMainImage").value=p.image_url||"";$("currentIntegratedImage").value=p.integrated_image_url||"";$("currentInfoImage").value=p.info_image_url||"";
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
-      renderCategoryChoices(selected,sp);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();
+      renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();
       $("productFormTitle").textContent=`Editar: ${p.name}`;$("cancelProductEdit").hidden=false;scrollTo({top:220,behavior:"smooth"});
     }
     if(toggle){const p=products.find(x=>x.id===toggle);const {error}=await db.from("products").update({active:!p.active,updated_at:new Date().toISOString()}).eq("id",p.id);if(error)return toast(error.message);await loadAll()}
@@ -316,6 +330,8 @@
   function calcProfit(){const base=num("calcPlant")+num("calcInputs")+num("calcSupplierTransport")+num("calcDelivery")+num("calcOther"),sale=num("calcSale"),fee=num("calcFee")/100,target=num("calcTargetMargin")/100,commission=sale*fee,profit=sale-base-commission,margin=sale?profit/sale*100:0,markup=base?profit/base*100:0,den=1-fee-target,suggested=den>0?base/den:0;$("calcBaseResult").textContent=money(base);$("calcFeeResult").textContent=money(commission);$("calcProfitResult").textContent=money(profit);$("calcMarginResult").textContent=`${margin.toFixed(1)}%`;$("calcMarkupResult").textContent=`${markup.toFixed(1)}%`;$("calcSuggestedResult").textContent=den>0?money(suggested):"Revisar %"}
   document.querySelectorAll(".calc-input").forEach(i=>i.addEventListener("input",calcProfit));calcProfit();
 
+
+  ["productSpacing1","productSpacing2","productSpacing3"].forEach(id=>$(id)?.addEventListener("input",updateAllClosureLabels));
   db.auth.onAuthStateChange(()=>setTimeout(refreshAuth,0));
   refreshAuth().catch(err=>console.error(err));
 })();

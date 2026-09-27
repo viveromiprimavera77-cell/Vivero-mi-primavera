@@ -1,15 +1,13 @@
-# Mi Primavera Vivero — v6
+# Mi Primavera Vivero — v7
 
-Cambios principales:
-- catálogo: muestra todas las opciones de litros realmente guardadas en Supabase; al tocar un litro cambia presentación y precio;
-- encabezado: buscador funcional en tiempo real en lugar de “Plantas destacadas”;
-- catálogo: selector desplegable para saltar rápidamente a una categoría;
-- botón flotante para volver al inicio;
-- menú lateral: sección “Contactanos” con viveromiprimavera77@gmail.com;
-- panel: indicadores compactos solo de pedidos a confirmar, confirmados y despachados;
-- pedidos del panel: ahora son desplegables/contraíbles;
-- el listado de plantas del panel muestra cada presentación junto con sus litros guardados.
+Cambios:
+- corrige el error de opciones duplicadas cuando una presentación no usa litros;
+- cada opción de venta puede tener **litros opcionales** y **altura opcional**;
+- permite, por ejemplo, Terrón · 1,50 m y Terrón · 2,00 m con precios distintos;
+- las distancias recomendadas ahora son opcionales;
+- si no se carga un dato, no se muestra al público;
+- los tiempos de cierre pueden dejarse vacíos cuando no aplican;
+- en el panel, cada campo de tiempo de cierre muestra entre paréntesis la distancia configurada y los litros de esa opción para facilitar la carga;
+- catálogo, calculadora, carrito, resumen y WhatsApp muestran la altura cuando corresponde.
 
-IMPORTANTE: si una planta muestra solamente 15 L en la web, es porque Supabase tiene solamente una fila guardada para esa planta. Para mostrar 5 L, 10 L y 15 L deben existir tres filas separadas en “Opciones de venta: presentación + litros” y luego tocar “Guardar planta”.
-
-- en el resumen del pedido también se puede cambiar los litros/presentación de cada artículo antes de confirmar.
+Supabase ya fue actualizado para soportar altura por opción de venta y evitar el conflicto de clave única.

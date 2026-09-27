@@ -46,7 +46,7 @@
   }
   function setupVariantSelectors(variants){
     document.querySelectorAll(".variant-selector[data-product]").forEach(box=>{
-      const pid=box.dataset.product,cid=box.dataset.category,all=variants.filter(v=>v.product_id===pid&&v.active),card=box.closest(".plant-card"),price=card.querySelector(".dynamic-price"),status=card.querySelector(".status"),pres=box.querySelector(".selected-presentation"),calc=card.querySelector(".calc-open-link");
+      const pid=box.dataset.product,cid=box.dataset.category,all=variants.filter(v=>v.product_id===pid&&v.active),card=box.closest(".plant-card"),price=card.querySelector(".dynamic-price"),status=card.querySelector(".status"),pres=box.querySelector(".selected-presentation"),extra=box.querySelector(".selected-extra"),calc=card.querySelector(".calc-open-link");
       box.addEventListener("click",e=>{const b=e.target.closest(".liter-chip");if(!b)return;const v=all.find(x=>x.id===b.dataset.variant);if(!v)return;box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));pres.textContent=v.label;price.textContent=money(v.price);status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";status.classList.toggle("status-stock",v.availability==="in_stock");calc.href=`calculadora.html?category=${cid}&product=${pid}&variant=${v.id}`});
     });
   }

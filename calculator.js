@@ -36,15 +36,16 @@
   }
   function variantsForProduct(){
     return variants.filter(v=>v.product_id===$('calcProduct').value&&v.active&&v.availability==='in_stock')
-      .sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)||String(a.label).localeCompare(String(b.label),'es'));
+      .sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)||String(a.height||'').localeCompare(String(b.height||''),'es')||String(a.label).localeCompare(String(b.label),'es'));
   }
   function renderCategories(){$('calcCategory').innerHTML=cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
   function renderProducts(){$('calcProduct').innerHTML=productListForCategory().map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
   function renderVariants(){
     const list=variantsForProduct();
     $('calcVariant').innerHTML=list.length?list.map(v=>{
-      const liters=v.liters?`${Number(v.liters).toLocaleString('es-AR')} L`:'Única';
-      return `<option value="${v.id}">${liters} — ${v.label} — ${money(v.price)}</option>`;
+      const size=v.liters?`${Number(v.liters).toLocaleString('es-AR')} L`:v.height?`Alt. ${v.height}`:'Opción única';
+      const extra=v.liters&&v.height?` · Alt. ${v.height}`:'';
+      return `<option value="${v.id}">${size}${extra} — ${v.label} — ${money(v.price)}</option>`;
     }).join(''):`<option value="">Sin opciones en stock</option>`;
     $('addToCartBtn').disabled=!list.length;
   }
@@ -105,7 +106,7 @@
       $('calcProductPreview').innerHTML=`${product.image_url?`<img src="${product.image_url}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
     }
     $('selectedPresentation').textContent=variant?.label||'—';
-    $('selectedOptionPrice').textContent=variant?`${variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`:'—';
+    $('selectedOptionPrice').textContent=variant?`${variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${variant.height?`Alt. ${variant.height} · `:''}${money(variant.price)}`:'—';
 
     let qty=0,spacing=null;
     if(linear){
@@ -129,7 +130,7 @@
     if(!current.variant||current.quantity<1)return;
     window.ViveroCart.add({
       product_id:current.product.id,variant_id:current.variant.id,category_id:current.category.id,
-      product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,
+      product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,height:current.variant.height||null,
       category_name:current.category.name,quantity:current.quantity,unit_price:Number(current.variant.price),
       image_url:current.product.image_url||'',length_m:current.linear?Number($('calcLength').value):null,
       spacing_cm:current.linear?Number(current.spacing):null
@@ -142,9 +143,9 @@
     $('checkoutItems').innerHTML=items.length?items.map(x=>`
       <div class="checkout-item" data-cart-id="${x.id}">
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
-        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}
+        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}
           <label class="checkout-variant-label">Litros / presentación
-            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${v.liters?`${Number(v.liters).toLocaleString('es-AR')} L · `:''}${v.label} · ${money(v.price)}</option>`).join('')}</select>
+            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>Number(a.liters??999999)-Number(b.liters??999999)).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${v.liters?`${Number(v.liters).toLocaleString('es-AR')} L · `:''}${v.height?`Alt. ${v.height} · `:''}${v.label} · ${money(v.price)}</option>`).join('')}</select>
           </label>
         </div>
         <label>Cantidad<input class="checkout-qty" type="number" min="1" value="${x.quantity}" data-qty-id="${x.id}"></label>
@@ -193,7 +194,7 @@
     const item=window.ViveroCart.get().find(x=>x.id===e.target.dataset.variantCartId);
     const v=variants.find(x=>x.id===e.target.value);
     if(!item||!v)return;
-    window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,unit_price:Number(v.price)});
+    window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,height:v.height||null,unit_price:Number(v.price)});
     renderCheckout();
   });
   $('checkoutItems').addEventListener('click',e=>{if(e.target.dataset.removeId){window.ViveroCart.remove(e.target.dataset.removeId);renderCheckout()}});
@@ -210,7 +211,7 @@
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,'',
         `Cliente: ${$('customerName').value.trim()}`,`Dirección: ${$('customerAddress').value.trim()}`,`CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
-        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
+        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null
       ].filter(x=>x!==null);

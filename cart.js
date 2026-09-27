@@ -137,7 +137,7 @@
         ${x.image_url ? `<img src="${x.image_url}" alt="">` : `<div class="cart-mini-placeholder">MP</div>`}
         <div class="cart-mini-copy">
           <strong>${x.product_name}</strong>
-          <span>${x.variant_label}${x.liters ? ` · ${x.liters} L` : ""}</span>
+          <span>${x.variant_label}${x.liters ? ` · ${x.liters} L` : ""}${x.height ? ` · Alt. ${x.height}` : ""}</span>
           <span>${x.quantity} × ${money(x.unit_price)}</span>
         </div>
         <button type="button" class="cart-mini-remove" data-remove-cart="${x.id}" aria-label="Quitar">×</button>

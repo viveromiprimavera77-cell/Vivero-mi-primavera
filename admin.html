@@ -65,11 +65,11 @@
 
             <fieldset class="wide field-box">
               <legend>Distancias recomendadas</legend>
-              <p class="field-help">Configurá tres distancias recomendadas para esta planta. Se usan en cercos, borduras y otras categorías calculadas por metros lineales.</p>
+              <p class="field-help">Configurá hasta tres distancias recomendadas solo si corresponde. Si esta planta no usa cálculo por distancia, dejalas vacías.</p>
               <div class="spacing-admin-grid">
-                <label>Opción 1 (cm)<input id="productSpacing1" type="number" min="1" step="1" value="50"></label>
-                <label>Opción 2 (cm)<input id="productSpacing2" type="number" min="1" step="1" value="70"></label>
-                <label>Opción 3 (cm)<input id="productSpacing3" type="number" min="1" step="1" value="80"></label>
+                <label>Opción 1 (cm)<input id="productSpacing1" type="number" min="1" step="1" placeholder="Ej.: 50"></label>
+                <label>Opción 2 (cm)<input id="productSpacing2" type="number" min="1" step="1" placeholder="Ej.: 70"></label>
+                <label>Opción 3 (cm)<input id="productSpacing3" type="number" min="1" step="1" placeholder="Ej.: 80"></label>
               </div>
             </fieldset>
 
@@ -90,7 +90,7 @@
 
             <fieldset class="wide field-box">
               <legend>Opciones de venta: presentación + litros</legend>
-              <p class="field-help">Cada fila es una opción vendible. Por ejemplo: “Maceta soplada · 5 L”, “Maceta soplada · 10 L” y “Maceta soplada · 15 L”. Podés repetir el mismo tipo de presentación con distintos litros, precios y costos. Para cada opción también podés indicar el tiempo estimado de cierre para las tres distancias recomendadas.</p>
+              <p class="field-help">Cada fila es una opción vendible. Podés usar litros, altura, o ambos. Ejemplos: “Maceta soplada · 10 L” o “Terrón · 1,80 m”. Si un dato no aplica, dejalo vacío. Para cercos también podés indicar el tiempo estimado de cierre para cada distancia recomendada.</p>
               <div id="variantRows" class="variant-rows"></div>
               <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción de litros</button>
             </fieldset>
