@@ -92,8 +92,8 @@
         <div class="public-form-grid">
           <label>Nombre y apellido<input id="customerName" required></label>
           <label>Teléfono / WhatsApp
-            <input id="customerPhone" type="tel" required placeholder="Ej.: 54911...">
-            <small>Ingresalo con código de país y área para poder contactarte por WhatsApp.</small>
+            <input id="customerPhone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required placeholder="Ej.: 1132123567">
+            <small>Ingresá 10 dígitos: código de área sin 0 + número sin 15. No escribas +54 9: lo agregamos automáticamente.</small>
           </label>
           <label>Dirección de envío<input id="customerAddress" required></label>
           <label>Código postal<input id="customerPostal" required></label>

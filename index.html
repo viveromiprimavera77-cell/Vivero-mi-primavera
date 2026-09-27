@@ -56,10 +56,11 @@
             <label class="hero-search-label" for="plantSearch">Buscar plantas o productos</label>
             <div class="hero-search-box">
               <span aria-hidden="true">⌕</span>
-              <input id="plantSearch" type="search" placeholder="Ej.: oleo, ligustrina, tierra..." autocomplete="off">
+              <input id="plantSearch" type="text" placeholder="Ej.: oleo, ligustrina, tierra..." autocomplete="off" enterkeyhint="search">
               <button id="clearPlantSearch" type="button" aria-label="Limpiar búsqueda" hidden>×</button>
             </div>
             <small id="searchStatus">Escribí para filtrar el catálogo automáticamente.</small>
+            <div id="searchResults" class="hero-search-results" hidden></div>
           </div>
           <div class="hero-actions">
             <a class="btn btn-ghost" href="#catalogo">Ver catálogo completo</a>

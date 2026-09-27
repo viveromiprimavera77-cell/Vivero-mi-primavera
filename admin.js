@@ -246,8 +246,13 @@
   $("newCategoryBtn").addEventListener("click",resetCategoryForm);$("cancelCategoryEdit").addEventListener("click",resetCategoryForm);
 
   function customerWhatsappLink(phone){
-    const digits=String(phone||"").replace(/\D/g,"");
-    return digits?`https://wa.me/${digits}`:"";
+    const digits=String(phone||'').replace(/\D/g,'');
+    return digits?`https://wa.me/${digits}`:'';
+  }
+  function displayCustomerPhone(phone){
+    const digits=String(phone||'').replace(/\D/g,'');
+    if(digits.startsWith('549')&&digits.length===13)return `+54 9 ${digits.slice(3)}`;
+    return phone||'Sin teléfono';
   }
   function statusLabel(s){return s==="pending_confirmation"?"Pedido a confirmar":s==="confirmed"?"Confirmado":s==="dispatched"?"Despachado":"Cancelado"}
   function statusClass(s){return s==="pending_confirmation"?"pending":s==="confirmed"?"confirmed":s==="dispatched"?"dispatched":"cancelled"}
@@ -274,7 +279,7 @@
           <div class="order-customer">
             <div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div>
             <div><span>Dirección</span><strong>${esc(o.shipping_address)} <small class="inline-cp">· CP ${esc(o.postal_code)}</small></strong></div>
-            <div><span>Teléfono</span><strong>${esc(o.phone||"Sin teléfono")}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
+            <div><span>Teléfono</span><strong>${esc(displayCustomerPhone(o.phone))}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
           </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
           <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"></label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>

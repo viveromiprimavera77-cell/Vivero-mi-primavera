@@ -89,14 +89,37 @@
       });
     });
   }
+  function matchingProducts(q){
+    if(!q)return [];
+    return catalogProducts.filter(p=>normalize([p.name,p.description,p.max_height,p.maturity_time,p.pruning_per_year].filter(Boolean).join(" ")).includes(q));
+  }
+  function renderSearchResults(q){
+    const box=el("searchResults");
+    if(!q){box.hidden=true;box.innerHTML="";return []}
+    const matches=matchingProducts(q);
+    box.innerHTML=matches.length?matches.slice(0,8).map(p=>{
+      const cats=catalogAssocs.filter(a=>a.product_id===p.id).map(a=>catalogCategories.find(c=>c.id===a.category_id)?.name).filter(Boolean);
+      return `<button type="button" class="hero-search-result" data-search-product="${p.id}"><span><strong>${esc(p.name)}</strong><small>${esc([...new Set(cats)].join(" · ")||"Producto")}</small></span><b>Ver →</b></button>`;
+    }).join(""):`<div class="hero-search-no-result">No encontramos plantas o productos con esa búsqueda.</div>`;
+    box.hidden=false;
+    return matches;
+  }
+  function goToSearchProduct(productId){
+    const product=catalogProducts.find(p=>p.id===productId);if(!product)return;
+    const target=document.querySelector(`#planta-${CSS.escape(product.slug)}`);
+    if(target){target.scrollIntoView({behavior:"smooth",block:"start"});setTimeout(()=>target.classList.add("search-hit"),250);setTimeout(()=>target.classList.remove("search-hit"),1900)}
+    el("searchResults").hidden=true;
+  }
   function applySearch(){
     const q=normalize(el("plantSearch")?.value||"").trim();let shown=0;
     document.querySelectorAll(".category-section").forEach(section=>{
       let sectionShown=0;section.querySelectorAll(".plant-card").forEach(card=>{const match=!q||card.dataset.search.includes(q);card.hidden=!match;if(match){shown++;sectionShown++}});section.hidden=sectionShown===0;
     });
+    const matches=renderSearchResults(q);
     el("catalogEmptySearch").hidden=shown>0||!q;
     el("clearPlantSearch").hidden=!q;
-    el("searchStatus").textContent=q?(shown===1?"1 resultado encontrado":`${shown} resultados encontrados`):"Escribí para filtrar el catálogo automáticamente.";
+    el("searchStatus").textContent=q?(matches.length===1?"1 producto encontrado":`${matches.length} productos encontrados`):"Escribí para filtrar el catálogo automáticamente.";
+    return matches;
   }
 
   async function load(){
@@ -118,7 +141,10 @@
 
   document.addEventListener("click",e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const target=document.querySelector(a.getAttribute("href"));if(!target)return;e.preventDefault();target.scrollIntoView({behavior:"smooth",block:"start"});if(innerWidth<=900)closeMenu()});
   el("mobileMenuBtn").addEventListener("click",()=>{const open=el("sidebar").classList.toggle("open");el("menuBackdrop").classList.toggle("show",open);el("mobileMenuBtn").setAttribute("aria-expanded",String(open))});el("menuBackdrop").addEventListener("click",closeMenu);
-  el("plantSearch").addEventListener("input",applySearch);el("clearPlantSearch").addEventListener("click",()=>{el("plantSearch").value="";applySearch();el("plantSearch").focus()});
+  el("plantSearch").addEventListener("input",applySearch);
+  el("plantSearch").addEventListener("keydown",e=>{if(e.key!=="Enter")return;e.preventDefault();const matches=applySearch();if(matches.length)goToSearchProduct(matches[0].id)});
+  el("searchResults").addEventListener("click",e=>{const btn=e.target.closest("[data-search-product]");if(btn)goToSearchProduct(btn.dataset.searchProduct)});
+  el("clearPlantSearch").addEventListener("click",()=>{el("plantSearch").value="";applySearch();el("plantSearch").focus()});
   el("categoryJump").addEventListener("change",e=>{if(!e.target.value)return;document.getElementById(e.target.value)?.scrollIntoView({behavior:"smooth",block:"start"});e.target.value=""});
   const topBtn=el("backToTop");window.addEventListener("scroll",()=>topBtn.classList.toggle("show",window.scrollY>500),{passive:true});topBtn.addEventListener("click",()=>scrollTo({top:0,behavior:"smooth"}));
   load();
