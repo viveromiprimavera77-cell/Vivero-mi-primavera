@@ -1,28 +1,21 @@
-# Mi Primavera Vivero — v4
+# Mi Primavera Vivero — v5
 
-Cambios principales:
-- logo duplicado en la raíz del proyecto y rutas absolutas para evitar fallas en Vercel;
-- botón del video: ya no abre WhatsApp; lleva a destacadas/catálogo;
-- cada planta separa **tipo de presentación** (Maceta soplada, Terrón, etc.) de **litros**;
-- una presentación puede tener múltiples litros y cada combinación tiene su precio y costo;
-- al elegir los litros en el catálogo cambia el precio automáticamente;
-- carrito persistente arriba a la derecha;
-- agregar al carrito desde la calculadora;
-- opción Seguir comprando o Continuar con el pedido;
-- resumen completo editable antes de confirmar;
-- se puede cambiar cantidad, borrar un artículo o vaciar el carrito;
-- el carrito lateral muestra productos, total, Confirmar mi pedido y Seguir comprando;
-- pedidos de varios artículos se registran en Supabase con un único código y luego abren WhatsApp.
+Cambios de esta versión:
+- selector público de litros corregido: muestra todas las opciones en stock;
+- al elegir litros cambia automáticamente la presentación, el precio y el enlace a la calculadora;
+- la calculadora muestra todas las combinaciones de litros/presentación disponibles;
+- 3 distancias recomendadas configurables por planta;
+- opción “Otra distancia” con advertencia y confirmación;
+- tiempo estimado de cierre configurable en meses para cada combinación de litros y cada una de las 3 distancias;
+- aclaración pública de que el tiempo de cierre es estimativo;
+- nuevos datos destacados editables por planta: altura máxima, tiempo hasta desarrollo máximo y podas anuales;
+- carrito y pedidos múltiples conservados.
 
-## Backend
-Supabase ya fue actualizado para:
-- permitir varios litros dentro de un mismo tipo de presentación;
-- registrar un pedido completo de varios artículos mediante `create_cart_order`.
+## Cómo cargar varias opciones
+En el panel, dentro de una planta, cada fila de “Opciones de venta” representa una combinación:
+- Maceta soplada | 5 L | precio/costo
+- Maceta soplada | 10 L | precio/costo
+- Maceta soplada | 15 L | precio/costo
+- Terrón | 10 L | precio/costo
 
-## Subida
-Reemplazá los archivos del repositorio por los de este ZIP. Es importante subir también:
-- `cart.js`
-- `calculator.js`
-- `calculadora.html`
-- `logo-mi-primavera.jpg` en la raíz
-- la carpeta `assets`
+Usá “+ Agregar otra opción de litros” para crear todas las combinaciones que quieras.

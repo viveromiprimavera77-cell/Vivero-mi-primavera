@@ -18,22 +18,42 @@
     <section class="calc-intro">
       <span class="eyebrow">MI PRIMAVERA</span>
       <h1>Calculadora de cantidad y costos</h1>
-      <p>Elegí el uso, la planta, el tipo de presentación y los litros disponibles.</p>
+      <p>Elegí la planta y una de sus opciones disponibles. Para cercos y borduras también podés calcular por metros lineales.</p>
     </section>
 
     <section class="public-calc-card" id="calculatorCard">
       <div class="public-form-grid">
         <label>Categoría<select id="calcCategory"></select></label>
         <label>Planta<select id="calcProduct"></select></label>
-        <label>Tipo de presentación<select id="calcPresentation"></select></label>
-        <label>Litros disponibles<select id="calcLiters"></select></label>
+        <label>Litros / opción disponible<select id="calcVariant"></select></label>
+        <div class="selected-option-card">
+          <span>Presentación seleccionada</span>
+          <strong id="selectedPresentation">—</strong>
+          <small id="selectedOptionPrice">—</small>
+        </div>
         <div class="calc-product-preview full" id="calcProductPreview"></div>
       </div>
 
       <div id="linearFields" class="linear-box" hidden>
-        <div class="public-form-grid">
-          <label>Metros lineales a cubrir<input id="calcLength" type="number" min="0.1" step="0.1" value="10"></label>
-          <label>Distancia entre plantas (cm)<input id="calcSpacing" type="number" min="1" step="1"><small id="spacingHelp"></small></label>
+        <label>Metros lineales a cubrir
+          <input id="calcLength" type="number" min="0.1" step="0.1" value="10">
+        </label>
+
+        <div class="spacing-block">
+          <span class="spacing-title">Distancia entre plantas</span>
+          <div id="spacingOptions" class="spacing-options"></div>
+          <div id="customSpacingWrap" class="custom-spacing-wrap" hidden>
+            <label>Otra distancia (cm)<input id="customSpacing" type="number" min="1" step="1"></label>
+          </div>
+          <div id="customSpacingWarning" class="spacing-warning" hidden>
+            <strong>Atención</strong>
+            <p>Las opciones fuera de las recomendadas pueden no ser ideales para el desarrollo de la planta elegida. ¿De todas maneras querés continuar?</p>
+            <div>
+              <button id="approveCustomSpacing" class="public-primary-btn" type="button">Sí, continuar</button>
+              <button id="backToRecommended" class="public-secondary-btn" type="button">Volver a recomendadas</button>
+            </div>
+          </div>
+          <div id="closureEstimate" class="closure-estimate"></div>
         </div>
       </div>
 
@@ -65,9 +85,7 @@
       </div>
       <div id="checkoutItems" class="checkout-items"></div>
       <div class="checkout-total"><span>Total estimado</span><strong id="checkoutTotal">$0</strong></div>
-      <div class="checkout-actions">
-        <a href="./#catalogo" class="public-secondary-btn">Seguir comprando</a>
-      </div>
+      <div class="checkout-actions"><a href="./#catalogo" class="public-secondary-btn">Seguir comprando</a></div>
 
       <form id="orderForm" class="public-order-form">
         <h3>Datos para confirmar el pedido</h3>

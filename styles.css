@@ -221,3 +221,30 @@ body.cart-open{overflow:hidden}
   .checkout-item label,.checkout-subtotal,.checkout-remove{grid-column:2}
   .checkout-heading{align-items:flex-start;flex-direction:column}
 }
+
+/* v5: datos destacados */
+.plant-highlights{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:13px 0}
+.plant-highlights div{background:#f3f9ef;border:1px solid #dcebd7;border-radius:10px;padding:9px}
+.plant-highlights span{display:block;font-size:.68rem;color:var(--muted);line-height:1.25}
+.plant-highlights strong{display:block;margin-top:4px;font-size:.82rem;color:var(--green-900);line-height:1.25}
+.selected-presentation-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+.selected-presentation-line span{font-size:.8rem;font-weight:900;color:var(--green-900)}
+.selected-presentation-line strong{background:#e4f5dd;color:var(--green-900);border-radius:999px;padding:7px 10px;font-size:.82rem}
+.selected-option-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f7fbf5;align-self:end}
+.selected-option-card span,.selected-option-card small{display:block;color:var(--muted)}
+.selected-option-card strong{display:block;color:var(--green-900);font-size:1.05rem;margin:4px 0}
+
+/* v5: distancias recomendadas */
+.spacing-block{margin-top:17px;border-top:1px solid var(--line);padding-top:16px}
+.spacing-title{display:block;font-weight:900;color:var(--green-950);margin-bottom:10px}
+.spacing-options{display:flex;flex-wrap:wrap;gap:8px}
+.spacing-chip{border:1px solid #badab3;background:#fff;color:var(--green-900);border-radius:999px;padding:10px 13px;font-weight:900;cursor:pointer}
+.spacing-chip.active{background:var(--green-800);color:#fff;border-color:var(--green-800)}
+.custom-spacing-wrap{margin-top:13px;max-width:300px}
+.custom-spacing-wrap input{width:100%;margin-top:7px;border:1px solid var(--line);border-radius:10px;padding:11px}
+.spacing-warning{margin-top:13px;background:#fff7df;border:1px solid #efd38d;border-radius:13px;padding:14px;color:#5d4b19}
+.spacing-warning strong{display:block;margin-bottom:4px}.spacing-warning p{margin:0 0 11px;line-height:1.5}
+.spacing-warning>div{display:flex;gap:8px;flex-wrap:wrap}
+.closure-estimate{margin-top:13px;background:#eef8ea;border:1px solid #cee5c7;border-radius:13px;padding:13px;color:var(--green-950)}
+.closure-estimate p{margin:0;line-height:1.5}.closure-estimate small{display:block;margin-top:6px;color:var(--muted);line-height:1.45}
+@media(max-width:520px){.plant-highlights{grid-template-columns:1fr}}

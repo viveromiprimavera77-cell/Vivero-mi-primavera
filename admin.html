@@ -55,6 +55,26 @@
             <label class="wide">Descripción<textarea id="productDescription" rows="4"></textarea></label>
 
             <fieldset class="wide field-box">
+              <legend>Datos destacados de la planta</legend>
+              <p class="field-help">Estos datos se muestran directamente en la tarjeta del catálogo.</p>
+              <div class="image-input-grid">
+                <label>Altura máxima<input id="productMaxHeight" placeholder="Ej.: 3–4 m"></label>
+                <label>Tiempo hasta desarrollo máximo<input id="productMaturityTime" placeholder="Ej.: 3–5 años"></label>
+                <label>Podas anuales<input id="productPruningPerYear" placeholder="Ej.: 2–3 podas"></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="wide field-box">
+              <legend>Distancias recomendadas</legend>
+              <p class="field-help">Configurá tres distancias recomendadas para esta planta. Se usan en cercos, borduras y otras categorías calculadas por metros lineales.</p>
+              <div class="spacing-admin-grid">
+                <label>Opción 1 (cm)<input id="productSpacing1" type="number" min="1" step="1" value="50"></label>
+                <label>Opción 2 (cm)<input id="productSpacing2" type="number" min="1" step="1" value="70"></label>
+                <label>Opción 3 (cm)<input id="productSpacing3" type="number" min="1" step="1" value="80"></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="wide field-box">
               <legend>Categorías donde aparece</legend>
               <p class="field-help">Una misma planta puede estar en varias categorías. Para categorías lineales podés definir la distancia recomendada.</p>
               <div id="productCategoryChoices" class="category-choice-list"></div>
@@ -70,10 +90,10 @@
             </fieldset>
 
             <fieldset class="wide field-box">
-              <legend>Presentaciones / litros</legend>
-              <p class="field-help">Solo las presentaciones marcadas “En stock” aparecerán como elegibles en la calculadora pública.</p>
+              <legend>Opciones de venta: presentación + litros</legend>
+              <p class="field-help">Cada fila es una opción vendible. Por ejemplo: “Maceta soplada · 5 L”, “Maceta soplada · 10 L” y “Maceta soplada · 15 L”. Podés repetir el mismo tipo de presentación con distintos litros, precios y costos. Para cada opción también podés indicar el tiempo estimado de cierre para las tres distancias recomendadas.</p>
               <div id="variantRows" class="variant-rows"></div>
-              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar presentación</button>
+              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción de litros</button>
             </fieldset>
 
             <div class="wide toggles">

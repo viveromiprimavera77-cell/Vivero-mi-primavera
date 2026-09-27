@@ -64,18 +64,40 @@
       </label>`).join(""):`<p class="form-message">Primero creá una categoría.</p>`;
   }
   function addVariantRow(v={}){
-    const div=document.createElement("div");div.className="variant-row";div.dataset.variantId=v.id||"";
+    const div=document.createElement("div");
+    div.className="variant-row";
+    div.dataset.variantId=v.id||"";
     div.innerHTML=`
-      <label>Tipo de presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: Maceta soplada, Terrón"></label>
-      <label>Litros<input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 3, 10, 15"></label>
-      <label>Precio<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
-      <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
-      <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
-      <button type="button" class="variant-remove">✕</button>`;
-    div.querySelector(".variant-remove").addEventListener("click",()=>{if($("variantRows").children.length>1)div.remove();else toast("La planta debe tener al menos una presentación.")});
+      <div class="variant-main-grid">
+        <label>Tipo de presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: Maceta soplada, Terrón"></label>
+        <label>Litros<input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 5"></label>
+        <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
+        <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
+        <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
+        <button type="button" class="variant-remove">✕</button>
+      </div>
+      <div class="variant-closure-grid">
+        <div class="variant-closure-title">Tiempo estimado de cierre (meses) según cada distancia recomendada</div>
+        <label>Para distancia 1<input class="v-close-1" type="number" min="1" step="1" value="${v.closure_months_1??""}" placeholder="Meses"></label>
+        <label>Para distancia 2<input class="v-close-2" type="number" min="1" step="1" value="${v.closure_months_2??""}" placeholder="Meses"></label>
+        <label>Para distancia 3<input class="v-close-3" type="number" min="1" step="1" value="${v.closure_months_3??""}" placeholder="Meses"></label>
+      </div>`;
+    div.querySelector(".variant-remove").addEventListener("click",()=>{
+      if($("variantRows").children.length>1)div.remove();
+      else toast("La planta debe tener al menos una opción de venta.");
+    });
     $("variantRows").appendChild(div);
   }
-  $("addVariantBtn").addEventListener("click",()=>addVariantRow());
+  $("addVariantBtn").addEventListener("click",()=>{
+    const rows=[...$("variantRows").children];
+    const last=rows.at(-1);
+    addVariantRow({
+      label:last?.querySelector(".v-label")?.value||"",
+      closure_months_1:last?.querySelector(".v-close-1")?.value||"",
+      closure_months_2:last?.querySelector(".v-close-2")?.value||"",
+      closure_months_3:last?.querySelector(".v-close-3")?.value||""
+    });
+  });
 
   async function uploadImage(file,slug,type){
     if(!file)return null;
@@ -85,8 +107,16 @@
   }
   function gatherVariants(){
     return [...$("variantRows").children].map((row,i)=>({
-      id:row.dataset.variantId||null,label:row.querySelector(".v-label").value.trim(),liters:row.querySelector(".v-liters").value?Number(row.querySelector(".v-liters").value):null,
-      price:Number(row.querySelector(".v-price").value||0),cost:Number(row.querySelector(".v-cost").value||0),availability:row.querySelector(".v-availability").value,active:true,sort_order:i
+      id:row.dataset.variantId||null,
+      label:row.querySelector(".v-label").value.trim(),
+      liters:row.querySelector(".v-liters").value?Number(row.querySelector(".v-liters").value):null,
+      price:Number(row.querySelector(".v-price").value||0),
+      cost:Number(row.querySelector(".v-cost").value||0),
+      availability:row.querySelector(".v-availability").value,
+      closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
+      closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
+      closure_months_3:row.querySelector(".v-close-3").value?Number(row.querySelector(".v-close-3").value):null,
+      active:true,sort_order:i
     })).filter(v=>v.label);
   }
   function gatherCategoryMap(){
@@ -112,6 +142,12 @@
       const first=vrows[0],payload={
         category_id:catMap[0].category_id,name,slug,description:$("productDescription").value.trim(),price:first.price,cost:first.cost,
         availability:vrows.some(v=>v.availability==="in_stock")?"in_stock":"consult",pot_size:first.label,image_url:main,integrated_image_url:integrated,info_image_url:info,
+        max_height:$("productMaxHeight").value.trim()||null,
+        maturity_time:$("productMaturityTime").value.trim()||null,
+        pruning_per_year:$("productPruningPerYear").value.trim()||null,
+        spacing_1_cm:Number($("productSpacing1").value||50),
+        spacing_2_cm:Number($("productSpacing2").value||70),
+        spacing_3_cm:Number($("productSpacing3").value||80),
         featured:$("productFeatured").checked,sort_order:Number($("productOrder").value||0),active:$("productActive").checked,updated_at:new Date().toISOString()
       };
       let product;
@@ -125,7 +161,9 @@
 
       const existing=variants.filter(v=>v.product_id===product.id),keep=[];
       for(const v of vrows){
-        const vp={product_id:product.id,label:v.label,liters:v.liters,price:v.price,cost:v.cost,availability:v.availability,active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
+        const vp={product_id:product.id,label:v.label,liters:v.liters,price:v.price,cost:v.cost,availability:v.availability,
+          closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
+          active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
         if(v.id){
           const {error}=await db.from("product_variants").update(vp).eq("id",v.id);if(error)throw error;keep.push(v.id);
         }else{
@@ -139,7 +177,10 @@
 
   function resetProductForm(){
     $("productForm").reset();$("productId").value="";$("currentMainImage").value="";$("currentIntegratedImage").value="";$("currentInfoImage").value="";
-    $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;$("productFormTitle").textContent="Agregar planta";$("cancelProductEdit").hidden=true;
+    $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
+    $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";
+    $("productSpacing1").value=50;$("productSpacing2").value=70;$("productSpacing3").value=80;
+    $("productFormTitle").textContent="Agregar planta";$("cancelProductEdit").hidden=true;
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
   }
 
@@ -158,6 +199,8 @@
     if(edit){
       const p=products.find(x=>x.id===edit);if(!p)return;
       $("productId").value=p.id;$("productName").value=p.name;$("productDescription").value=p.description||"";$("productOrder").value=p.sort_order;$("productFeatured").checked=p.featured;$("productActive").checked=p.active;
+      $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";
+      $("productSpacing1").value=p.spacing_1_cm||50;$("productSpacing2").value=p.spacing_2_cm||70;$("productSpacing3").value=p.spacing_3_cm||80;
       $("currentMainImage").value=p.image_url||"";$("currentIntegratedImage").value=p.integrated_image_url||"";$("currentInfoImage").value=p.info_image_url||"";
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});

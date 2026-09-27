@@ -23,3 +23,13 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .add-item-box{border-top:1px dashed var(--line);margin-top:12px;padding-top:12px}.add-item-grid{display:grid;grid-template-columns:1.3fr .55fr .7fr .7fr auto;gap:8px;align-items:end}.sales-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,120px);opacity:0;background:#1a2b1f;color:#fff;padding:12px 18px;border-radius:999px;transition:.25s;z-index:100}.toast.show{transform:translate(-50%,0);opacity:1}
 @media(max-width:900px){.admin-shell{padding:16px}.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid,.calc-grid{grid-template-columns:1fr}.wide{grid-column:auto}.category-choice-list,.image-input-grid{grid-template-columns:1fr}.variant-row{grid-template-columns:repeat(2,1fr)}.order-customer{grid-template-columns:1fr}.order-item-row,.add-item-grid{grid-template-columns:1fr 1fr}.sales-summary-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:540px){.admin-header{align-items:flex-start}.admin-brand img{width:58px;height:58px}.admin-brand h1{font-size:1.5rem}.header-actions{flex-direction:column}.login-card{grid-template-columns:1fr;margin:5vh auto}.stats-grid,.sales-summary-grid,.calc-results{grid-template-columns:1fr}.panel-heading{display:block}.search-input{max-width:none;width:100%;margin-top:10px}.item-row,.order-head{grid-template-columns:1fr}.variant-row,.order-item-row,.add-item-grid{grid-template-columns:1fr}}
+
+/* v5 */
+.spacing-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.variant-row{display:block!important}
+.variant-main-grid{display:grid;grid-template-columns:1.2fr .55fr .8fr .8fr .9fr auto;gap:8px;align-items:end}
+.variant-closure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.variant-closure-grid label{font-size:.78rem}
+.variant-closure-title{grid-column:1/-1;font-size:.78rem;font-weight:900;color:var(--green);margin-bottom:-2px}
+@media(max-width:900px){.spacing-admin-grid,.variant-main-grid,.variant-closure-grid{grid-template-columns:1fr 1fr}.variant-closure-title{grid-column:1/-1}}
+@media(max-width:540px){.spacing-admin-grid,.variant-main-grid,.variant-closure-grid{grid-template-columns:1fr}}
