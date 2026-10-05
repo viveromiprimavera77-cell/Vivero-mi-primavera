@@ -100,3 +100,9 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 
 /* v14: quitar imágenes existentes al editar */
 .remove-image-btn{display:inline-flex;margin-top:8px;padding:0;font-size:.82rem}
+
+
+/* v15: profundidad recomendada y presentaciones de materiales */
+.variant-main-grid{grid-template-columns:repeat(4,minmax(0,1fr)) auto!important}
+@media(max-width:900px){.variant-main-grid{grid-template-columns:1fr 1fr!important}}
+@media(max-width:540px){.variant-main-grid{grid-template-columns:1fr!important}}
