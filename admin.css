@@ -80,3 +80,19 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 /* v12: selectores dependientes de opciones de venta */
 .variant-main-grid select:disabled{background:#f1f4f0;color:#9aa39c;cursor:not-allowed}
 .v-liters-manual{margin-top:6px}
+
+
+/* v13: resumen final de opciones de compra */
+.summary-sale-option{padding:13px}
+.summary-sale-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.summary-sale-head>strong{font-size:1rem;color:var(--green)}
+.summary-sale-details{margin-top:6px!important;color:var(--muted)!important}
+.summary-sale-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.summary-sale-values>div{border:1px solid var(--line);border-radius:9px;background:#fff;padding:9px 10px}
+.summary-sale-values span{display:block!important;margin:0!important;color:var(--muted)!important;font-size:.72rem!important;font-weight:800}
+.summary-sale-values strong{display:block;margin-top:3px;font-size:1rem;color:var(--green)}
+.summary-stock{display:inline-flex!important;align-items:center;gap:6px;margin:0!important;padding:5px 8px;border-radius:999px;font-size:.76rem!important;font-weight:900}
+.summary-stock.in-stock{background:#e7f6e7;color:#176a2e!important}
+.summary-stock.in-stock i{width:8px;height:8px;border-radius:50%;background:#20b84b;display:inline-block}
+.summary-stock.consult{background:#f2f2ef;color:#6b716d!important}
+@media(max-width:540px){.summary-sale-values{grid-template-columns:1fr}.summary-sale-head{align-items:flex-start}}
