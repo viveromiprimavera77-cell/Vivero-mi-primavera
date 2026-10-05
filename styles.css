@@ -291,3 +291,8 @@ body.welcome-open{overflow:hidden}
 .welcome-note{margin:17px 0 0;color:var(--muted);line-height:1.55}
 .welcome-start{margin-top:18px;border:0;border-radius:999px;background:var(--green-800);color:#fff;padding:13px 25px;font-weight:950;cursor:pointer;min-width:150px}
 @media(max-width:600px){.welcome-modal{padding:14px}.welcome-card{padding:24px 18px 20px;border-radius:20px}.welcome-logo-wrap{width:76px;height:76px}.welcome-features>div{grid-template-columns:32px 1fr;padding:10px}.welcome-note{font-size:.9rem}}
+
+
+/* v12: flechas de metros con pulsación continua */
+.number-stepper-buttons button{transition:transform .12s ease,background .12s ease,box-shadow .12s ease;transform-origin:center}
+.number-stepper-buttons button.holding{transform:scale(1.12);z-index:2;background:#e1f2dc;box-shadow:0 4px 12px rgba(7,94,42,.16)}
