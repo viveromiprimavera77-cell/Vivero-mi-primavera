@@ -15,6 +15,15 @@
     ["pointerup","pointercancel","pointerleave"].forEach(ev=>node.addEventListener(ev,()=>{down=false;node.classList.remove("dragging")}));
   }
   function closeMenu(){el("sidebar").classList.remove("open");el("menuBackdrop").classList.remove("show");el("mobileMenuBtn").setAttribute("aria-expanded","false")}
+  function openWelcome(tagline){
+    el("welcomeSlogan").textContent=tagline||"Naturaleza que transforma tu espacio";
+    el("welcomeModal").hidden=false;
+    document.body.classList.add("welcome-open");
+  }
+  function closeWelcome(){
+    el("welcomeModal").hidden=true;
+    document.body.classList.remove("welcome-open");
+  }
 
   function photoCarousel(p){
     const slides=[{url:p.image_url,label:"Planta",info:false},{url:p.integrated_image_url,label:"Integrada",info:false},{url:p.info_image_url,label:"Ficha",info:true}];
@@ -128,7 +137,7 @@
       [cr,pr,ar,vr].forEach(r=>{if(r.error)throw r.error});
       const cats=cr.data||[],products=pr.data||[],assocs=ar.data||[],variants=vr.data||[],settings=sr.data||{};
       catalogCategories=cats;catalogProducts=products;catalogAssocs=assocs;catalogVariants=variants;
-      if(settings.tagline)el("heroTitle").textContent=settings.tagline;el("shippingTitle").textContent=settings.shipping_title||"Envíos";el("shippingText").textContent=settings.shipping_text||"Realizamos entregas coordinadas. Consultanos por cobertura, costo y tiempos.";el("aboutTitle").textContent=settings.about_title||"Acerca de nosotros";el("aboutText").textContent=settings.about_text||"En Mi Primavera seleccionamos plantas para cercos, jardines y espacios verdes.";
+      if(settings.tagline)el("heroTitle").textContent=settings.tagline;el("shippingTitle").textContent=settings.shipping_title||"Envíos";el("shippingText").textContent=settings.shipping_text||"Realizamos entregas coordinadas. Consultanos por cobertura, costo y tiempos.";el("aboutTitle").textContent=settings.about_title||"Acerca de nosotros";el("aboutText").textContent=settings.about_text||"En Mi Primavera seleccionamos plantas para cercos, jardines y espacios verdes.";openWelcome(settings.tagline);
       if(settings.hero_video_url){el("heroVideo").src=settings.hero_video_url;el("heroVideo").style.display="block";el("heroFallback").style.display="none";el("heroVideo").addEventListener("error",()=>{el("heroVideo").style.display="none";el("heroFallback").style.display="grid"},{once:true})}
       const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");["shippingWhatsapp","whatsappFloat"].forEach(id=>{if(wa){el(id).href=wa;el(id).hidden=false}});
       const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id);return `<a class="featured-card" href="${a?`#planta-${esc(p.slug)}`:"#catalogo"}">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name)}">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
@@ -146,6 +155,10 @@
   el("searchResults").addEventListener("click",e=>{const btn=e.target.closest("[data-search-product]");if(btn)goToSearchProduct(btn.dataset.searchProduct)});
   el("clearPlantSearch").addEventListener("click",()=>{el("plantSearch").value="";applySearch();el("plantSearch").focus()});
   el("categoryJump").addEventListener("change",e=>{if(!e.target.value)return;document.getElementById(e.target.value)?.scrollIntoView({behavior:"smooth",block:"start"});e.target.value=""});
+  el("welcomeClose").addEventListener("click",closeWelcome);
+  el("welcomeStart").addEventListener("click",closeWelcome);
+  el("welcomeModal").addEventListener("click",e=>{if(e.target===el("welcomeModal"))closeWelcome()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el("welcomeModal").hidden)closeWelcome()});
   const topBtn=el("backToTop");window.addEventListener("scroll",()=>topBtn.classList.toggle("show",window.scrollY>500),{passive:true});topBtn.addEventListener("click",()=>scrollTo({top:0,behavior:"smooth"}));
   load();
 })();
