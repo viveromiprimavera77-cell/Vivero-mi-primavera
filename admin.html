@@ -43,17 +43,38 @@
       <section id="productsTab" class="tab-panel active">
         <div class="panel">
           <div class="panel-heading"><div><span class="eyebrow">CATÁLOGO</span><h2 id="productFormTitle">Agregar planta</h2></div><button id="newProductBtn" class="secondary-btn" type="button">Nueva planta</button></div>
-          <form id="productForm" class="form-grid">
+          <form id="productForm" class="product-wizard-form">
             <input type="hidden" id="productId">
             <input type="hidden" id="currentMainImage"><input type="hidden" id="currentIntegratedImage"><input type="hidden" id="currentInfoImage">
-            <label>Nombre<input id="productName" required></label>
-            <label>Posición en el catálogo
-              <input id="productOrder" type="number" min="0" step="1" value="0">
-              <small>Es el orden visual: 1 aparece antes que 2, 2 antes que 3, etc.</small>
-            </label>
-            <label class="wide">Descripción<textarea id="productDescription" rows="4"></textarea></label>
 
-            <fieldset class="wide field-box">
+            <fieldset class="product-wizard-step field-box" data-product-step="0">
+              <legend>Nombre, posición en el catálogo y descripción</legend>
+              <div class="form-grid">
+                <label>Nombre<input id="productName" required></label>
+                <label>Posición en el catálogo
+                  <input id="productOrder" type="number" min="0" step="1" value="0">
+                  <small>Es el orden visual: 1 aparece antes que 2, 2 antes que 3, etc.</small>
+                </label>
+                <label class="wide">Descripción<textarea id="productDescription" rows="4"></textarea></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="product-wizard-step field-box" data-product-step="1" hidden>
+              <legend>Imágenes de la planta</legend>
+              <div class="image-input-grid">
+                <label>1. Foto principal<input id="productImageMain" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small id="mainImageState"></small></label>
+                <label>2. Foto integrada<input id="productImageIntegrated" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Ej.: cerco vivo, jardín, bordura, macizo.</small><small id="integratedImageState"></small></label>
+                <label>3. Ficha informativa<input id="productImageInfo" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Imagen con la información visual de la planta.</small><small id="infoImageState"></small></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="product-wizard-step field-box" data-product-step="2" hidden>
+              <legend>Categorías donde aparece</legend>
+              <p class="field-help">Una misma planta puede estar en varias categorías.</p>
+              <div id="productCategoryChoices" class="category-choice-list"></div>
+            </fieldset>
+
+            <fieldset class="product-wizard-step field-box" data-product-step="3" hidden>
               <legend>Datos destacados de la planta</legend>
               <p class="field-help">Estos datos se muestran directamente en la tarjeta del catálogo.</p>
               <div class="image-input-grid">
@@ -63,7 +84,7 @@
               </div>
             </fieldset>
 
-            <fieldset class="wide field-box">
+            <fieldset class="product-wizard-step field-box" data-product-step="4" hidden>
               <legend>Distancias recomendadas</legend>
               <p class="field-help">Configurá hasta tres distancias recomendadas solo si corresponde. Si esta planta no usa cálculo por distancia, dejalas vacías.</p>
               <div class="spacing-admin-grid">
@@ -73,39 +94,38 @@
               </div>
             </fieldset>
 
-            <fieldset class="wide field-box">
-              <legend>Categorías donde aparece</legend>
-              <p class="field-help">Una misma planta puede estar en varias categorías. Para categorías lineales podés definir la distancia recomendada.</p>
-              <div id="productCategoryChoices" class="category-choice-list"></div>
-            </fieldset>
+            <fieldset class="product-wizard-step field-box" data-product-step="5" hidden>
+              <legend>Opciones de venta</legend>
+              <p class="field-help">Cada fila es una opción vendible. Podés usar litros, altura, o ambos. Ejemplos: “Maceta soplada · 10 L” o “Terrón · 1,80 m”. Si un dato no aplica, dejalo vacío.</p>
+              <div id="variantRows" class="variant-rows"></div>
+              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción</button>
 
-            <fieldset class="wide field-box">
-              <legend>3 imágenes de la planta</legend>
-              <div class="image-input-grid">
-                <label>1. Foto principal<input id="productImageMain" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small id="mainImageState"></small></label>
-                <label>2. Foto integrada<input id="productImageIntegrated" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Ej.: cerco vivo, jardín, bordura, macizo.</small><small id="integratedImageState"></small></label>
-                <label>3. Ficha informativa<input id="productImageInfo" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Imagen con la información visual de la planta.</small><small id="infoImageState"></small></label>
+              <div class="selector-priority-box wizard-inline-box">
+                <label class="check-label"><input id="productPrioritizeHeight" type="checkbox"> <strong>Priorizar altura en el catálogo</strong></label>
+                <small>Activá esta opción cuando haya opciones mixtas y quieras que el cliente elija primero la altura. Si ninguna opción tiene litros y sí tienen altura, la web prioriza altura automáticamente; en los demás casos, por defecto prioriza litros.</small>
+              </div>
+
+              <div class="toggles wizard-inline-box">
+                <label class="check-label"><input id="productFeatured" type="checkbox"> Mostrar como destacada</label>
+                <label class="check-label"><input id="productActive" type="checkbox" checked> Visible en la web</label>
               </div>
             </fieldset>
 
-            <fieldset class="wide field-box">
-              <legend>Opciones de venta: presentación + litros/altura</legend>
-              <p class="field-help">Cada fila es una opción vendible. Podés usar litros, altura, o ambos. Ejemplos: “Maceta soplada · 10 L” o “Terrón · 1,80 m”. Si un dato no aplica, dejalo vacío. Para cercos también podés indicar el tiempo estimado de cierre para cada distancia recomendada.</p>
-              <div id="variantRows" class="variant-rows"></div>
-              <button id="addVariantBtn" class="secondary-btn" type="button">+ Agregar otra opción</button>
-            </fieldset>
+            <section class="product-wizard-step product-summary-step" data-product-step="6" hidden>
+              <div class="summary-heading">
+                <span class="eyebrow">RESUMEN</span>
+                <h3>Revisá la planta antes de finalizar</h3>
+              </div>
+              <div id="productSummary" class="product-summary"></div>
+            </section>
 
-            <div class="wide selector-priority-box">
-              <label class="check-label"><input id="productPrioritizeHeight" type="checkbox"> <strong>Priorizar altura en el catálogo</strong></label>
-              <small>Activá esta opción cuando haya opciones mixtas y quieras que el cliente elija primero la altura. Si ninguna opción tiene litros y sí tienen altura, la web prioriza altura automáticamente; en los demás casos, por defecto prioriza litros.</small>
+            <div class="product-wizard-actions">
+              <button id="cancelProductEdit" class="secondary-btn" type="button">Cancelar</button>
+              <button id="productOmitBtn" class="secondary-btn" type="button" hidden>Omitir</button>
+              <button id="productNextBtn" class="primary-btn" type="button">Siguiente</button>
+              <button id="productFinishBtn" class="primary-btn" type="submit" hidden>Finalizar</button>
             </div>
-
-            <div class="wide toggles">
-              <label class="check-label"><input id="productFeatured" type="checkbox"> Mostrar como destacada</label>
-              <label class="check-label"><input id="productActive" type="checkbox" checked> Visible en la web</label>
-            </div>
-            <div class="wide form-actions"><button class="primary-btn" type="submit">Guardar planta</button><button id="cancelProductEdit" class="secondary-btn" type="button" hidden>Cancelar edición</button></div>
-            <p id="productMessage" class="form-message wide"></p>
+            <p id="productMessage" class="form-message"></p>
           </form>
         </div>
 
