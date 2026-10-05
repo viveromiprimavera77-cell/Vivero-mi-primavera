@@ -15,10 +15,13 @@
     ["pointerup","pointercancel","pointerleave"].forEach(ev=>node.addEventListener(ev,()=>{down=false;node.classList.remove("dragging")}));
   }
   function closeMenu(){el("sidebar").classList.remove("open");el("menuBackdrop").classList.remove("show");el("mobileMenuBtn").setAttribute("aria-expanded","false")}
+  const WELCOME_SESSION_KEY="miPrimaveraWelcomeShown";
   function openWelcome(tagline){
+    if(sessionStorage.getItem(WELCOME_SESSION_KEY)==="1")return;
     el("welcomeSlogan").textContent=tagline||"Naturaleza que transforma tu espacio";
     el("welcomeModal").hidden=false;
     document.body.classList.add("welcome-open");
+    sessionStorage.setItem(WELCOME_SESSION_KEY,"1");
   }
   function closeWelcome(){
     el("welcomeModal").hidden=true;
