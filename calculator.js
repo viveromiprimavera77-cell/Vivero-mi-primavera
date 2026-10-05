@@ -8,6 +8,13 @@
   function numericFromText(value){const m=String(value||'').replace(',','.').match(/\d+(?:\.\d+)?/);return m?Number(m[0]):999999}
   function isAreaCategory(category){return category?.calculation_mode==='area'||category?.slug==='grama'}
   function isMaterialCategory(category){return category?.slug==='otros'}
+  function normalizeText(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+  function isBarkProduct(product){
+    return normalizeText(product?.slug||product?.name).includes('corteza');
+  }
+  function firstProductImage(product){
+    return product?.image_url||product?.integrated_image_url||product?.info_image_url||'';
+  }
   function volumeTextDm3(value){
     const dm3=Number(value||0);
     if(!dm3)return 'Sin volumen configurado';
@@ -152,10 +159,16 @@
     }
   }
   function updateMaterialFields(useLatestContext=false){
+    const product=products.find(p=>p.id===$('calcProduct').value);
+    const bark=isBarkProduct(product);
+    const holesRadio=document.querySelector('input[name="materialUse"][value="holes"]');
+    const terrainRadio=document.querySelector('input[name="materialUse"][value="terrain"]');
+    if(holesRadio?.closest('label'))holesRadio.closest('label').hidden=bark;
+    if(bark&&holesRadio?.checked&&terrainRadio)terrainRadio.checked=true;
     const mode=materialUseMode();
     $('materialTerrainFields').hidden=mode!=='terrain';
-    $('materialHoleFields').hidden=mode!=='holes';
-    if(mode==='holes'){
+    $('materialHoleFields').hidden=mode!=='holes'||bark;
+    if(mode==='holes'&&!bark){
       if(useLatestContext)applyLatestPlantContext();
       else if(!$('materialHoleLiters').options.length)renderHoleRecommendationOptions();
     }
@@ -253,7 +266,8 @@
     const material=isMaterialCategory(category);
 
     if(product){
-      $('calcProductPreview').innerHTML=`${product.image_url?`<img src="${product.image_url}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
+      const previewImage=firstProductImage(product);
+      $('calcProductPreview').innerHTML=`${previewImage?`<img src="${previewImage}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
     }
     $('selectedPresentation').textContent=presentationText(variant,category);
     $('selectedOptionPrice').textContent=variant
@@ -317,7 +331,7 @@
       product_id:current.product.id,variant_id:current.variant.id,category_id:current.category.id,
       product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,height:current.variant.height||null,
       category_name:current.category.name,quantity:current.quantity,unit_price:Number(current.variant.price),
-      image_url:current.product.image_url||'',length_m:current.linear?Number($('calcLength').value):null,
+      image_url:firstProductImage(current.product),length_m:current.linear?Number($('calcLength').value):null,
       spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null,area_mode:current.area,
       material_mode:current.material?current.materialMode:null,
       material_volume_dm3:current.material?Number(current.materialVolumeDm3):null,
