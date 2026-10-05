@@ -106,3 +106,6 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .variant-main-grid{grid-template-columns:repeat(4,minmax(0,1fr)) auto!important}
 @media(max-width:900px){.variant-main-grid{grid-template-columns:1fr 1fr!important}}
 @media(max-width:540px){.variant-main-grid{grid-template-columns:1fr!important}}
+
+/* v16: ficha técnica de plantas */
+.plant-profile-admin{margin-top:14px}
