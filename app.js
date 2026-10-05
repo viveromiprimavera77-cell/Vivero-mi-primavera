@@ -29,16 +29,46 @@
   }
 
   function firstProductImage(p){
-    return p.image_url||p.integrated_image_url||p.info_image_url||"";
+    return p.image_url||p.integrated_image_url||"";
+  }
+  function plantInfoSlide(p){
+    if(!p.scientific_name)return "";
+    const facts=[
+      ["Uso",p.use_summary],
+      ["Follaje",p.foliage_type],
+      ["Luz",p.sun_exposure],
+      ["Resistencia",p.climate_tolerance],
+      ["Altura máxima",p.max_height],
+      ["Desarrollo",p.maturity_time],
+      ["Crecimiento",p.growth_rate],
+      ["Floración",p.flowering_info],
+      ["Riego",p.water_needs]
+    ].filter(([,value])=>Boolean(value));
+    return `<div class="photo-slide info-slide plant-info-slide">
+      <span class="slide-label">Ficha</span>
+      <div class="plant-info-content">
+        <div class="plant-info-head">
+          <strong>${esc(p.name)}</strong>
+          <em>${esc(p.scientific_name)}</em>
+        </div>
+        <div class="plant-info-facts">
+          ${facts.map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("")}
+        </div>
+        ${p.care_note?`<p class="plant-info-note"><strong>Dato útil:</strong> ${esc(p.care_note)}</p>`:""}
+      </div>
+    </div>`;
   }
   function photoCarousel(p){
+    const imageSlides=[
+      p.image_url?{url:p.image_url,label:"Planta"}:null,
+      p.integrated_image_url?{url:p.integrated_image_url,label:"En jardín"}:null
+    ].filter(Boolean);
     const slides=[
-      {url:p.image_url,label:"Planta",info:false},
-      {url:p.integrated_image_url,label:"Integrada",info:false},
-      {url:p.info_image_url,label:"Ficha",info:true}
-    ].filter(x=>Boolean(x.url));
+      ...imageSlides.map(x=>`<div class="photo-slide"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`),
+      plantInfoSlide(p)
+    ].filter(Boolean);
     if(!slides.length)return "";
-    return `<div class="photo-carousel"><div class="photo-track drag-scroll">${slides.map(x=>`<div class="photo-slide ${x.info?"info-slide":""}"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`).join("")}</div>${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}</div>`;
+    return `<div class="photo-carousel"><div class="photo-track drag-scroll">${slides.join("")}</div>${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}</div>`;
   }
   function highlights(p){
     const rows=[p.max_height?`<div><span>Altura máxima</span><strong>${esc(p.max_height)}</strong></div>`:"",p.maturity_time?`<div><span>Desarrollo máximo</span><strong>${esc(p.maturity_time)}</strong></div>`:"",p.pruning_per_year?`<div><span>Podas anuales</span><strong>${esc(p.pruning_per_year)}</strong></div>`:""].filter(Boolean);
