@@ -32,7 +32,10 @@
       x.variant_id === item.variant_id &&
       x.category_id === item.category_id &&
       Number(x.spacing_cm || 0) === Number(item.spacing_cm || 0) &&
-      String(x.material_mode || "") === String(item.material_mode || "")
+      String(x.material_mode || "") === String(item.material_mode || "") &&
+      Number(x.fill_depth_cm || 0) === Number(item.fill_depth_cm || 0) &&
+      Number(x.hole_width_cm || 0) === Number(item.hole_width_cm || 0) &&
+      Number(x.hole_depth_cm || 0) === Number(item.hole_depth_cm || 0)
     );
 
     if (match) {
