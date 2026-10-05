@@ -53,7 +53,7 @@
     $("productCategoryChoices").innerHTML=categories.length?categories.map(c=>`
       <label class="category-choice">
         <input type="checkbox" class="pc-check" value="${c.id}" ${selected[c.id]?"checked":""}>
-        <span>${esc(c.name)}${c.calculation_mode==="linear"?" · cálculo por metros lineales":""}</span>
+        <span>${esc(c.name)}${c.calculation_mode==="linear"?" · cálculo por metros lineales":c.calculation_mode==="area"?" · cálculo por m²":""}</span>
       </label>`).join(""):`<p class="form-message">Primero creá una categoría.</p>`;
   }
 
@@ -73,12 +73,23 @@
   }
 
   const STANDARD_LITERS=[3,5,7,10,15,20,30,40,50];
+  function isAreaProductSelection(){
+    return [...document.querySelectorAll(".pc-check:checked")].some(ch=>{
+      const cat=categories.find(c=>c.id===ch.value);
+      return cat?.calculation_mode==="area"||cat?.slug==="grama";
+    });
+  }
   function normalizePresentationLabel(value){
     const key=String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     if(key==="plantin")return "Plantín";
     if(key==="terron")return "Terrón";
     if(key==="maceta soplada")return "Maceta soplada";
+    if(key==="panes cuadrados"||key==="pan cuadrado")return "Panes cuadrados";
     return "";
+  }
+  function validPaneDimensions(value){
+    const nums=String(value||"").replace(/,/g,".").match(/\d+(?:\.\d+)?/g)||[];
+    return nums.length>=2&&Number(nums[0])>0&&Number(nums[1])>0;
   }
   function variantLitersValue(row){
     if(row.querySelector(".v-label").value!=="Maceta soplada")return null;
@@ -106,11 +117,35 @@
     }
     updateClosureLabels(row);
   }
+  function refreshVariantAreaMode(){
+    const area=isAreaProductSelection();
+    [...$("variantRows").children].forEach(row=>{
+      const sel=row.querySelector(".v-label");
+      let pane=sel.querySelector('option[value="Panes cuadrados"]');
+      if(area&&!pane){
+        pane=document.createElement("option");
+        pane.value="Panes cuadrados";pane.textContent="Panes cuadrados";sel.appendChild(pane);
+      }else if(!area&&pane){
+        if(sel.value==="Panes cuadrados")sel.value="";
+        pane.remove();
+      }
+      row.querySelector(".v-height-label-text").textContent=area?"Dimensiones":"Altura";
+      row.querySelector(".v-height").placeholder=area?"Ej.: 40x40 cm":"Ej.: 1,80 m";
+      row.querySelector(".variant-closure-grid").hidden=area;
+      syncVariantPresentation(row);
+    });
+    const priorityBox=$("productPrioritizeHeight").closest(".selector-priority-box");
+    if(priorityBox){
+      priorityBox.hidden=area;
+      if(area)$("productPrioritizeHeight").checked=false;
+    }
+  }
 
   function addVariantRow(v={}){
     const div=document.createElement("div");
     div.className="variant-row";
     div.dataset.variantId=v.id||"";
+    const area=isAreaProductSelection();
     const presentation=normalizePresentationLabel(v.label);
     const litersNumber=v.liters==null?null:Number(v.liters);
     const standardLiters=litersNumber!=null&&STANDARD_LITERS.includes(litersNumber);
@@ -123,6 +158,7 @@
             <option value="Plantín" ${presentation==="Plantín"?"selected":""}>Plantín</option>
             <option value="Maceta soplada" ${presentation==="Maceta soplada"?"selected":""}>Maceta soplada</option>
             <option value="Terrón" ${presentation==="Terrón"?"selected":""}>Terrón</option>
+            ${area?`<option value="Panes cuadrados" ${presentation==="Panes cuadrados"?"selected":""}>Panes cuadrados</option>`:""}
           </select>
         </label>
         <label>Litros <span class="optional-tag">opcional</span>
@@ -133,13 +169,13 @@
           </select>
           <input class="v-liters-manual" type="number" min="0.1" step="0.1" value="${litersChoice==="other"&&litersNumber!=null?litersNumber:""}" placeholder="Ingresar litros" ${litersChoice==="other"?"":"hidden disabled"}>
         </label>
-        <label>Altura <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="Ej.: 1,80 m"></label>
+        <label><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
-      <div class="variant-closure-grid">
+      <div class="variant-closure-grid" ${area?"hidden":""}>
         <div class="variant-closure-title">Tiempo estimado de cierre (meses), solo si aplica</div>
         <label><span class="closure-label-1">Para distancia 1</span><input class="v-close-1" type="number" min="1" step="1" value="${v.closure_months_1??""}" placeholder="Meses"></label>
         <label><span class="closure-label-2">Para distancia 2</span><input class="v-close-2" type="number" min="1" step="1" value="${v.closure_months_2??""}" placeholder="Meses"></label>
@@ -159,6 +195,9 @@
   $("addVariantBtn").addEventListener("click",()=>{
     const rows=[...$("variantRows").children],last=rows.at(-1);
     addVariantRow({label:last?.querySelector(".v-label")?.value||""});
+  });
+  $("productCategoryChoices").addEventListener("change",e=>{
+    if(e.target.matches(".pc-check"))refreshVariantAreaMode();
   });
 
   async function uploadImage(file,slug,type){
@@ -218,6 +257,10 @@
       const vrows=gatherVariants();
       if(!vrows.length){
         msg("productMessage","Agregá al menos una opción de venta con tipo de presentación.","error");
+        return false;
+      }
+      if(isAreaProductSelection()&&vrows.some(v=>v.label==="Panes cuadrados"&&!validPaneDimensions(v.height))){
+        msg("productMessage","En Panes cuadrados ingresá las dimensiones, por ejemplo 40x40 cm.","error");
         return false;
       }
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height)){
@@ -314,6 +357,7 @@
       if(!hasProductImage())throw new Error("Subí al menos una foto de la planta.");
       if(!catMap.length)throw new Error("Elegí al menos una categoría.");
       if(!vrows.length)throw new Error("Agregá al menos una presentación.");
+      if(isAreaProductSelection()&&vrows.some(v=>v.label==="Panes cuadrados"&&!validPaneDimensions(v.height)))throw new Error("En Panes cuadrados ingresá las dimensiones, por ejemplo 40x40 cm.");
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height))throw new Error("Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.");
       const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
       if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
@@ -365,7 +409,7 @@
     $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";$("productPrioritizeHeight").checked=false;
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";
-    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
+    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
     showProductStep(0,false);
   }
 
@@ -389,7 +433,7 @@
       $("currentMainImage").value=p.image_url||"";$("currentIntegratedImage").value=p.integrated_image_url||"";$("currentInfoImage").value=p.info_image_url||"";
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
-      renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();
+      renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();refreshVariantAreaMode();
       $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);
     }
     if(toggle){const p=products.find(x=>x.id===toggle);const {error}=await db.from("products").update({active:!p.active,updated_at:new Date().toISOString()}).eq("id",p.id);if(error)return toast(error.message);await loadAll()}
