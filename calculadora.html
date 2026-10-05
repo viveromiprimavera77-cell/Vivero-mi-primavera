@@ -76,6 +76,41 @@
         <div id="areaCoverageInfo" class="closure-estimate"></div>
       </div>
 
+      <div id="materialFields" class="material-calculator" hidden>
+        <div class="material-use-heading">
+          <strong>¿Cómo vas a utilizar este producto?</strong>
+          <small>Elegí una opción y completá las medidas. La calculadora convierte todo automáticamente.</small>
+        </div>
+        <div class="material-use-options" role="radiogroup" aria-label="Uso del producto">
+          <label><input type="radio" name="materialUse" value="terrain" checked> <span>Rellenar o nivelar un terreno</span></label>
+          <label><input type="radio" name="materialUse" value="holes"> <span>Rellenar pozos para plantas</span></label>
+        </div>
+
+        <div id="materialTerrainFields" class="public-form-grid material-fields-grid">
+          <label>m² a cubrir<input id="materialArea" type="number" min="0.1" step="0.1" value="10"></label>
+          <label>Profundidad de relleno (cm)<input id="materialDepth" type="number" min="1" step="1" value="10"></label>
+        </div>
+
+        <div id="materialHoleFields" class="public-form-grid material-fields-grid" hidden>
+          <label>Cantidad de pozos<input id="materialHoleCount" type="number" min="1" step="1" value="1"></label>
+          <label>Ancho aproximado de cada pozo (cm)
+            <select id="materialHoleWidth">
+              <option value="30">30 cm</option>
+              <option value="40" selected>40 cm</option>
+              <option value="50">50 cm</option>
+              <option value="60">60 cm</option>
+            </select>
+          </label>
+          <label>Profundidad del pozo (cm)<input id="materialHoleDepth" type="number" min="1" step="1" value="40"></label>
+          <div id="materialPlantRecommendation" class="selected-option-card">
+            <span>Recomendación según la planta agregada</span>
+            <strong>—</strong>
+            <small>Si la presentación de la planta tiene una profundidad recomendada cargada desde el panel, se completa automáticamente.</small>
+          </div>
+        </div>
+        <div id="materialCoverageInfo" class="closure-estimate"></div>
+      </div>
+
       <div id="unitFields" class="public-form-grid" hidden>
         <label>Cantidad<input id="calcQuantityInput" type="number" min="1" step="1" value="1"></label>
       </div>
@@ -90,6 +125,12 @@
 
       <div class="added-choice" id="addedChoice" hidden>
         <strong>Su pedido fue agregado. ¿Desea agregar más artículos?</strong>
+        <div id="addonMaterialPrompt" class="addon-material-prompt" hidden>
+          <label>¿Deseás agregar tierra, abono o corteza para sumar a tu pedido?
+            <select id="addonProductSelect"></select>
+          </label>
+          <button id="addonProductBtn" class="public-primary-btn" type="button">Sí, agregar</button>
+        </div>
         <div>
           <button id="keepShoppingBtn" class="public-secondary-btn" type="button">Seguir comprando</button>
           <button id="continueOrderBtn" class="public-primary-btn" type="button">Continuar con el pedido</button>
