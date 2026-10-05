@@ -493,7 +493,7 @@
     renderCategoryOrderOptions(categories.length+1);
   }
   function renderCategories(){
-    $("categoryList").innerHTML=categories.map(c=>`<div class="item-row"><div><div class="item-title">${esc(c.name)} ${c.active?"":"· Oculta"}</div><div class="item-meta">${c.calculation_mode==="linear"?"Metros lineales":"Por unidades"} · orden ${c.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-category="${c.id}">Editar</button><button class="small-btn danger" data-delete-category="${c.id}">Eliminar</button></div></div>`).join("");
+    $("categoryList").innerHTML=categories.map(c=>`<div class="item-row"><div><div class="item-title">${esc(c.name)} ${c.active?"":"· Oculta"}</div><div class="item-meta">${c.calculation_mode==="linear"?"Metros lineales":c.calculation_mode==="area"?"Por m²":"Por unidades"} · orden ${c.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-category="${c.id}">Editar</button><button class="small-btn danger" data-delete-category="${c.id}">Eliminar</button></div></div>`).join("");
   }
   $("categoryList").addEventListener("click",async e=>{
     const edit=e.target.dataset.editCategory,del=e.target.dataset.deleteCategory;
