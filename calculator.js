@@ -6,12 +6,30 @@
   let cats=[],products=[],assocs=[],variants=[],settings={};
   let current={},selectedSpacing=null,customApproved=false,customMode=false;
   function numericFromText(value){const m=String(value||'').replace(',','.').match(/\d+(?:\.\d+)?/);return m?Number(m[0]):999999}
-  function presentationText(v){return v?`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString('es-AR')} L`:''}`:'—'}
+  function isAreaCategory(category){return category?.calculation_mode==='area'||category?.slug==='grama'}
+  function dimensionsAreaM2(value){
+    const text=String(value||'').toLowerCase().replace(/,/g,'.');
+    const nums=text.match(/\d+(?:\.\d+)?/g)||[];
+    if(nums.length<2)return 0;
+    let a=Number(nums[0]),b=Number(nums[1]);
+    if(!(a>0&&b>0))return 0;
+    const explicitMeters=/\bm\b/.test(text)&&!text.includes('cm');
+    if(!explicitMeters){a/=100;b/=100}
+    return a*b;
+  }
+  function presentationText(v,category=null){
+    if(!v)return '—';
+    if(isAreaCategory(category)&&v.height)return `${v.label} · ${v.height}`;
+    return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString('es-AR')} L`:''}`;
+  }
   function prioritizesHeight(product,list){return !!product?.prioritize_height || (list?.length>0 && list.every(v=>!v.liters) && list.some(v=>v.height))}
-  function optionText(v,p){
+  function optionText(v,p,category=null){
     if(!v)return '';
+    if(isAreaCategory(category)){
+      return `${v.height||'Sin dimensiones'} — ${v.label} — ${money(v.price)}`;
+    }
     if(prioritizesHeight(p, variants.filter(x=>x.product_id===p?.id&&x.active&&x.availability==='in_stock'))){
-      return `${v.height||'Sin altura'} — ${presentationText(v)} — ${money(v.price)}`;
+      return `${v.height||'Sin altura'} — ${presentationText(v,category)} — ${money(v.price)}`;
     }
     const size=v.liters?`${Number(v.liters).toLocaleString('es-AR')} L`:v.height?`Alt. ${v.height}`:'Opción única';
     return `${size} — ${v.label} — ${money(v.price)}`;
@@ -47,10 +65,14 @@
   }
   function variantsForProduct(){
     const product=products.find(p=>p.id===$('calcProduct').value);
+    const category=cats.find(c=>c.id===$('calcCategory').value);
     const base=variants.filter(v=>v.product_id===$('calcProduct').value&&v.active&&v.availability==='in_stock');
-    const priority=prioritizesHeight(product,base);
+    const area=isAreaCategory(category);
+    const priority=area||prioritizesHeight(product,base);
     return base.sort((a,b)=>{
-      if(priority){
+      if(area){
+        const d=dimensionsAreaM2(a.height)-dimensionsAreaM2(b.height);if(d!==0)return d;
+      }else if(priority){
         const h=numericFromText(a.height)-numericFromText(b.height);if(h!==0)return h;
       }else{
         const l=Number(a.liters??999999)-Number(b.liters??999999);if(l!==0)return l;
@@ -63,8 +85,9 @@
   function renderVariants(){
     const list=variantsForProduct();
     const product=products.find(p=>p.id===$('calcProduct').value);
-    $('calcVariantLabel').textContent=prioritizesHeight(product,list)?'Altura / opción disponible':'Litros / opción disponible';
-    $('calcVariant').innerHTML=list.length?list.map(v=>`<option value="${v.id}">${optionText(v,product)}</option>`).join(''):`<option value="">Sin opciones en stock</option>`;
+    const category=cats.find(c=>c.id===$('calcCategory').value);
+    $('calcVariantLabel').textContent=isAreaCategory(category)?'Dimensiones / opción disponible':prioritizesHeight(product,list)?'Altura / opción disponible':'Litros / opción disponible';
+    $('calcVariant').innerHTML=list.length?list.map(v=>`<option value="${v.id}">${optionText(v,product,category)}</option>`).join(''):`<option value="">Sin opciones en stock</option>`;
     $('addToCartBtn').disabled=!list.length;
   }
 
@@ -83,7 +106,10 @@
     const category=cats.find(c=>c.id===$('calcCategory').value);
     const product=products.find(p=>p.id===$('calcProduct').value);
     const linear=category?.calculation_mode==='linear';
-    $('linearFields').hidden=!linear;$('unitFields').hidden=linear;
+    const area=isAreaCategory(category);
+    $('linearFields').hidden=!linear;
+    $('areaFields').hidden=!area;
+    $('unitFields').hidden=linear||area;
     if(!linear)return;
     const vals=spacingValues(product);
     $('spacingOptions').innerHTML=[
@@ -119,19 +145,27 @@
     const assoc=assocs.find(a=>a.category_id===cid&&a.product_id===pid)||null;
     const variant=variants.find(v=>v.id===vid)||null;
     const linear=category?.calculation_mode==='linear';
+    const area=isAreaCategory(category);
 
     if(product){
       $('calcProductPreview').innerHTML=`${product.image_url?`<img src="${product.image_url}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
     }
-    $('selectedPresentation').textContent=presentationText(variant);
-    $('selectedOptionPrice').textContent=variant?`${prioritizesHeight(product,variantsForProduct())&&variant.height?`Alt. ${variant.height} · `:''}${!prioritizesHeight(product,variantsForProduct())&&variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`:'—';
+    $('selectedPresentation').textContent=presentationText(variant,category);
+    $('selectedOptionPrice').textContent=variant?`${area&&variant.height?`Dim. ${variant.height} · `:prioritizesHeight(product,variantsForProduct())&&variant.height?`Alt. ${variant.height} · `:!prioritizesHeight(product,variantsForProduct())&&variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`:'—';
 
-    let qty=0,spacing=null;
+    let qty=0,spacing=null,areaM2=null,paneAreaM2=null;
     if(linear){
       spacing=customMode?Number($('customSpacing').value||0):Number(selectedSpacing||0);
       const length=Number($('calcLength').value||0);
       qty=length>0&&spacing>0?Math.ceil((length*100)/spacing):0;
       updateClosureEstimate(variant);
+    }else if(area){
+      areaM2=Number($('calcArea').value||0);
+      paneAreaM2=dimensionsAreaM2(variant?.height);
+      qty=areaM2>0&&paneAreaM2>0?Math.ceil(areaM2/paneAreaM2):0;
+      $('areaCoverageInfo').innerHTML=paneAreaM2>0
+        ?`<p><strong>Cobertura por pan:</strong> ${paneAreaM2.toLocaleString('es-AR',{maximumFractionDigits:3})} m² según dimensiones ${variant?.height||''}.</p><small>La cantidad se redondea hacia arriba para cubrir toda la superficie indicada.</small>`
+        :`<p><strong>Dimensiones pendientes:</strong> cargá una medida como 40x40 cm en la opción de venta para poder calcular.</p>`;
     }else{
       qty=Math.max(1,Math.floor(Number($('calcQuantityInput').value||1)));
     }
@@ -139,8 +173,8 @@
     $('resultQty').textContent=qty.toLocaleString('es-AR');
     $('resultUnitPrice').textContent=money(unit);
     $('resultTotal').textContent=money(total);
-    $('addToCartBtn').disabled=!variant||qty<1||(linear&&customMode&&!customApproved);
-    current={category,product,assoc,variant,quantity:qty,total,linear,spacing};
+    $('addToCartBtn').disabled=!variant||qty<1||(linear&&customMode&&!customApproved)||(area&&paneAreaM2<=0);
+    current={category,product,assoc,variant,quantity:qty,total,linear,area,spacing,areaM2,paneAreaM2};
   }
 
   function addCurrentToCart(){
@@ -151,7 +185,7 @@
       product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,height:current.variant.height||null,
       category_name:current.category.name,quantity:current.quantity,unit_price:Number(current.variant.price),
       image_url:current.product.image_url||'',length_m:current.linear?Number($('calcLength').value):null,
-      spacing_cm:current.linear?Number(current.spacing):null
+      spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null
     });
     $('addedChoice').hidden=false;$('addedChoice').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
@@ -161,9 +195,9 @@
     $('checkoutItems').innerHTML=items.length?items.map(x=>`
       <div class="checkout-item" data-cart-id="${x.id}">
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
-        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}
-          <label class="checkout-variant-label">Litros / presentación
-            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>{const p=products.find(p=>p.id===x.product_id);const list=variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock');return prioritizesHeight(p,list)?(numericFromText(a.height)-numericFromText(b.height)):(Number(a.liters??999999)-Number(b.liters??999999))}).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${optionText(v,products.find(p=>p.id===x.product_id))}</option>`).join('')}</select>
+        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.category_name==="Grama"?"Dim.":"Alt."} ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}${x.area_m2?`<span>${x.area_m2} m² a cubrir</span>`:''}
+          <label class="checkout-variant-label">Opción / presentación
+            <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>{const p=products.find(p=>p.id===x.product_id);const list=variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock');return prioritizesHeight(p,list)?(numericFromText(a.height)-numericFromText(b.height)):(Number(a.liters??999999)-Number(b.liters??999999))}).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${optionText(v,products.find(p=>p.id===x.product_id),cats.find(c=>c.id===x.category_id))}</option>`).join('')}</select>
           </label>
         </div>
         <label>Cantidad<input class="checkout-qty" type="number" min="1" value="${x.quantity}" data-qty-id="${x.id}"></label>
@@ -179,6 +213,7 @@
   $('calcProduct').addEventListener('change',()=>{renderVariants();resetSpacing();calculate()});
   $('calcVariant').addEventListener('change',calculate);
   $('calcLength').addEventListener('input',calculate);
+  $('calcArea').addEventListener('input',calculate);
   const adjustLength=delta=>{
     const input=$('calcLength');
     const min=Number(input.min||1);
@@ -269,7 +304,7 @@
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,'',
         `Cliente: ${$('customerName').value.trim()}`,`Teléfono: +54 9 ${phoneNational}`,`Dirección: ${$('customerAddress').value.trim()} · CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
-        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · Alt. ${x.height}`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
+        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.category_name==="Grama"?"Dim.":"Alt."} ${x.height}`:''}${x.area_m2?` · ${x.area_m2} m²`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null
       ].filter(x=>x!==null);
