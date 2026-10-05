@@ -157,6 +157,11 @@
     $('calcProduct').value=productId;
     renderVariants();
     resetSpacing();
+    const suggestion=latestPlantSuggestion();
+    if(suggestion){
+      const holesRadio=document.querySelector('input[name="materialUse"][value="holes"]');
+      if(holesRadio)holesRadio.checked=true;
+    }
     updateMaterialFields(true);
     calculate();
     $('addedChoice').hidden=true;
