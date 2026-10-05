@@ -10,6 +10,23 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="welcome-modal" id="welcomeModal" hidden>
+    <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+      <button class="welcome-close" id="welcomeClose" type="button" aria-label="Cerrar">×</button>
+      <div class="welcome-logo-wrap"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></div>
+      <span class="eyebrow">MI PRIMAVERA</span>
+      <h2 id="welcomeTitle">Bienvenido/a a Vivero Mi Primavera</h2>
+      <p class="welcome-slogan" id="welcomeSlogan">Naturaleza que transforma tu espacio</p>
+      <p class="welcome-intro">Desde esta página podrás:</p>
+      <div class="welcome-features">
+        <div><span>📲</span><p>Calcular cuántas plantas necesitás para tu proyecto.</p></div>
+        <div><span>☘️</span><p>Ver la información de las diferentes plantas y sus categorías.</p></div>
+        <div><span>✅</span><p>Realizar tus pedidos y confirmarlos por WhatsApp.</p></div>
+      </div>
+      <p class="welcome-note">Si buscás alguna otra planta en particular o tenés alguna duda, tocá el botón de WhatsApp y escribinos.</p>
+      <button class="welcome-start" id="welcomeStart" type="button">Comenzar</button>
+    </div>
+  </div>
   <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span><span></span></button>
   <div class="menu-backdrop" id="menuBackdrop"></div>
 
