@@ -190,6 +190,7 @@
 
   const PRODUCT_SUMMARY_STEP=6;
   let productWizardStep=0;
+  let quickProductSaveRequested=false;
 
   function hasProductImage(){
     return ["productImageMain","productImageIntegrated","productImageInfo"].some(id=>$(id).files?.[0]) ||
@@ -279,6 +280,7 @@
     $("productListPanel").hidden=productWizardStep!==0;
     $("productBackBtn").hidden=productWizardStep===0;
     $("productOmitBtn").hidden=productWizardStep!==3;
+    $("productQuickSaveBtn").hidden=!$("productId").value||productWizardStep===PRODUCT_SUMMARY_STEP;
     $("productNextBtn").hidden=productWizardStep===PRODUCT_SUMMARY_STEP;
     $("productFinishBtn").hidden=productWizardStep!==PRODUCT_SUMMARY_STEP;
     if(productWizardStep===5)updateAllClosureLabels();
@@ -295,12 +297,18 @@
   $("productNextBtn").addEventListener("click",advanceProductStep);
   $("productBackBtn").addEventListener("click",()=>showProductStep(productWizardStep-1));
   $("productOmitBtn").addEventListener("click",()=>showProductStep(productWizardStep+1));
+  $("productQuickSaveBtn").addEventListener("click",()=>{
+    quickProductSaveRequested=true;
+    $("productForm").requestSubmit();
+  });
 
   $("productForm").addEventListener("submit",async e=>{
     e.preventDefault();
-    if(productWizardStep!==PRODUCT_SUMMARY_STEP){advanceProductStep();return;}
+    if(productWizardStep!==PRODUCT_SUMMARY_STEP&&!quickProductSaveRequested){advanceProductStep();return;}
+    quickProductSaveRequested=false;
     msg("productMessage","Guardando...");
     try{
+      const wasEditing=Boolean($("productId").value);
       const name=$("productName").value.trim(),slug=slugify(name),catMap=gatherCategoryMap(),vrows=gatherVariants();
       if(!name||!slug)throw new Error("Ingresá un nombre válido.");
       if(!hasProductImage())throw new Error("Subí al menos una foto de la planta.");
@@ -347,7 +355,7 @@
         }
       }
       for(const old of existing){if(!keep.includes(old.id)){const {error}=await db.from("product_variants").delete().eq("id",old.id);if(error)throw error}}
-      resetProductForm();await loadAll();toast("Planta guardada");
+      resetProductForm();await loadAll();toast(wasEditing?"Cambios guardados":"Planta guardada");
     }catch(err){console.error(err);msg("productMessage",err.message||"No se pudo guardar.","error")}
   });
 
