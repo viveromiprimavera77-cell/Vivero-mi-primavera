@@ -62,9 +62,23 @@
             <fieldset class="product-wizard-step field-box" data-product-step="1" hidden>
               <legend>Imágenes de la planta</legend>
               <div class="image-input-grid">
-                <label>1. Foto principal<input id="productImageMain" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small id="mainImageState"></small></label>
-                <label>2. Foto integrada<input id="productImageIntegrated" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Ej.: cerco vivo, jardín, bordura, macizo.</small><small id="integratedImageState"></small></label>
-                <label>3. Ficha informativa<input id="productImageInfo" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><small>Imagen con la información visual de la planta.</small><small id="infoImageState"></small></label>
+                <label>1. Foto principal
+                  <input id="productImageMain" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+                  <small id="mainImageState"></small>
+                  <button id="removeMainImage" class="danger-link remove-image-btn" type="button" hidden>Quitar foto</button>
+                </label>
+                <label>2. Foto integrada
+                  <input id="productImageIntegrated" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+                  <small>Ej.: cerco vivo, jardín, bordura, macizo.</small>
+                  <small id="integratedImageState"></small>
+                  <button id="removeIntegratedImage" class="danger-link remove-image-btn" type="button" hidden>Quitar foto</button>
+                </label>
+                <label>3. Ficha informativa
+                  <input id="productImageInfo" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+                  <small>Imagen con la información visual de la planta.</small>
+                  <small id="infoImageState"></small>
+                  <button id="removeInfoImage" class="danger-link remove-image-btn" type="button" hidden>Quitar foto</button>
+                </label>
               </div>
             </fieldset>
 
