@@ -45,7 +45,7 @@
           <div class="panel-heading"><div><span class="eyebrow">CATÁLOGO</span><h2 id="productFormTitle">Agregar planta</h2></div><button id="newProductBtn" class="secondary-btn" type="button">Nueva planta</button></div>
           <form id="productForm" class="product-wizard-form">
             <input type="hidden" id="productId">
-            <input type="hidden" id="currentMainImage"><input type="hidden" id="currentIntegratedImage"><input type="hidden" id="currentInfoImage">
+            <input type="hidden" id="currentMainImage"><input type="hidden" id="currentIntegratedImage">
 
             <fieldset class="product-wizard-step field-box" data-product-step="0">
               <legend>Nombre, posición en el catálogo y descripción</legend>
@@ -73,12 +73,6 @@
                   <small id="integratedImageState"></small>
                   <button id="removeIntegratedImage" class="danger-link remove-image-btn" type="button" hidden>Quitar foto</button>
                 </label>
-                <label>3. Ficha informativa
-                  <input id="productImageInfo" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
-                  <small>Imagen con la información visual de la planta.</small>
-                  <small id="infoImageState"></small>
-                  <button id="removeInfoImage" class="danger-link remove-image-btn" type="button" hidden>Quitar foto</button>
-                </label>
               </div>
             </fieldset>
 
@@ -89,12 +83,23 @@
             </fieldset>
 
             <fieldset class="product-wizard-step field-box" data-product-step="3" hidden>
-              <legend>Datos destacados de la planta</legend>
-              <p class="field-help">Estos datos se muestran directamente en la tarjeta del catálogo.</p>
+              <legend>Ficha técnica y datos destacados</legend>
+              <p class="field-help">Esta información reemplaza la tercera foto del catálogo y se muestra como una ficha breve para el cliente.</p>
               <div class="image-input-grid">
                 <label>Altura máxima<input id="productMaxHeight" placeholder="Ej.: 3–4 m"></label>
-                <label>Tiempo hasta desarrollo máximo<input id="productMaturityTime" placeholder="Ej.: 3–5 años"></label>
-                <label>Podas anuales<input id="productPruningPerYear" placeholder="Ej.: 2–3 podas"></label>
+                <label>Tiempo hasta desarrollo máximo<input id="productMaturityTime" placeholder="Ej.: 5–10 años"></label>
+                <label>Podas anuales<input id="productPruningPerYear" placeholder="Ej.: 2–3"></label>
+              </div>
+              <div class="form-grid plant-profile-admin">
+                <label>Nombre científico<input id="productScientificName" placeholder="Ej.: Viburnum tinus"></label>
+                <label>Uso principal<input id="productUseSummary" placeholder="Ej.: Cerco vivo, pantalla y ornamental"></label>
+                <label>Follaje<input id="productFoliageType" placeholder="Ej.: Perenne"></label>
+                <label>Exposición<input id="productSunExposure" placeholder="Ej.: Sol a media sombra"></label>
+                <label class="wide">Resistencia / clima<input id="productClimateTolerance" placeholder="Ej.: Tolera frío moderado y calor"></label>
+                <label class="wide">Floración<input id="productFloweringInfo" placeholder="Ej.: Flores blancas en primavera"></label>
+                <label>Velocidad de crecimiento<input id="productGrowthRate" placeholder="Ej.: Rápido"></label>
+                <label>Riego<input id="productWaterNeeds" placeholder="Ej.: Moderado"></label>
+                <label class="wide">Dato de cuidado importante<textarea id="productCareNote" rows="3" placeholder="Consejo corto y útil para el cliente"></textarea></label>
               </div>
             </fieldset>
 
