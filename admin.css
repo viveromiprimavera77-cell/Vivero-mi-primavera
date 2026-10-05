@@ -52,3 +52,26 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .inline-cp{font-size:.78rem;color:var(--muted);font-weight:700}
 .whatsapp-customer-link{display:inline-flex;align-items:center;margin-top:7px;padding:7px 10px;border-radius:999px;background:#25D366;color:#fff;text-decoration:none;font-size:.78rem;font-weight:900}
 .whatsapp-customer-link:hover{filter:brightness(.96)}
+
+
+/* v11: alta y edición de plantas por pasos */
+.product-wizard-form{display:block}
+.product-wizard-step{width:100%;margin:0}
+.product-wizard-step.field-box{padding:20px}
+.product-wizard-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
+.product-wizard-actions #cancelProductEdit{margin-right:auto}
+.wizard-inline-box{margin-top:16px}
+.product-summary-step{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fbfdf9}
+.summary-heading h3{font-family:Georgia,serif;font-size:1.65rem;color:var(--green);margin:.2em 0 18px}
+.product-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product-summary article{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px}
+.product-summary article>span{display:block;color:var(--muted);font-size:.75rem;font-weight:850;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.product-summary article>strong{display:block;color:var(--green);font-size:1rem}
+.product-summary article p{margin:6px 0 0;color:var(--ink);line-height:1.45;font-size:.88rem}
+.product-summary .summary-wide{grid-column:1/-1}
+.summary-sale-list{display:grid;gap:8px;margin-top:8px}
+.summary-sale-option{border:1px solid #e2ece0;border-radius:10px;padding:10px;background:#f8fbf7}
+.summary-sale-option strong,.summary-sale-option span,.summary-sale-option small{display:block}
+.summary-sale-option span{margin-top:4px;font-size:.84rem;color:var(--ink)}
+.summary-sale-option small{margin-top:4px;color:var(--muted);line-height:1.4}
+@media(max-width:700px){.product-summary{grid-template-columns:1fr}.product-summary .summary-wide{grid-column:auto}.product-wizard-actions{align-items:stretch}.product-wizard-actions button{flex:1}.product-wizard-actions #cancelProductEdit{margin-right:0}}
