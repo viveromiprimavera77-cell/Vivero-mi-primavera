@@ -31,13 +31,17 @@
       x.product_id === item.product_id &&
       x.variant_id === item.variant_id &&
       x.category_id === item.category_id &&
-      Number(x.spacing_cm || 0) === Number(item.spacing_cm || 0)
+      Number(x.spacing_cm || 0) === Number(item.spacing_cm || 0) &&
+      String(x.material_mode || "") === String(item.material_mode || "")
     );
 
     if (match) {
       match.quantity = Number(match.quantity || 0) + Number(item.quantity || 0);
       if (item.length_m) match.length_m = Number(match.length_m || 0) + Number(item.length_m || 0);
       if (item.area_m2) match.area_m2 = Number(match.area_m2 || 0) + Number(item.area_m2 || 0);
+      if (item.material_volume_dm3) match.material_volume_dm3 = Number(match.material_volume_dm3 || 0) + Number(item.material_volume_dm3 || 0);
+      if (item.coverage_area_m2) match.coverage_area_m2 = Number(match.coverage_area_m2 || 0) + Number(item.coverage_area_m2 || 0);
+      if (item.hole_count) match.hole_count = Number(match.hole_count || 0) + Number(item.hole_count || 0);
     } else {
       items.push({ id: makeId(), ...item });
     }
@@ -138,8 +142,10 @@
         ${x.image_url ? `<img src="${x.image_url}" alt="">` : `<div class="cart-mini-placeholder">MP</div>`}
         <div class="cart-mini-copy">
           <strong>${x.product_name}</strong>
-          <span>${x.variant_label}${x.liters ? ` · ${x.liters} L` : ""}${x.height ? ` · ${x.area_mode?"Dim.":"Alt."} ${x.height}` : ""}</span>
+          <span>${x.variant_label}${x.material_mode&&x.liters ? ` · ${Number(x.liters)>=1000?(Number(x.liters)/1000).toLocaleString("es-AR")+" m³":Number(x.liters).toLocaleString("es-AR")+" dm³"}` : x.liters ? ` · ${x.liters} L` : ""}${x.height ? ` · ${x.area_mode?"Dim.":"Alt."} ${x.height}` : ""}</span>
           ${x.area_m2 ? `<span>${x.area_m2} m² a cubrir</span>` : ""}
+          ${x.material_mode==="terrain" ? `<span>${x.coverage_area_m2} m² · ${x.fill_depth_cm} cm de profundidad</span>` : ""}
+          ${x.material_mode==="holes" ? `<span>${x.hole_count} pozos · ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm</span>` : ""}
           <span>${x.quantity} × ${money(x.unit_price)}</span>
         </div>
         <button type="button" class="cart-mini-remove" data-remove-cart="${x.id}" aria-label="Quitar">×</button>
