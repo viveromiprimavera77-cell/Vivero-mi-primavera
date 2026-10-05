@@ -138,7 +138,7 @@
         ${x.image_url ? `<img src="${x.image_url}" alt="">` : `<div class="cart-mini-placeholder">MP</div>`}
         <div class="cart-mini-copy">
           <strong>${x.product_name}</strong>
-          <span>${x.variant_label}${x.liters ? ` · ${x.liters} L` : ""}${x.height ? ` · ${x.category_name==="Grama"?"Dim.":"Alt."} ${x.height}` : ""}</span>
+          <span>${x.variant_label}${x.liters ? ` · ${x.liters} L` : ""}${x.height ? ` · ${x.area_mode?"Dim.":"Alt."} ${x.height}` : ""}</span>
           ${x.area_m2 ? `<span>${x.area_m2} m² a cubrir</span>` : ""}
           <span>${x.quantity} × ${money(x.unit_price)}</span>
         </div>
