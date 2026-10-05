@@ -96,3 +96,7 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .summary-stock.in-stock i{width:8px;height:8px;border-radius:50%;background:#20b84b;display:inline-block}
 .summary-stock.consult{background:#f2f2ef;color:#6b716d!important}
 @media(max-width:540px){.summary-sale-values{grid-template-columns:1fr}.summary-sale-head{align-items:flex-start}}
+
+
+/* v14: quitar imágenes existentes al editar */
+.remove-image-btn{display:inline-flex;margin-top:8px;padding:0;font-size:.82rem}
