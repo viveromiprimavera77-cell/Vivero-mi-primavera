@@ -242,11 +242,6 @@
       $("productMaturityTime").value.trim()&&`Desarrollo máximo: ${$("productMaturityTime").value.trim()}`,
       $("productPruningPerYear").value.trim()&&`Podas anuales: ${$("productPruningPerYear").value.trim()}`
     ].filter(Boolean);
-    const imageState=(fileId,currentId)=>{
-      const file=$(fileId).files[0];
-      if(file)return file.name;
-      return $(currentId).value?"Imagen actual cargada":"Sin imagen";
-    };
     const vrows=gatherVariants();
     const variantsHtml=vrows.map((v,i)=>{
       const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"",v.height||""].filter(Boolean).join(" · ");
@@ -254,16 +249,26 @@
         const months=v[`closure_months_${n}`],spacing=$("productSpacing"+n).value.trim();
         return months?`Distancia ${n}${spacing?` (${spacing} cm)`:""}: ${months} meses`:"";
       }).filter(Boolean);
-      return `<div class="summary-sale-option"><strong>${i+1}. ${esc(v.label)}</strong><span>${esc(details||"Sin litros/altura")} · Venta: ${money(v.price)} · Costo: ${money(v.cost)} · ${v.availability==="in_stock"?"En stock":"Consultar"}</span>${closures.length?`<small>${esc(closures.join(" · "))}</small>`:""}</div>`;
+      const statusHtml=v.availability==="in_stock"
+        ?'<span class="summary-stock in-stock"><i aria-hidden="true"></i>En stock</span>'
+        :'<span class="summary-stock consult">A consultar</span>';
+      return `<div class="summary-sale-option">
+        <div class="summary-sale-head"><strong>${i+1}. ${esc(v.label)}</strong>${statusHtml}</div>
+        <span class="summary-sale-details">${esc(details||"Sin litros/altura")}</span>
+        <div class="summary-sale-values">
+          <div><span>Precio de venta</span><strong>${money(v.price)}</strong></div>
+          <div><span>Costo</span><strong>${money(v.cost)}</strong></div>
+        </div>
+        ${closures.length?`<small>${esc(closures.join(" · "))}</small>`:""}
+      </div>`;
     }).join("");
 
     $("productSummary").innerHTML=`
       <article><span>Datos principales</span><strong>${esc($("productName").value.trim())}</strong><p>Posición: ${Number($("productOrder").value||0)}</p><p>${esc($("productDescription").value.trim()||"Sin descripción")}</p></article>
-      <article><span>Imágenes</span><p>Principal: ${esc(imageState("productImageMain","currentMainImage"))}</p><p>Integrada: ${esc(imageState("productImageIntegrated","currentIntegratedImage"))}</p><p>Ficha: ${esc(imageState("productImageInfo","currentInfoImage"))}</p></article>
       <article><span>Categorías</span><strong>${esc(selectedCategories.join(", ")||"Sin categorías")}</strong></article>
       <article><span>Datos destacados</span><p>${esc(highlights.join(" · ")||"Omitidos")}</p></article>
       <article><span>Distancias recomendadas</span><strong>${esc(distances.join(" · ")||"Sin distancias configuradas")}</strong></article>
-      <article class="summary-wide"><span>Opciones de venta</span><div class="summary-sale-list">${variantsHtml}</div><p>Selector: ${$("productPrioritizeHeight").checked?"priorizar altura":"priorizar litros"} · ${$("productFeatured").checked?"Destacada":"No destacada"} · ${$("productActive").checked?"Visible":"Oculta"}</p></article>`;
+      <article class="summary-wide"><span>Opciones de compra</span><div class="summary-sale-list">${variantsHtml}</div><p>Selector: ${$("productPrioritizeHeight").checked?"priorizar altura":"priorizar litros"} · ${$("productFeatured").checked?"Destacada":"No destacada"} · ${$("productActive").checked?"Visible":"Oculta"}</p></article>`;
   }
 
   function showProductStep(step,scroll=false){
