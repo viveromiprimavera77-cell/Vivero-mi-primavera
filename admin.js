@@ -191,6 +191,11 @@
   const PRODUCT_SUMMARY_STEP=6;
   let productWizardStep=0;
 
+  function hasProductImage(){
+    return ["productImageMain","productImageIntegrated","productImageInfo"].some(id=>$(id).files?.[0]) ||
+      ["currentMainImage","currentIntegratedImage","currentInfoImage"].some(id=>Boolean($(id).value));
+  }
+
   function validateProductStep(step){
     msg("productMessage","");
     if(step===0){
@@ -199,6 +204,10 @@
         $("productName").focus();
         return false;
       }
+    }
+    if(step===1 && !hasProductImage()){
+      msg("productMessage","Subí al menos una foto de la planta para continuar.","error");
+      return false;
     }
     if(step===2 && !gatherCategoryMap().length){
       msg("productMessage","Elegí al menos una categoría.","error");
@@ -263,6 +272,7 @@
       el.hidden=Number(el.dataset.productStep)!==productWizardStep;
     });
     $("productListPanel").hidden=productWizardStep!==0;
+    $("productBackBtn").hidden=productWizardStep===0;
     $("productOmitBtn").hidden=productWizardStep!==3;
     $("productNextBtn").hidden=productWizardStep===PRODUCT_SUMMARY_STEP;
     $("productFinishBtn").hidden=productWizardStep!==PRODUCT_SUMMARY_STEP;
@@ -278,6 +288,7 @@
   }
 
   $("productNextBtn").addEventListener("click",advanceProductStep);
+  $("productBackBtn").addEventListener("click",()=>showProductStep(productWizardStep-1));
   $("productOmitBtn").addEventListener("click",()=>showProductStep(productWizardStep+1));
 
   $("productForm").addEventListener("submit",async e=>{
@@ -287,6 +298,7 @@
     try{
       const name=$("productName").value.trim(),slug=slugify(name),catMap=gatherCategoryMap(),vrows=gatherVariants();
       if(!name||!slug)throw new Error("Ingresá un nombre válido.");
+      if(!hasProductImage())throw new Error("Subí al menos una foto de la planta.");
       if(!catMap.length)throw new Error("Elegí al menos una categoría.");
       if(!vrows.length)throw new Error("Agregá al menos una presentación.");
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height))throw new Error("Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.");
