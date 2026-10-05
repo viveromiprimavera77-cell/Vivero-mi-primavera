@@ -181,15 +181,39 @@
   $('calcLength').addEventListener('input',calculate);
   const adjustLength=delta=>{
     const input=$('calcLength');
-    const step=Number(input.step||0.1);
-    const min=Number(input.min||0.1);
+    const min=Number(input.min||1);
     const current=Number(input.value||min);
-    const next=Math.max(min,Math.round((current+delta*step)*10)/10);
-    input.value=next.toFixed(1).replace(/\.0$/,'');
+    const next=Math.max(min,current+delta);
+    input.value=Number.isInteger(next)?String(next):String(Math.round(next*100)/100);
     input.dispatchEvent(new Event('input',{bubbles:true}));
   };
-  $('calcLengthUp').addEventListener('click',()=>adjustLength(1));
-  $('calcLengthDown').addEventListener('click',()=>adjustLength(-1));
+
+  function setupHoldStepper(button,delta){
+    let holdDelay=null,repeatTimer=null,suppressClick=false;
+    const stop=()=>{
+      clearTimeout(holdDelay);clearInterval(repeatTimer);
+      holdDelay=null;repeatTimer=null;
+      button.classList.remove('holding');
+    };
+    button.addEventListener('pointerdown',e=>{
+      if(e.button!==undefined&&e.button!==0)return;
+      e.preventDefault();
+      suppressClick=true;
+      button.classList.add('holding');
+      button.setPointerCapture?.(e.pointerId);
+      adjustLength(delta);
+      holdDelay=setTimeout(()=>{
+        repeatTimer=setInterval(()=>adjustLength(delta),90);
+      },350);
+    });
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>button.addEventListener(ev,stop));
+    button.addEventListener('click',()=>{
+      if(suppressClick){suppressClick=false;return}
+      adjustLength(delta);
+    });
+  }
+  setupHoldStepper($('calcLengthUp'),1);
+  setupHoldStepper($('calcLengthDown'),-1);
   $('calcQuantityInput').addEventListener('input',calculate);
 
   $('spacingOptions').addEventListener('click',e=>{
