@@ -296,3 +296,19 @@ body.welcome-open{overflow:hidden}
 /* v12: flechas de metros con pulsación continua */
 .number-stepper-buttons button{transition:transform .12s ease,background .12s ease,box-shadow .12s ease;transform-origin:center}
 .number-stepper-buttons button.holding{transform:scale(1.12);z-index:2;background:#e1f2dc;box-shadow:0 4px 12px rgba(7,94,42,.16)}
+
+
+/* v13: calculadora de tierra, abono y corteza */
+.material-calculator{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.material-use-heading strong,.material-use-heading small{display:block}
+.material-use-heading strong{font-size:1rem;color:var(--green-950)}
+.material-use-heading small{margin-top:5px;color:var(--muted);line-height:1.45}
+.material-use-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.material-use-options label{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:13px;padding:13px;background:#f8fcf6;cursor:pointer}
+.material-use-options input{width:auto;margin:0}
+.material-use-options span{font-weight:850;color:var(--green-900)}
+.material-fields-grid{margin-top:10px}
+.addon-material-prompt{width:100%;display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin:13px 0;padding:13px;border:1px solid #cfe5c9;border-radius:13px;background:#f7fbf5}
+.addon-material-prompt label{font-weight:900;color:var(--green-950)}
+.addon-material-prompt select{width:100%;margin-top:7px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff}
+@media(max-width:650px){.material-use-options{grid-template-columns:1fr}.addon-material-prompt{grid-template-columns:1fr}}
