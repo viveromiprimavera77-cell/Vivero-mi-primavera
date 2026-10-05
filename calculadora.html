@@ -93,19 +93,16 @@
 
         <div id="materialHoleFields" class="public-form-grid material-fields-grid" hidden>
           <label>Cantidad de pozos<input id="materialHoleCount" type="number" min="1" step="1" value="1"></label>
-          <label>Ancho aproximado de cada pozo (cm)
-            <select id="materialHoleWidth">
-              <option value="30">30 cm</option>
-              <option value="40" selected>40 cm</option>
-              <option value="50">50 cm</option>
-              <option value="60">60 cm</option>
-            </select>
+          <label>Tamaño de maceta / presentación (litros)
+            <select id="materialHoleLiters"></select>
+            <small>La recomendación del pozo depende solamente de los litros.</small>
           </label>
+          <label>Ancho aproximado de cada pozo (cm)<input id="materialHoleWidth" type="number" min="1" step="1" value="40"></label>
           <label>Profundidad del pozo (cm)<input id="materialHoleDepth" type="number" min="1" step="1" value="40"></label>
-          <div id="materialPlantRecommendation" class="selected-option-card">
-            <span>Recomendación según la planta agregada</span>
-            <strong>—</strong>
-            <small>Si la presentación de la planta tiene una profundidad recomendada cargada desde el panel, se completa automáticamente.</small>
+          <div id="materialHoleRecommendation" class="selected-option-card">
+            <span>Recomendación general por litros</span>
+            <strong>Elegí los litros</strong>
+            <small>Podés modificar manualmente el ancho o la profundidad si tu caso lo requiere.</small>
           </div>
         </div>
         <div id="materialCoverageInfo" class="closure-estimate"></div>
@@ -145,7 +142,7 @@
       </div>
       <div id="checkoutItems" class="checkout-items"></div>
       <div class="checkout-total"><span>Total estimado</span><strong id="checkoutTotal">$0</strong></div>
-      <div class="checkout-actions"><a href="./#catalogo" class="public-secondary-btn">Seguir comprando</a></div>
+      <div class="checkout-actions"><a href="index.html#catalogo" class="public-secondary-btn">Seguir comprando</a></div>
 
       <form id="orderForm" class="public-order-form">
         <h3>Datos para confirmar el pedido</h3>
