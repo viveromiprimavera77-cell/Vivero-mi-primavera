@@ -232,8 +232,7 @@
 
   const IMAGE_SLOTS=[
     {file:"productImageMain",current:"currentMainImage",state:"mainImageState",remove:"removeMainImage",type:"main"},
-    {file:"productImageIntegrated",current:"currentIntegratedImage",state:"integratedImageState",remove:"removeIntegratedImage",type:"integrated"},
-    {file:"productImageInfo",current:"currentInfoImage",state:"infoImageState",remove:"removeInfoImage",type:"info"}
+    {file:"productImageIntegrated",current:"currentIntegratedImage",state:"integratedImageState",remove:"removeIntegratedImage",type:"integrated"}
   ];
   function storagePathFromPublicUrl(url){
     const marker="/storage/v1/object/public/product-images/";
@@ -253,7 +252,7 @@
     current.dataset.originalUrl=url||"";
     current.dataset.removeRequested="0";
     file.value="";
-    state.textContent=url?(slot.type==="info"?"Ficha actual cargada":"Foto actual cargada"):"";
+    state.textContent=url?"Foto actual cargada":"";
     remove.hidden=!url;
   }
   function clearImageSlots(){
@@ -276,7 +275,7 @@
         $(slot.remove).hidden=true;
       }else{
         const current=$(slot.current).value;
-        $(slot.state).textContent=current?(slot.type==="info"?"Ficha actual cargada":"Foto actual cargada"):"";
+        $(slot.state).textContent=current?"Foto actual cargada":"";
         $(slot.remove).hidden=!current;
       }
     });
@@ -314,8 +313,8 @@
   let quickProductSaveRequested=false;
 
   function hasProductImage(){
-    return ["productImageMain","productImageIntegrated","productImageInfo"].some(id=>$(id).files?.[0]) ||
-      ["currentMainImage","currentIntegratedImage","currentInfoImage"].some(id=>Boolean($(id).value));
+    return ["productImageMain","productImageIntegrated"].some(id=>$(id).files?.[0]) ||
+      ["currentMainImage","currentIntegratedImage"].some(id=>Boolean($(id).value));
   }
 
   function validateProductStep(step){
@@ -372,6 +371,13 @@
       $("productMaturityTime").value.trim()&&`Desarrollo máximo: ${$("productMaturityTime").value.trim()}`,
       $("productPruningPerYear").value.trim()&&`Podas anuales: ${$("productPruningPerYear").value.trim()}`
     ].filter(Boolean);
+    const profile=[
+      $("productScientificName").value.trim()&&`Nombre científico: ${$("productScientificName").value.trim()}`,
+      $("productUseSummary").value.trim()&&`Uso: ${$("productUseSummary").value.trim()}`,
+      $("productFoliageType").value.trim()&&`Follaje: ${$("productFoliageType").value.trim()}`,
+      $("productSunExposure").value.trim()&&`Luz: ${$("productSunExposure").value.trim()}`,
+      $("productGrowthRate").value.trim()&&`Crecimiento: ${$("productGrowthRate").value.trim()}`
+    ].filter(Boolean);
     const vrows=gatherVariants();
     const variantsHtml=vrows.map((v,i)=>{
       const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} ${isOtherProductSelection()?"dm³ por unidad":"L"}`:"",v.height||""].filter(Boolean).join(" · ");
@@ -397,6 +403,7 @@
       <article><span>Datos principales</span><strong>${esc($("productName").value.trim())}</strong><p>Posición: ${Number($("productOrder").value||0)}</p><p>${esc($("productDescription").value.trim()||"Sin descripción")}</p></article>
       <article><span>Categorías</span><strong>${esc(selectedCategories.join(", ")||"Sin categorías")}</strong></article>
       <article><span>Datos destacados</span><p>${esc(highlights.join(" · ")||"Omitidos")}</p></article>
+      <article><span>Ficha técnica</span><p>${esc(profile.join(" · ")||"Sin ficha técnica")}</p></article>
       <article><span>Distancias recomendadas</span><strong>${esc(distances.join(" · ")||"Sin distancias configuradas")}</strong></article>
       <article class="summary-wide"><span>Opciones de compra</span><div class="summary-sale-list">${variantsHtml}</div><p>Selector: ${$("productPrioritizeHeight").checked?"priorizar altura":"priorizar litros"} · ${$("productFeatured").checked?"Destacada":"No destacada"} · ${$("productActive").checked?"Visible":"Oculta"}</p></article>`;
   }
@@ -450,20 +457,33 @@
       if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
       const oldImageUrls={
         main:$("currentMainImage").dataset.originalUrl||"",
-        integrated:$("currentIntegratedImage").dataset.originalUrl||"",
-        info:$("currentInfoImage").dataset.originalUrl||""
+        integrated:$("currentIntegratedImage").dataset.originalUrl||""
       };
-      let main=$("currentMainImage").value||null,integrated=$("currentIntegratedImage").value||null,info=$("currentInfoImage").value||null;
-      const files=[["productImageMain","main"],["productImageIntegrated","integrated"],["productImageInfo","info"]];
+      let main=$("currentMainImage").value||null,integrated=$("currentIntegratedImage").value||null;
+      const files=[["productImageMain","main"],["productImageIntegrated","integrated"]];
       for(const [id,type] of files){
-        const file=$(id).files[0];if(file){const url=await uploadImage(file,slug,type);if(type==="main")main=url;if(type==="integrated")integrated=url;if(type==="info")info=url}
+        const file=$(id).files[0];
+        if(file){
+          const url=await uploadImage(file,slug,type);
+          if(type==="main")main=url;
+          if(type==="integrated")integrated=url;
+        }
       }
       const first=vrows[0],payload={
         category_id:catMap[0].category_id,name,slug,description:$("productDescription").value.trim(),price:first.price,cost:first.cost,
-        availability:vrows.some(v=>v.availability==="in_stock")?"in_stock":"consult",pot_size:first.label,image_url:main,integrated_image_url:integrated,info_image_url:info,
+        availability:vrows.some(v=>v.availability==="in_stock")?"in_stock":"consult",pot_size:first.label,image_url:main,integrated_image_url:integrated,info_image_url:null,
         max_height:$("productMaxHeight").value.trim()||null,
         maturity_time:$("productMaturityTime").value.trim()||null,
         pruning_per_year:$("productPruningPerYear").value.trim()||null,
+        scientific_name:$("productScientificName").value.trim()||null,
+        use_summary:$("productUseSummary").value.trim()||null,
+        foliage_type:$("productFoliageType").value.trim()||null,
+        sun_exposure:$("productSunExposure").value.trim()||null,
+        climate_tolerance:$("productClimateTolerance").value.trim()||null,
+        flowering_info:$("productFloweringInfo").value.trim()||null,
+        growth_rate:$("productGrowthRate").value.trim()||null,
+        water_needs:$("productWaterNeeds").value.trim()||null,
+        care_note:$("productCareNote").value.trim()||null,
         prioritize_height:$("productPrioritizeHeight").checked,
         spacing_1_cm:$("productSpacing1").value?Number($("productSpacing1").value):null,
         spacing_2_cm:$("productSpacing2").value?Number($("productSpacing2").value):null,
@@ -491,7 +511,7 @@
         }
       }
       for(const old of existing){if(!keep.includes(old.id)){const {error}=await db.from("product_variants").delete().eq("id",old.id);if(error)throw error}}
-      const newImageUrls={main:main||"",integrated:integrated||"",info:info||""};
+      const newImageUrls={main:main||"",integrated:integrated||""};
       await Promise.allSettled(Object.keys(oldImageUrls).map(type=>{
         const oldUrl=oldImageUrls[type],newUrl=newImageUrls[type];
         return oldUrl&&oldUrl!==newUrl?removeStoredImage(oldUrl):Promise.resolve();
@@ -504,6 +524,7 @@
     $("productForm").reset();$("productId").value="";clearImageSlots();
     $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
     $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";$("productPrioritizeHeight").checked=false;
+    ["productScientificName","productUseSummary","productFoliageType","productSunExposure","productClimateTolerance","productFloweringInfo","productGrowthRate","productWaterNeeds","productCareNote"].forEach(id=>$(id).value="");
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();msg("productMessage","");
@@ -526,10 +547,11 @@
       const p=products.find(x=>x.id===edit);if(!p)return;
       $("productId").value=p.id;$("productName").value=p.name;$("productDescription").value=p.description||"";$("productOrder").value=p.sort_order;$("productFeatured").checked=p.featured;$("productActive").checked=p.active;
       $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";$("productPrioritizeHeight").checked=!!p.prioritize_height;
+      $("productScientificName").value=p.scientific_name||"";$("productUseSummary").value=p.use_summary||"";$("productFoliageType").value=p.foliage_type||"";$("productSunExposure").value=p.sun_exposure||"";
+      $("productClimateTolerance").value=p.climate_tolerance||"";$("productFloweringInfo").value=p.flowering_info||"";$("productGrowthRate").value=p.growth_rate||"";$("productWaterNeeds").value=p.water_needs||"";$("productCareNote").value=p.care_note||"";
       $("productSpacing1").value=p.spacing_1_cm||"";$("productSpacing2").value=p.spacing_2_cm||"";$("productSpacing3").value=p.spacing_3_cm||"";
       setImageSlot(IMAGE_SLOTS[0],p.image_url||"");
       setImageSlot(IMAGE_SLOTS[1],p.integrated_image_url||"");
-      setImageSlot(IMAGE_SLOTS[2],p.info_image_url||"");
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
       renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();refreshVariantAreaMode();
       $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);
