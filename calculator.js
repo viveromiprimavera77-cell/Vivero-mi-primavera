@@ -179,6 +179,17 @@
   $('calcProduct').addEventListener('change',()=>{renderVariants();resetSpacing();calculate()});
   $('calcVariant').addEventListener('change',calculate);
   $('calcLength').addEventListener('input',calculate);
+  const adjustLength=delta=>{
+    const input=$('calcLength');
+    const step=Number(input.step||0.1);
+    const min=Number(input.min||0.1);
+    const current=Number(input.value||min);
+    const next=Math.max(min,Math.round((current+delta*step)*10)/10);
+    input.value=next.toFixed(1).replace(/\.0$/,'');
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+  $('calcLengthUp').addEventListener('click',()=>adjustLength(1));
+  $('calcLengthDown').addEventListener('click',()=>adjustLength(-1));
   $('calcQuantityInput').addEventListener('input',calculate);
 
   $('spacingOptions').addEventListener('click',e=>{
