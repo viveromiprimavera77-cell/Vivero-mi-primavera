@@ -52,29 +52,36 @@
       return String(a.label).localeCompare(String(b.label),"es");
     });
   }
-  function presentationText(v){
+  function isAreaCategoryId(categoryId){
+    const cat=catalogCategories.find(c=>c.id===categoryId);
+    return cat?.calculation_mode==="area"||cat?.slug==="grama";
+  }
+  function presentationText(v,categoryId=null){
     if(!v)return "—";
-    return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}`;
+    const area=isAreaCategoryId(categoryId);
+    const size=area&&v.height?` · ${v.height}`:v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:"";
+    return `${v.label}${size}`;
   }
   function selectorHtml(p,pvars,categoryId){
     const rawAvailable=pvars.filter(v=>v.active&&v.availability==="in_stock");
-    const autoHeight=rawAvailable.length>0 && rawAvailable.every(v=>!v.liters) && rawAvailable.some(v=>v.height);
-    const priority=!!p.prioritize_height || autoHeight;
+    const area=isAreaCategoryId(categoryId);
+    const autoHeight=!area&&rawAvailable.length>0 && rawAvailable.every(v=>!v.liters) && rawAvailable.some(v=>v.height);
+    const priority=area||!!p.prioritize_height||autoHeight;
     const available=sortedVariants(rawAvailable,priority);
     if(!available.length)return `<div class="variant-selector empty-variants">Consultar disponibilidad de presentaciones.</div>`;
     const keyOf=v=>priority?String(v.height||"").trim().toLowerCase():String(v.liters??"none");
     const counts={};available.forEach(v=>{const k=keyOf(v);counts[k]=(counts[k]||0)+1});
-    const title=priority?"Elegí la altura":"Seleccioná los litros";
+    const title=area?"Elegí las dimensiones":priority?"Elegí la altura":"Seleccioná los litros";
     const buttons=available.map((v,i)=>{
-      let main=priority?(v.height||"Sin altura"):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única");
+      let main=priority?(v.height||(area?"Sin dimensiones":"Sin altura")):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única");
       const duplicate=counts[keyOf(v)]>1;
-      if(duplicate)main+=` · ${presentationText(v)}`;
+      if(duplicate)main+=` · ${presentationText(v,categoryId)}`;
       return `<button type="button" class="option-chip liter-chip ${i===0?"active":""}" data-variant="${v.id}">${esc(main)}</button>`;
     }).join("");
-    return `<div class="variant-selector" data-product="${p.id}" data-category="${categoryId}" data-priority="${priority?"height":"liters"}">
+    return `<div class="variant-selector" data-product="${p.id}" data-category="${categoryId}" data-priority="${area?"dimensions":priority?"height":"liters"}">
       <div class="selector-title">${title}</div>
       <div class="liters-options">${buttons}</div>
-      <div class="selected-presentation-line"><span>Presentación</span><strong class="selected-presentation">${esc(presentationText(available[0]))}</strong></div>
+      <div class="selected-presentation-line"><span>Presentación</span><strong class="selected-presentation">${esc(presentationText(available[0],categoryId))}</strong></div>
     </div>`;
   }
   function card(p,assoc,variants){
@@ -93,7 +100,7 @@
         const b=e.target.closest(".liter-chip");if(!b)return;
         const v=all.find(x=>x.id===b.dataset.variant);if(!v)return;
         box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));
-        pres.textContent=presentationText(v);
+        pres.textContent=presentationText(v,cid);
         price.textContent=money(v.price);
         status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";
         status.classList.toggle("status-stock",v.availability==="in_stock");
