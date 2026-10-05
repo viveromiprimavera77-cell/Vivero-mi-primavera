@@ -185,7 +185,7 @@
       product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,height:current.variant.height||null,
       category_name:current.category.name,quantity:current.quantity,unit_price:Number(current.variant.price),
       image_url:current.product.image_url||'',length_m:current.linear?Number($('calcLength').value):null,
-      spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null
+      spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null,area_mode:current.area
     });
     $('addedChoice').hidden=false;$('addedChoice').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
@@ -195,7 +195,7 @@
     $('checkoutItems').innerHTML=items.length?items.map(x=>`
       <div class="checkout-item" data-cart-id="${x.id}">
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
-        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.category_name==="Grama"?"Dim.":"Alt."} ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}${x.area_m2?`<span>${x.area_m2} m² a cubrir</span>`:''}
+        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}${x.area_m2?`<span>${x.area_m2} m² a cubrir</span>`:''}
           <label class="checkout-variant-label">Opción / presentación
             <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>{const p=products.find(p=>p.id===x.product_id);const list=variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock');return prioritizesHeight(p,list)?(numericFromText(a.height)-numericFromText(b.height)):(Number(a.liters??999999)-Number(b.liters??999999))}).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${optionText(v,products.find(p=>p.id===x.product_id),cats.find(c=>c.id===x.category_id))}</option>`).join('')}</select>
           </label>
@@ -282,7 +282,10 @@
     const item=window.ViveroCart.get().find(x=>x.id===e.target.dataset.variantCartId);
     const v=variants.find(x=>x.id===e.target.value);
     if(!item||!v)return;
-    window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,height:v.height||null,unit_price:Number(v.price)});
+    const cat=cats.find(c=>c.id===item.category_id),area=isAreaCategory(cat);
+    const paneArea=area?dimensionsAreaM2(v.height):0;
+    const qty=area&&item.area_m2&&paneArea>0?Math.ceil(Number(item.area_m2)/paneArea):item.quantity;
+    window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,height:v.height||null,unit_price:Number(v.price),quantity:qty,area_mode:area});
     renderCheckout();
   });
   $('checkoutItems').addEventListener('click',e=>{if(e.target.dataset.removeId){window.ViveroCart.remove(e.target.dataset.removeId);renderCheckout()}});
@@ -304,7 +307,7 @@
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,'',
         `Cliente: ${$('customerName').value.trim()}`,`Teléfono: +54 9 ${phoneNational}`,`Dirección: ${$('customerAddress').value.trim()} · CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
-        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.category_name==="Grama"?"Dim.":"Alt."} ${x.height}`:''}${x.area_m2?` · ${x.area_m2} m²`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
+        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}${x.area_m2?` · ${x.area_m2} m²`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null
       ].filter(x=>x!==null);
