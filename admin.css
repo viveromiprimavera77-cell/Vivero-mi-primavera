@@ -75,3 +75,8 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 .summary-sale-option span{margin-top:4px;font-size:.84rem;color:var(--ink)}
 .summary-sale-option small{margin-top:4px;color:var(--muted);line-height:1.4}
 @media(max-width:700px){.product-summary{grid-template-columns:1fr}.product-summary .summary-wide{grid-column:auto}.product-wizard-actions{align-items:stretch}.product-wizard-actions button{flex:1}.product-wizard-actions #cancelProductEdit{margin-right:0}}
+
+
+/* v12: selectores dependientes de opciones de venta */
+.variant-main-grid select:disabled{background:#f1f4f0;color:#9aa39c;cursor:not-allowed}
+.v-liters-manual{margin-top:6px}
