@@ -78,7 +78,7 @@
     if(key==="plantin")return "Plantín";
     if(key==="terron")return "Terrón";
     if(key==="maceta soplada")return "Maceta soplada";
-    return "Maceta soplada";
+    return "";
   }
   function variantLitersValue(row){
     if(row.querySelector(".v-label").value!=="Maceta soplada")return null;
@@ -119,6 +119,7 @@
       <div class="variant-main-grid">
         <label>Tipo de presentación
           <select class="v-label">
+            <option value="" ${!presentation?"selected":""}>Elegir presentación</option>
             <option value="Plantín" ${presentation==="Plantín"?"selected":""}>Plantín</option>
             <option value="Maceta soplada" ${presentation==="Maceta soplada"?"selected":""}>Maceta soplada</option>
             <option value="Terrón" ${presentation==="Terrón"?"selected":""}>Terrón</option>
