@@ -35,8 +35,14 @@
       </div>
 
       <div id="linearFields" class="linear-box" hidden>
-        <label>Metros lineales a cubrir
-          <input id="calcLength" type="number" min="0.1" step="0.1" value="10">
+        <label class="linear-length-field"><span class="linear-length-label">Metros lineales a cubrir</span>
+          <div class="number-stepper">
+            <input id="calcLength" type="number" min="0.1" step="0.1" value="10">
+            <div class="number-stepper-buttons" aria-hidden="false">
+              <button id="calcLengthUp" type="button" aria-label="Aumentar metros">▲</button>
+              <button id="calcLengthDown" type="button" aria-label="Disminuir metros">▼</button>
+            </div>
+          </div>
         </label>
 
         <div class="spacing-block">
