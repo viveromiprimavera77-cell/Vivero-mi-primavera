@@ -142,7 +142,7 @@
           <form id="categoryForm" class="form-grid">
             <input type="hidden" id="categoryId">
             <label>Nombre<input id="categoryName" required></label>
-            <label>Posición en el menú<input id="categoryOrder" type="number" min="0" value="0"></label>
+            <label>Orden de aparición<select id="categoryOrder"></select><small>Este orden se usa tanto en el menú desplegable del inicio como en las secciones del catálogo.</small></label>
             <label>Tipo de calculadora
               <select id="categoryMode"><option value="unit">Por unidades</option><option value="linear">Por metros lineales</option></select>
               <small>Usá metros lineales para cercos, borduras y usos similares.</small>
