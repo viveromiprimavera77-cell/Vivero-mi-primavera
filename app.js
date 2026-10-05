@@ -28,9 +28,17 @@
     document.body.classList.remove("welcome-open");
   }
 
+  function firstProductImage(p){
+    return p.image_url||p.integrated_image_url||p.info_image_url||"";
+  }
   function photoCarousel(p){
-    const slides=[{url:p.image_url,label:"Planta",info:false},{url:p.integrated_image_url,label:"Integrada",info:false},{url:p.info_image_url,label:"Ficha",info:true}];
-    return `<div class="photo-carousel"><div class="photo-track drag-scroll">${slides.map(x=>`<div class="photo-slide ${x.info?"info-slide":""}">${x.url?`<img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy">`:`<div class="plant-placeholder">Imagen ${x.label.toLowerCase()} pendiente</div>`}<span class="slide-label">${x.label}</span></div>`).join("")}</div><div class="photo-dots"><span></span><span></span><span></span></div></div>`;
+    const slides=[
+      {url:p.image_url,label:"Planta",info:false},
+      {url:p.integrated_image_url,label:"Integrada",info:false},
+      {url:p.info_image_url,label:"Ficha",info:true}
+    ].filter(x=>Boolean(x.url));
+    if(!slides.length)return "";
+    return `<div class="photo-carousel"><div class="photo-track drag-scroll">${slides.map(x=>`<div class="photo-slide ${x.info?"info-slide":""}"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`).join("")}</div>${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}</div>`;
   }
   function highlights(p){
     const rows=[p.max_height?`<div><span>Altura máxima</span><strong>${esc(p.max_height)}</strong></div>`:"",p.maturity_time?`<div><span>Desarrollo máximo</span><strong>${esc(p.maturity_time)}</strong></div>`:"",p.pruning_per_year?`<div><span>Podas anuales</span><strong>${esc(p.pruning_per_year)}</strong></div>`:""].filter(Boolean);
@@ -150,7 +158,7 @@
       if(settings.tagline)el("heroTitle").textContent=settings.tagline;el("shippingTitle").textContent=settings.shipping_title||"Envíos";el("shippingText").textContent=settings.shipping_text||"Realizamos entregas coordinadas. Consultanos por cobertura, costo y tiempos.";el("aboutTitle").textContent=settings.about_title||"Acerca de nosotros";el("aboutText").textContent=settings.about_text||"En Mi Primavera seleccionamos plantas para cercos, jardines y espacios verdes.";openWelcome(settings.tagline);
       if(settings.hero_video_url){el("heroVideo").src=settings.hero_video_url;el("heroVideo").style.display="block";el("heroFallback").style.display="none";el("heroVideo").addEventListener("error",()=>{el("heroVideo").style.display="none";el("heroFallback").style.display="grid"},{once:true})}
       const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");["shippingWhatsapp","whatsappFloat"].forEach(id=>{if(wa){el(id).href=wa;el(id).hidden=false}});
-      const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id);return `<a class="featured-card" href="${a?`#planta-${esc(p.slug)}`:"#catalogo"}">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name)}">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
+      const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id);return `<a class="featured-card" href="${a?`#planta-${esc(p.slug)}`:"#catalogo"}">${firstProductImage(p)?`<img src="${esc(firstProductImage(p))}" alt="${esc(p.name)}">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
       el("categoryNav").innerHTML=cats.length?cats.map(c=>{const ids=assocs.filter(a=>a.category_id===c.id).map(a=>a.product_id),ps=products.filter(p=>ids.includes(p.id));return `<a class="category-link" href="#cat-${esc(c.slug)}">${esc(c.name)}</a>${ps.map(p=>`<a class="plant-link" href="#planta-${esc(p.slug)}">↳ ${esc(p.name)}</a>`).join("")}`}).join(""):`<span class="nav-loading">Sin categorías</span>`;
       el("categoryJump").innerHTML=`<option value="">Todas las categorías</option>${cats.map(c=>`<option value="cat-${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
       el("categories").innerHTML=cats.length?cats.map(c=>{const rows=assocs.filter(a=>a.category_id===c.id).map(a=>({a,p:products.find(p=>p.id===a.product_id)})).filter(x=>x.p);return `<section class="category-section" id="cat-${esc(c.slug)}"><div class="category-header"><h2>${esc(c.name)}</h2><p class="category-description">${esc(c.description||"")}</p></div><div class="plant-grid">${rows.length?rows.map(x=>card(x.p,x.a,variants)).join(""):`<div class="empty-state">Próximamente sumaremos plantas a esta categoría.</div>`}</div></section>`}).join(""):`<div class="empty-state">El catálogo está listo para empezar a cargar plantas.</div>`;
