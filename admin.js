@@ -5,7 +5,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const slugify=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  let products=[],categories=[],assocs=[],variants=[],settings={},orders=[],orderItems=[],currentUser=null,removingVideo=false;
+  let products=[],categories=[],assocs=[],variants=[],holeRecommendations=[],settings={},orders=[],orderItems=[],currentUser=null,removingVideo=false;
 
   function toast(m){$("adminToast").textContent=m;$("adminToast").classList.add("show");setTimeout(()=>$("adminToast").classList.remove("show"),2300)}
   function msg(id,m="",type=""){$(id).textContent=m;$(id).className=`form-message ${type}`.trim()}
@@ -29,18 +29,19 @@
   $("logoutBtn").addEventListener("click",async()=>{await db.auth.signOut();location.reload()});
 
   async function loadAll(){
-    const [pr,cr,ar,vr,sr,or,oir]=await Promise.all([
+    const [pr,cr,ar,vr,hr,sr,or,oir]=await Promise.all([
       db.from("products").select("*").order("sort_order").order("name"),
       db.from("categories").select("*").order("sort_order").order("name"),
       db.from("product_categories").select("*").order("sort_order"),
       db.from("product_variants").select("*").order("sort_order"),
+      db.from("hole_recommendations").select("*").order("liters"),
       db.from("site_settings").select("*").eq("id",1).maybeSingle(),
       db.from("orders").select("*").order("created_at",{ascending:false}),
       db.from("order_items").select("*").order("created_at")
     ]);
-    [pr,cr,ar,vr,or,oir].forEach(r=>{if(r.error)throw r.error});
-    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
-    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderOrders();fillSettings();
+    [pr,cr,ar,vr,hr,or,oir].forEach(r=>{if(r.error)throw r.error});
+    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];holeRecommendations=hr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
+    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderHoleRecommendations();renderOrders();fillSettings();
     if(!$("variantRows").children.length) addVariantRow();
   }
 
@@ -158,9 +159,6 @@
       row.querySelector(".v-height-label-text").textContent=area?"Dimensiones":"Altura";
       row.querySelector(".v-height").placeholder=area?"Ej.: 40x40 cm":"Ej.: 1,80 m";
 
-      const holeDepthWrap=row.querySelector(".v-hole-depth-wrap");
-      if(holeDepthWrap)holeDepthWrap.hidden=area||material;
-
       row.querySelector(".variant-closure-grid").hidden=area||material;
       syncVariantPresentation(row);
     });
@@ -202,7 +200,6 @@
           <input class="v-liters-manual" type="number" min="0.1" step="0.1" value="${material&&litersNumber!=null?litersNumber:litersChoice==="other"&&litersNumber!=null?litersNumber:""}" placeholder="${material?"Ej.: 8000 para 8 m³":"Ingresar litros"}" ${material||litersChoice==="other"?"":"hidden disabled"}>
         </label>
         <label class="v-height-wrap" ${material?"hidden":""}><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
-        <label class="v-hole-depth-wrap" ${area||material?"hidden":""}>Profundidad recomendada del pozo (cm) <span class="optional-tag">opcional</span><input class="v-hole-depth" type="number" min="1" step="1" value="${v.recommended_hole_depth_cm??""}" placeholder="Ej.: 40"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
@@ -300,7 +297,6 @@
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
       availability:row.querySelector(".v-availability").value,
-      recommended_hole_depth_cm:row.querySelector(".v-hole-depth").value?Number(row.querySelector(".v-hole-depth").value):null,
       closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
       closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
       closure_months_3:row.querySelector(".v-close-3").value?Number(row.querySelector(".v-close-3").value):null,
@@ -378,7 +374,7 @@
     ].filter(Boolean);
     const vrows=gatherVariants();
     const variantsHtml=vrows.map((v,i)=>{
-      const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} ${isOtherProductSelection()?"dm³ por unidad":"L"}`:"",v.height||"",v.recommended_hole_depth_cm?`Pozo: ${v.recommended_hole_depth_cm} cm de profundidad`:""].filter(Boolean).join(" · ");
+      const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} ${isOtherProductSelection()?"dm³ por unidad":"L"}`:"",v.height||""].filter(Boolean).join(" · ");
       const closures=[1,2,3].map(n=>{
         const months=v[`closure_months_${n}`],spacing=$("productSpacing"+n).value.trim();
         return months?`Distancia ${n}${spacing?` (${spacing} cm)`:""}: ${months} meses`:"";
@@ -486,7 +482,6 @@
       const existing=variants.filter(v=>v.product_id===product.id),keep=[];
       for(const v of vrows){
         const vp={product_id:product.id,label:v.label,liters:v.liters,height:v.height,price:v.price,cost:v.cost,availability:v.availability,
-          recommended_hole_depth_cm:v.recommended_hole_depth_cm,
           closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
           active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
         if(v.id){
@@ -568,6 +563,72 @@
     ids.splice(target,0,categoryId);
     await persistCategorySequence(ids);
   }
+
+  function resetHoleRecommendationForm(){
+    $("holeRecommendationForm").reset();
+    $("holeRecommendationId").value="";
+    $("cancelHoleRecommendationEdit").hidden=true;
+    msg("holeRecommendationMessage","");
+  }
+  function renderHoleRecommendations(){
+    const list=$("holeRecommendationList");
+    if(!list)return;
+    list.innerHTML=holeRecommendations.length?holeRecommendations.map(r=>`
+      <div class="item-row">
+        <div>
+          <div class="item-title">${Number(r.liters).toLocaleString("es-AR")} L</div>
+          <div class="item-meta">Pozo recomendado: ${Number(r.width_cm).toLocaleString("es-AR")} × ${Number(r.width_cm).toLocaleString("es-AR")} cm · profundidad ${Number(r.depth_cm).toLocaleString("es-AR")} cm</div>
+        </div>
+        <div class="item-actions">
+          <button class="small-btn" type="button" data-edit-hole="${r.id}">Editar</button>
+          <button class="small-btn danger" type="button" data-delete-hole="${r.id}">Eliminar</button>
+        </div>
+      </div>`).join(""):`<p class="form-message">Todavía no cargaste recomendaciones por litros.</p>`;
+  }
+  $("holeRecommendationForm").addEventListener("submit",async e=>{
+    e.preventDefault();msg("holeRecommendationMessage","Guardando...");
+    try{
+      const payload={
+        liters:Number($("holeRecommendationLiters").value),
+        width_cm:Number($("holeRecommendationWidth").value),
+        depth_cm:Number($("holeRecommendationDepth").value),
+        sort_order:Number($("holeRecommendationLiters").value),
+        active:true,
+        updated_at:new Date().toISOString()
+      };
+      if(!(payload.liters>0&&payload.width_cm>0&&payload.depth_cm>0))throw new Error("Completá litros, ancho y profundidad con valores mayores a cero.");
+      const id=$("holeRecommendationId").value;
+      if(id){
+        const {error}=await db.from("hole_recommendations").update(payload).eq("id",id);if(error)throw error;
+      }else{
+        const {error}=await db.from("hole_recommendations").insert(payload);if(error){
+          if(String(error.message||"").toLowerCase().includes("duplicate"))throw new Error("Ya existe una recomendación para esos litros. Editala en la lista.");
+          throw error;
+        }
+      }
+      await loadAll();resetHoleRecommendationForm();toast("Recomendación guardada");
+    }catch(err){msg("holeRecommendationMessage",err.message||"No se pudo guardar.","error")}
+  });
+  $("holeRecommendationList").addEventListener("click",async e=>{
+    const edit=e.target.dataset.editHole,del=e.target.dataset.deleteHole;
+    if(edit){
+      const r=holeRecommendations.find(x=>x.id===edit);if(!r)return;
+      $("holeRecommendationId").value=r.id;
+      $("holeRecommendationLiters").value=r.liters;
+      $("holeRecommendationWidth").value=r.width_cm;
+      $("holeRecommendationDepth").value=r.depth_cm;
+      $("cancelHoleRecommendationEdit").hidden=false;
+      msg("holeRecommendationMessage","");
+      $("holeRecommendationForm").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+    if(del){
+      if(!confirm("¿Eliminar esta recomendación de pozo?"))return;
+      const {error}=await db.from("hole_recommendations").delete().eq("id",del);
+      if(error)return toast(error.message);
+      await loadAll();resetHoleRecommendationForm();toast("Recomendación eliminada");
+    }
+  });
+  $("cancelHoleRecommendationEdit").addEventListener("click",resetHoleRecommendationForm);
 
   $("categoryForm").addEventListener("submit",async e=>{
     e.preventDefault();msg("categoryMessage","Guardando...");
