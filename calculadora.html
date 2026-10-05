@@ -18,7 +18,7 @@
     <section class="calc-intro">
       <span class="eyebrow">MI PRIMAVERA</span>
       <h1>Calculadora de cantidad y costos</h1>
-      <p>Elegí la planta y una de sus opciones disponibles. Para cercos y borduras también podés calcular por metros lineales.</p>
+      <p>Elegí la planta y una de sus opciones disponibles. Para cercos y borduras podés calcular por metros lineales, y para grama por m².</p>
     </section>
 
     <section class="public-calc-card" id="calculatorCard">
@@ -61,6 +61,13 @@
           </div>
           <div id="closureEstimate" class="closure-estimate"></div>
         </div>
+      </div>
+
+      <div id="areaFields" class="linear-box" hidden>
+        <label class="linear-length-field"><span class="linear-length-label">m² a cubrir</span>
+          <input id="calcArea" type="number" min="0.1" step="0.1" value="10">
+        </label>
+        <div id="areaCoverageInfo" class="closure-estimate"></div>
       </div>
 
       <div id="unitFields" class="public-form-grid" hidden>
