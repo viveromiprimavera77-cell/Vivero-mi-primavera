@@ -641,6 +641,20 @@
     products.forEach(p=>variants.filter(v=>v.product_id===p.id&&v.active).forEach(v=>opts.push(`<option value="${v.id}">${esc(p.name)} — ${esc(v.label)} — ${money(v.price)}</option>`)));
     return `<option value="">Ítem personalizado</option>${opts.join("")}`;
   }
+  function orderItemCalcMeta(item){
+    if(item.material_volume_dm3){
+      const volume=Number(item.material_volume_dm3).toLocaleString("es-AR",{maximumFractionDigits:1});
+      if(item.hole_count){
+        return `Cálculo: ${item.hole_count} pozos · ${Number(item.hole_width_cm||0).toLocaleString("es-AR")}×${Number(item.hole_width_cm||0).toLocaleString("es-AR")}×${Number(item.hole_depth_cm||0).toLocaleString("es-AR")} cm · ${volume} dm³`;
+      }
+      if(item.coverage_area_m2){
+        return `Cálculo: ${Number(item.coverage_area_m2).toLocaleString("es-AR")} m² · ${Number(item.fill_depth_cm||0).toLocaleString("es-AR")} cm de profundidad · ${volume} dm³`;
+      }
+    }
+    if(item.length_m)return `Cálculo: ${Number(item.length_m).toLocaleString("es-AR")} m lineales · distancia ${Number(item.spacing_cm||0).toLocaleString("es-AR")} cm`;
+    return "";
+  }
+
   function renderOrders(){
     $("orderList").innerHTML=orders.length?orders.map(o=>{
       const items=orderItems.filter(i=>i.order_id===o.id),t=orderTotals(o.id);
@@ -656,7 +670,7 @@
             <div><span>Teléfono</span><strong>${esc(displayCustomerPhone(o.phone))}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
           </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
-          <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"></label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>
+          <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}">${orderItemCalcMeta(i)?`<small>${esc(orderItemCalcMeta(i))}</small>`:""}</label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>
           <div class="order-total-row"><span>Venta: ${money(t.sales)}</span><span>Costo: ${money(t.cost)}</span><span>Ganancia: ${money(t.profit)}</span></div>
           <label>Otros costos del pedido<input class="order-extra-cost" type="number" min="0" step="0.01" value="${o.extra_cost||0}"></label>
           <div class="add-item-box"><strong>Agregar ítem</strong><div class="add-item-grid"><label>Producto / presentación<select class="add-catalog-variant">${catalogOptions()}</select></label><label>Cant.<input class="add-qty" type="number" min="1" value="1"></label><label>Precio<input class="add-price" type="number" min="0" value="0"></label><label>Costo<input class="add-cost" type="number" min="0" value="0"></label><button class="small-btn" data-add-item="${o.id}">Agregar</button></div><label class="custom-name-wrap">Nombre personalizado<input class="add-custom-name" placeholder="Ej.: Tierra abonada"></label></div>
