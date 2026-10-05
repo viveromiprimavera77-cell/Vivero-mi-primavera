@@ -169,6 +169,28 @@
           </form>
         </div>
         <div class="panel"><h2>Categorías</h2><div id="categoryList" class="item-list"></div></div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">CALCULADORA DE TIERRA</span>
+              <h2>Recomendaciones de pozos por litros</h2>
+              <p>Estas medidas son generales: se aplican por tamaño de maceta, independientemente de la especie de planta.</p>
+            </div>
+          </div>
+          <form id="holeRecommendationForm" class="form-grid">
+            <input type="hidden" id="holeRecommendationId">
+            <label>Litros de la presentación<input id="holeRecommendationLiters" type="number" min="0.1" step="0.1" required placeholder="Ej.: 10"></label>
+            <label>Ancho recomendado del pozo (cm)<input id="holeRecommendationWidth" type="number" min="1" step="1" required placeholder="Ej.: 40"></label>
+            <label>Profundidad recomendada (cm)<input id="holeRecommendationDepth" type="number" min="1" step="1" required placeholder="Ej.: 40"></label>
+            <div class="wide form-actions">
+              <button class="primary-btn" type="submit">Guardar recomendación</button>
+              <button id="cancelHoleRecommendationEdit" class="secondary-btn" type="button" hidden>Cancelar edición</button>
+            </div>
+            <p id="holeRecommendationMessage" class="form-message wide"></p>
+          </form>
+          <div id="holeRecommendationList" class="item-list"></div>
+        </div>
       </section>
 
       <section id="ordersTab" class="tab-panel">
