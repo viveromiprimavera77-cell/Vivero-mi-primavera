@@ -214,16 +214,17 @@
   $('calcVariant').addEventListener('change',calculate);
   $('calcLength').addEventListener('input',calculate);
   $('calcArea').addEventListener('input',calculate);
-  const adjustLength=delta=>{
-    const input=$('calcLength');
-    const min=Number(input.min||1);
+
+  const adjustStepperValue=(inputId,delta,minValue)=>{
+    const input=$(inputId);
+    const min=Number(minValue??input.min??0);
     const current=Number(input.value||min);
     const next=Math.max(min,current+delta);
     input.value=Number.isInteger(next)?String(next):String(Math.round(next*100)/100);
     input.dispatchEvent(new Event('input',{bubbles:true}));
   };
 
-  function setupHoldStepper(button,delta){
+  function setupHoldStepper(button,action){
     let holdDelay=null,repeatTimer=null,suppressClick=false;
     const stop=()=>{
       clearTimeout(holdDelay);clearInterval(repeatTimer);
@@ -236,19 +237,21 @@
       suppressClick=true;
       button.classList.add('holding');
       button.setPointerCapture?.(e.pointerId);
-      adjustLength(delta);
+      action();
       holdDelay=setTimeout(()=>{
-        repeatTimer=setInterval(()=>adjustLength(delta),90);
+        repeatTimer=setInterval(action,90);
       },350);
     });
     ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>button.addEventListener(ev,stop));
     button.addEventListener('click',()=>{
       if(suppressClick){suppressClick=false;return}
-      adjustLength(delta);
+      action();
     });
   }
-  setupHoldStepper($('calcLengthUp'),1);
-  setupHoldStepper($('calcLengthDown'),-1);
+  setupHoldStepper($('calcLengthUp'),()=>adjustStepperValue('calcLength',1,1));
+  setupHoldStepper($('calcLengthDown'),()=>adjustStepperValue('calcLength',-1,1));
+  setupHoldStepper($('calcAreaUp'),()=>adjustStepperValue('calcArea',1,0.1));
+  setupHoldStepper($('calcAreaDown'),()=>adjustStepperValue('calcArea',-1,0.1));
   $('calcQuantityInput').addEventListener('input',calculate);
 
   $('spacingOptions').addEventListener('click',e=>{
