@@ -200,6 +200,58 @@
     if(e.target.matches(".pc-check"))refreshVariantAreaMode();
   });
 
+  const IMAGE_SLOTS=[
+    {file:"productImageMain",current:"currentMainImage",state:"mainImageState",remove:"removeMainImage",type:"main"},
+    {file:"productImageIntegrated",current:"currentIntegratedImage",state:"integratedImageState",remove:"removeIntegratedImage",type:"integrated"},
+    {file:"productImageInfo",current:"currentInfoImage",state:"infoImageState",remove:"removeInfoImage",type:"info"}
+  ];
+  function storagePathFromPublicUrl(url){
+    const marker="/storage/v1/object/public/product-images/";
+    const pos=String(url||"").indexOf(marker);
+    if(pos<0)return null;
+    return decodeURIComponent(String(url).slice(pos+marker.length).split("?")[0]);
+  }
+  async function removeStoredImage(url){
+    const path=storagePathFromPublicUrl(url);
+    if(!path)return;
+    const {error}=await db.storage.from("product-images").remove([path]);
+    if(error)console.warn("No se pudo limpiar la imagen anterior:",error.message);
+  }
+  function setImageSlot(slot,url=""){
+    const current=$(slot.current),state=$(slot.state),remove=$(slot.remove),file=$(slot.file);
+    current.value=url||"";
+    current.dataset.originalUrl=url||"";
+    current.dataset.removeRequested="0";
+    file.value="";
+    state.textContent=url?(slot.type==="info"?"Ficha actual cargada":"Foto actual cargada"):"";
+    remove.hidden=!url;
+  }
+  function clearImageSlots(){
+    IMAGE_SLOTS.forEach(slot=>setImageSlot(slot,""));
+  }
+  function markImageForRemoval(slot){
+    const current=$(slot.current);
+    current.value="";
+    current.dataset.removeRequested="1";
+    $(slot.file).value="";
+    $(slot.state).textContent="Se quitará al guardar los cambios";
+    $(slot.remove).hidden=true;
+  }
+  IMAGE_SLOTS.forEach(slot=>{
+    $(slot.remove).addEventListener("click",()=>markImageForRemoval(slot));
+    $(slot.file).addEventListener("change",()=>{
+      const hasNew=Boolean($(slot.file).files?.[0]);
+      if(hasNew){
+        $(slot.state).textContent="Nueva foto seleccionada";
+        $(slot.remove).hidden=true;
+      }else{
+        const current=$(slot.current).value;
+        $(slot.state).textContent=current?(slot.type==="info"?"Ficha actual cargada":"Foto actual cargada"):"";
+        $(slot.remove).hidden=!current;
+      }
+    });
+  });
+
   async function uploadImage(file,slug,type){
     if(!file)return null;
     const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${slug}/${type}-${Date.now()}.${ext}`;
@@ -361,6 +413,11 @@
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height))throw new Error("Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.");
       const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
       if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
+      const oldImageUrls={
+        main:$("currentMainImage").dataset.originalUrl||"",
+        integrated:$("currentIntegratedImage").dataset.originalUrl||"",
+        info:$("currentInfoImage").dataset.originalUrl||""
+      };
       let main=$("currentMainImage").value||null,integrated=$("currentIntegratedImage").value||null,info=$("currentInfoImage").value||null;
       const files=[["productImageMain","main"],["productImageIntegrated","integrated"],["productImageInfo","info"]];
       for(const [id,type] of files){
@@ -399,17 +456,22 @@
         }
       }
       for(const old of existing){if(!keep.includes(old.id)){const {error}=await db.from("product_variants").delete().eq("id",old.id);if(error)throw error}}
+      const newImageUrls={main:main||"",integrated:integrated||"",info:info||""};
+      await Promise.allSettled(Object.keys(oldImageUrls).map(type=>{
+        const oldUrl=oldImageUrls[type],newUrl=newImageUrls[type];
+        return oldUrl&&oldUrl!==newUrl?removeStoredImage(oldUrl):Promise.resolve();
+      }));
       resetProductForm();await loadAll();toast(wasEditing?"Cambios guardados":"Planta guardada");
     }catch(err){console.error(err);msg("productMessage",err.message||"No se pudo guardar.","error")}
   });
 
   function resetProductForm(){
-    $("productForm").reset();$("productId").value="";$("currentMainImage").value="";$("currentIntegratedImage").value="";$("currentInfoImage").value="";
+    $("productForm").reset();$("productId").value="";clearImageSlots();
     $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
     $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";$("productPrioritizeHeight").checked=false;
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";
-    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
+    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();msg("productMessage","");
     showProductStep(0,false);
   }
 
@@ -430,8 +492,9 @@
       $("productId").value=p.id;$("productName").value=p.name;$("productDescription").value=p.description||"";$("productOrder").value=p.sort_order;$("productFeatured").checked=p.featured;$("productActive").checked=p.active;
       $("productMaxHeight").value=p.max_height||"";$("productMaturityTime").value=p.maturity_time||"";$("productPruningPerYear").value=p.pruning_per_year||"";$("productPrioritizeHeight").checked=!!p.prioritize_height;
       $("productSpacing1").value=p.spacing_1_cm||"";$("productSpacing2").value=p.spacing_2_cm||"";$("productSpacing3").value=p.spacing_3_cm||"";
-      $("currentMainImage").value=p.image_url||"";$("currentIntegratedImage").value=p.integrated_image_url||"";$("currentInfoImage").value=p.info_image_url||"";
-      $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
+      setImageSlot(IMAGE_SLOTS[0],p.image_url||"");
+      setImageSlot(IMAGE_SLOTS[1],p.integrated_image_url||"");
+      setImageSlot(IMAGE_SLOTS[2],p.info_image_url||"");
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
       renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();refreshVariantAreaMode();
       $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);
