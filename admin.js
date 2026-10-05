@@ -79,12 +79,18 @@
       return cat?.calculation_mode==="area"||cat?.slug==="grama";
     });
   }
+  function isOtherProductSelection(){
+    return [...document.querySelectorAll(".pc-check:checked")].some(ch=>categories.find(c=>c.id===ch.value)?.slug==="otros");
+  }
   function normalizePresentationLabel(value){
     const key=String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     if(key==="plantin")return "Plantín";
     if(key==="terron")return "Terrón";
     if(key==="maceta soplada")return "Maceta soplada";
     if(key==="panes cuadrados"||key==="pan cuadrado")return "Panes cuadrados";
+    if(key==="camion"||key==="camión")return "Camión";
+    if(key==="bolsa")return "Bolsa";
+    if(key==="por dm3"||key==="por dm³"||key==="dm3"||key==="dm³")return "Por dm³";
     return "";
   }
   function validPaneDimensions(value){
@@ -92,11 +98,14 @@
     return nums.length>=2&&Number(nums[0])>0&&Number(nums[1])>0;
   }
   function variantLitersValue(row){
+    const manual=row.querySelector(".v-liters-manual");
+    if(isOtherProductSelection()){
+      return manual.value?Number(manual.value):null;
+    }
     if(row.querySelector(".v-label").value!=="Maceta soplada")return null;
     const choice=row.querySelector(".v-liters-select").value;
     if(choice==="other"){
-      const manual=row.querySelector(".v-liters-manual").value;
-      return manual?Number(manual):null;
+      return manual.value?Number(manual.value):null;
     }
     return choice?Number(choice):null;
   }
@@ -104,40 +113,61 @@
     const type=row.querySelector(".v-label").value;
     const litersSelect=row.querySelector(".v-liters-select");
     const manual=row.querySelector(".v-liters-manual");
+    const material=isOtherProductSelection();
     const usesLiters=type==="Maceta soplada";
-    litersSelect.disabled=!usesLiters;
-    if(!usesLiters){
-      litersSelect.value="";
-      manual.value="";
-      manual.hidden=true;
-      manual.disabled=true;
+    if(material){
+      litersSelect.hidden=true;litersSelect.disabled=true;
+      manual.hidden=false;manual.disabled=false;
+      manual.placeholder="Ej.: 8000 para 8 m³, 25 para bolsa de 25 dm³, 1 por dm³";
     }else{
-      manual.hidden=litersSelect.value!=="other";
-      manual.disabled=litersSelect.value!=="other";
+      litersSelect.hidden=false;
+      litersSelect.disabled=!usesLiters;
+      manual.placeholder="Ingresar litros";
+      if(!usesLiters){
+        litersSelect.value="";
+        manual.value="";
+        manual.hidden=true;
+        manual.disabled=true;
+      }else{
+        manual.hidden=litersSelect.value!=="other";
+        manual.disabled=litersSelect.value!=="other";
+      }
     }
     updateClosureLabels(row);
   }
   function refreshVariantAreaMode(){
     const area=isAreaProductSelection();
+    const material=isOtherProductSelection();
     [...$("variantRows").children].forEach(row=>{
       const sel=row.querySelector(".v-label");
-      let pane=sel.querySelector('option[value="Panes cuadrados"]');
-      if(area&&!pane){
-        pane=document.createElement("option");
-        pane.value="Panes cuadrados";pane.textContent="Panes cuadrados";sel.appendChild(pane);
-      }else if(!area&&pane){
-        if(sel.value==="Panes cuadrados")sel.value="";
-        pane.remove();
-      }
+      const ensureOption=(value,label,enabled)=>{
+        let opt=sel.querySelector(`option[value="${value}"]`);
+        if(enabled&&!opt){opt=document.createElement("option");opt.value=value;opt.textContent=label;sel.appendChild(opt)}
+        if(!enabled&&opt){if(sel.value===value)sel.value="";opt.remove()}
+      };
+      ensureOption("Panes cuadrados","Panes cuadrados",area);
+      ensureOption("Camión","Camión",material);
+      ensureOption("Bolsa","Bolsa",material);
+      ensureOption("Por dm³","Por dm³",material);
+
+      const litersLabel=row.querySelector(".v-liters-label-text");
+      if(litersLabel)litersLabel.textContent=material?"Volumen por unidad (dm³)":"Litros";
+
+      const heightWrap=row.querySelector(".v-height-wrap");
+      if(heightWrap)heightWrap.hidden=material;
       row.querySelector(".v-height-label-text").textContent=area?"Dimensiones":"Altura";
       row.querySelector(".v-height").placeholder=area?"Ej.: 40x40 cm":"Ej.: 1,80 m";
-      row.querySelector(".variant-closure-grid").hidden=area;
+
+      const holeDepthWrap=row.querySelector(".v-hole-depth-wrap");
+      if(holeDepthWrap)holeDepthWrap.hidden=area||material;
+
+      row.querySelector(".variant-closure-grid").hidden=area||material;
       syncVariantPresentation(row);
     });
     const priorityBox=$("productPrioritizeHeight").closest(".selector-priority-box");
     if(priorityBox){
-      priorityBox.hidden=area;
-      if(area)$("productPrioritizeHeight").checked=false;
+      priorityBox.hidden=area||material;
+      if(area||material)$("productPrioritizeHeight").checked=false;
     }
   }
 
@@ -146,6 +176,7 @@
     div.className="variant-row";
     div.dataset.variantId=v.id||"";
     const area=isAreaProductSelection();
+    const material=isOtherProductSelection();
     const presentation=normalizePresentationLabel(v.label);
     const litersNumber=v.liters==null?null:Number(v.liters);
     const standardLiters=litersNumber!=null&&STANDARD_LITERS.includes(litersNumber);
@@ -159,17 +190,19 @@
             <option value="Maceta soplada" ${presentation==="Maceta soplada"?"selected":""}>Maceta soplada</option>
             <option value="Terrón" ${presentation==="Terrón"?"selected":""}>Terrón</option>
             ${area?`<option value="Panes cuadrados" ${presentation==="Panes cuadrados"?"selected":""}>Panes cuadrados</option>`:""}
+            ${material?`<option value="Camión" ${presentation==="Camión"?"selected":""}>Camión</option><option value="Bolsa" ${presentation==="Bolsa"?"selected":""}>Bolsa</option><option value="Por dm³" ${presentation==="Por dm³"?"selected":""}>Por dm³</option>`:""}
           </select>
         </label>
-        <label>Litros <span class="optional-tag">opcional</span>
-          <select class="v-liters-select" ${presentation!=="Maceta soplada"?"disabled":""}>
+        <label><span class="v-liters-label-text">${material?"Volumen por unidad (dm³)":"Litros"}</span> <span class="optional-tag">opcional</span>
+          <select class="v-liters-select" ${material?"hidden disabled":presentation!=="Maceta soplada"?"disabled":""}>
             <option value="" ${!litersChoice?"selected":""}>Elegir litros</option>
             ${STANDARD_LITERS.map(l=>`<option value="${l}" ${litersChoice===String(l)?"selected":""}>${l} Lts</option>`).join("")}
             <option value="other" ${litersChoice==="other"?"selected":""}>Otros envases</option>
           </select>
-          <input class="v-liters-manual" type="number" min="0.1" step="0.1" value="${litersChoice==="other"&&litersNumber!=null?litersNumber:""}" placeholder="Ingresar litros" ${litersChoice==="other"?"":"hidden disabled"}>
+          <input class="v-liters-manual" type="number" min="0.1" step="0.1" value="${material&&litersNumber!=null?litersNumber:litersChoice==="other"&&litersNumber!=null?litersNumber:""}" placeholder="${material?"Ej.: 8000 para 8 m³":"Ingresar litros"}" ${material||litersChoice==="other"?"":"hidden disabled"}>
         </label>
-        <label><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
+        <label class="v-height-wrap" ${material?"hidden":""}><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
+        <label class="v-hole-depth-wrap" ${area||material?"hidden":""}>Profundidad recomendada del pozo (cm) <span class="optional-tag">opcional</span><input class="v-hole-depth" type="number" min="1" step="1" value="${v.recommended_hole_depth_cm??""}" placeholder="Ej.: 40"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
@@ -267,6 +300,7 @@
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
       availability:row.querySelector(".v-availability").value,
+      recommended_hole_depth_cm:row.querySelector(".v-hole-depth").value?Number(row.querySelector(".v-hole-depth").value):null,
       closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
       closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
       closure_months_3:row.querySelector(".v-close-3").value?Number(row.querySelector(".v-close-3").value):null,
@@ -315,6 +349,10 @@
         msg("productMessage","En Panes cuadrados ingresá las dimensiones, por ejemplo 40x40 cm.","error");
         return false;
       }
+      if(isOtherProductSelection()&&vrows.some(v=>!v.liters||v.liters<=0)){
+        msg("productMessage","En productos de Otros cargá el volumen por unidad en dm³ para poder calcular la cantidad.","error");
+        return false;
+      }
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height)){
         msg("productMessage","Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.","error");
         return false;
@@ -340,7 +378,7 @@
     ].filter(Boolean);
     const vrows=gatherVariants();
     const variantsHtml=vrows.map((v,i)=>{
-      const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"",v.height||""].filter(Boolean).join(" · ");
+      const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} ${isOtherProductSelection()?"dm³ por unidad":"L"}`:"",v.height||"",v.recommended_hole_depth_cm?`Pozo: ${v.recommended_hole_depth_cm} cm de profundidad`:""].filter(Boolean).join(" · ");
       const closures=[1,2,3].map(n=>{
         const months=v[`closure_months_${n}`],spacing=$("productSpacing"+n).value.trim();
         return months?`Distancia ${n}${spacing?` (${spacing} cm)`:""}: ${months} meses`:"";
@@ -410,6 +448,7 @@
       if(!catMap.length)throw new Error("Elegí al menos una categoría.");
       if(!vrows.length)throw new Error("Agregá al menos una presentación.");
       if(isAreaProductSelection()&&vrows.some(v=>v.label==="Panes cuadrados"&&!validPaneDimensions(v.height)))throw new Error("En Panes cuadrados ingresá las dimensiones, por ejemplo 40x40 cm.");
+      if(isOtherProductSelection()&&vrows.some(v=>!v.liters||v.liters<=0))throw new Error("En productos de Otros cargá el volumen por unidad en dm³.");
       if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height))throw new Error("Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.");
       const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
       if(new Set(optionKeys).size!==optionKeys.length)throw new Error("Hay dos opciones iguales. Diferencialas por litros o por altura antes de guardar.");
@@ -447,6 +486,7 @@
       const existing=variants.filter(v=>v.product_id===product.id),keep=[];
       for(const v of vrows){
         const vp={product_id:product.id,label:v.label,liters:v.liters,height:v.height,price:v.price,cost:v.cost,availability:v.availability,
+          recommended_hole_depth_cm:v.recommended_hole_depth_cm,
           closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
           active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
         if(v.id){
