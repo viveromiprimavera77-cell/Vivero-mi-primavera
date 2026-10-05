@@ -57,15 +57,9 @@
       </label>`).join(""):`<p class="form-message">Primero creá una categoría.</p>`;
   }
 
-  function spacingCaption(index,row){
+  function spacingCaption(index){
     const spacing=$("productSpacing"+index)?.value?.trim();
-    const liters=row?.querySelector(".v-liters")?.value?.trim();
-    const height=row?.querySelector(".v-height")?.value?.trim();
-    const parts=[];
-    if(spacing)parts.push(`${spacing} cm`);
-    if(liters)parts.push(`${liters} L`);
-    if(height)parts.push(`Alt. ${height}`);
-    return parts.length?` (${parts.join(" · ")})`:"";
+    return spacing?` (${spacing} cm)`:"";
   }
   function updateClosureLabels(row){
     if(!row)return;
@@ -139,8 +133,101 @@
     }));
   }
 
+  const PRODUCT_SUMMARY_STEP=6;
+  let productWizardStep=0;
+
+  function validateProductStep(step){
+    msg("productMessage","");
+    if(step===0){
+      if(!$("productName").value.trim()){
+        msg("productMessage","Ingresá el nombre de la planta.","error");
+        $("productName").focus();
+        return false;
+      }
+    }
+    if(step===2 && !gatherCategoryMap().length){
+      msg("productMessage","Elegí al menos una categoría.","error");
+      return false;
+    }
+    if(step===5){
+      const vrows=gatherVariants();
+      if(!vrows.length){
+        msg("productMessage","Agregá al menos una opción de venta con tipo de presentación.","error");
+        return false;
+      }
+      if($("productPrioritizeHeight").checked && vrows.some(v=>!v.height)){
+        msg("productMessage","Si activás ‘Priorizar altura’, cargá una altura en cada opción de venta.","error");
+        return false;
+      }
+      const optionKeys=vrows.map(v=>`${v.label.trim().toLowerCase()}|${v.liters??""}|${(v.height||"").trim().toLowerCase()}`);
+      if(new Set(optionKeys).size!==optionKeys.length){
+        msg("productMessage","Hay dos opciones iguales. Diferencialas por litros o por altura antes de continuar.","error");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function renderProductSummary(){
+    const selectedCategories=[...document.querySelectorAll(".pc-check:checked")]
+      .map(ch=>categories.find(c=>c.id===ch.value)?.name)
+      .filter(Boolean);
+    const distances=[1,2,3].map(i=>$("productSpacing"+i).value.trim()).filter(Boolean).map(v=>`${v} cm`);
+    const highlights=[
+      $("productMaxHeight").value.trim()&&`Altura máxima: ${$("productMaxHeight").value.trim()}`,
+      $("productMaturityTime").value.trim()&&`Desarrollo máximo: ${$("productMaturityTime").value.trim()}`,
+      $("productPruningPerYear").value.trim()&&`Podas anuales: ${$("productPruningPerYear").value.trim()}`
+    ].filter(Boolean);
+    const imageState=(fileId,currentId)=>{
+      const file=$(fileId).files[0];
+      if(file)return file.name;
+      return $(currentId).value?"Imagen actual cargada":"Sin imagen";
+    };
+    const vrows=gatherVariants();
+    const variantsHtml=vrows.map((v,i)=>{
+      const details=[v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"",v.height||""].filter(Boolean).join(" · ");
+      const closures=[1,2,3].map(n=>{
+        const months=v[`closure_months_${n}`],spacing=$("productSpacing"+n).value.trim();
+        return months?`Distancia ${n}${spacing?` (${spacing} cm)`:""}: ${months} meses`:"";
+      }).filter(Boolean);
+      return `<div class="summary-sale-option"><strong>${i+1}. ${esc(v.label)}</strong><span>${esc(details||"Sin litros/altura")} · Venta: ${money(v.price)} · Costo: ${money(v.cost)} · ${v.availability==="in_stock"?"En stock":"Consultar"}</span>${closures.length?`<small>${esc(closures.join(" · "))}</small>`:""}</div>`;
+    }).join("");
+
+    $("productSummary").innerHTML=`
+      <article><span>Datos principales</span><strong>${esc($("productName").value.trim())}</strong><p>Posición: ${Number($("productOrder").value||0)}</p><p>${esc($("productDescription").value.trim()||"Sin descripción")}</p></article>
+      <article><span>Imágenes</span><p>Principal: ${esc(imageState("productImageMain","currentMainImage"))}</p><p>Integrada: ${esc(imageState("productImageIntegrated","currentIntegratedImage"))}</p><p>Ficha: ${esc(imageState("productImageInfo","currentInfoImage"))}</p></article>
+      <article><span>Categorías</span><strong>${esc(selectedCategories.join(", ")||"Sin categorías")}</strong></article>
+      <article><span>Datos destacados</span><p>${esc(highlights.join(" · ")||"Omitidos")}</p></article>
+      <article><span>Distancias recomendadas</span><strong>${esc(distances.join(" · ")||"Sin distancias configuradas")}</strong></article>
+      <article class="summary-wide"><span>Opciones de venta</span><div class="summary-sale-list">${variantsHtml}</div><p>Selector: ${$("productPrioritizeHeight").checked?"priorizar altura":"priorizar litros"} · ${$("productFeatured").checked?"Destacada":"No destacada"} · ${$("productActive").checked?"Visible":"Oculta"}</p></article>`;
+  }
+
+  function showProductStep(step,scroll=true){
+    productWizardStep=Math.max(0,Math.min(PRODUCT_SUMMARY_STEP,step));
+    document.querySelectorAll(".product-wizard-step").forEach(el=>{
+      el.hidden=Number(el.dataset.productStep)!==productWizardStep;
+    });
+    $("productOmitBtn").hidden=productWizardStep!==3;
+    $("productNextBtn").hidden=productWizardStep===PRODUCT_SUMMARY_STEP;
+    $("productFinishBtn").hidden=productWizardStep!==PRODUCT_SUMMARY_STEP;
+    if(productWizardStep===5)updateAllClosureLabels();
+    if(productWizardStep===PRODUCT_SUMMARY_STEP)renderProductSummary();
+    msg("productMessage","");
+    if(scroll)$("productForm").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function advanceProductStep(){
+    if(!validateProductStep(productWizardStep))return;
+    showProductStep(productWizardStep+1);
+  }
+
+  $("productNextBtn").addEventListener("click",advanceProductStep);
+  $("productOmitBtn").addEventListener("click",()=>showProductStep(productWizardStep+1));
+
   $("productForm").addEventListener("submit",async e=>{
-    e.preventDefault();msg("productMessage","Guardando...");
+    e.preventDefault();
+    if(productWizardStep!==PRODUCT_SUMMARY_STEP){advanceProductStep();return;}
+    msg("productMessage","Guardando...");
     try{
       const name=$("productName").value.trim(),slug=slugify(name),catMap=gatherCategoryMap(),vrows=gatherVariants();
       if(!name||!slug)throw new Error("Ingresá un nombre válido.");
@@ -196,8 +283,9 @@
     $("productOrder").value=0;$("productActive").checked=true;$("productFeatured").checked=false;
     $("productMaxHeight").value="";$("productMaturityTime").value="";$("productPruningPerYear").value="";$("productPrioritizeHeight").checked=false;
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
-    $("productFormTitle").textContent="Agregar planta";$("cancelProductEdit").hidden=true;
+    $("productFormTitle").textContent="Agregar planta";
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();["mainImageState","integratedImageState","infoImageState"].forEach(id=>$(id).textContent="");msg("productMessage","");
+    showProductStep(0,false);
   }
 
   function renderProducts(){
@@ -221,12 +309,13 @@
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
       renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();
-      $("productFormTitle").textContent=`Editar: ${p.name}`;$("cancelProductEdit").hidden=false;scrollTo({top:220,behavior:"smooth"});
+      $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0);
     }
     if(toggle){const p=products.find(x=>x.id===toggle);const {error}=await db.from("products").update({active:!p.active,updated_at:new Date().toISOString()}).eq("id",p.id);if(error)return toast(error.message);await loadAll()}
     if(del){const p=products.find(x=>x.id===del);if(!confirm(`¿Eliminar "${p.name}"?`))return;const {error}=await db.from("products").delete().eq("id",p.id);if(error)return toast(error.message);await loadAll();toast("Planta eliminada")}
   });
-  $("newProductBtn").addEventListener("click",resetProductForm);$("cancelProductEdit").addEventListener("click",resetProductForm);
+  $("newProductBtn").addEventListener("click",()=>{resetProductForm();$("productName").focus()});
+  $("cancelProductEdit").addEventListener("click",resetProductForm);
 
   $("categoryForm").addEventListener("submit",async e=>{
     e.preventDefault();msg("categoryMessage","Guardando...");
