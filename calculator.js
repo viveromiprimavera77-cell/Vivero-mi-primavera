@@ -4,9 +4,16 @@
   const $=id=>document.getElementById(id);
   const money=n=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}).format(Number(n||0));
   let cats=[],products=[],assocs=[],variants=[],settings={};
-  let current={},selectedSpacing=null,customApproved=false,customMode=false;
+  let current={},selectedSpacing=null,customApproved=false,customMode=false,lastPlantSuggestion=null;
   function numericFromText(value){const m=String(value||'').replace(',','.').match(/\d+(?:\.\d+)?/);return m?Number(m[0]):999999}
   function isAreaCategory(category){return category?.calculation_mode==='area'||category?.slug==='grama'}
+  function isMaterialCategory(category){return category?.slug==='otros'}
+  function volumeTextDm3(value){
+    const dm3=Number(value||0);
+    if(!dm3)return 'Sin volumen configurado';
+    if(dm3>=1000)return `${(dm3/1000).toLocaleString('es-AR',{maximumFractionDigits:2})} m³`;
+    return `${dm3.toLocaleString('es-AR',{maximumFractionDigits:2})} dm³`;
+  }
   function dimensionsAreaM2(value){
     const text=String(value||'').toLowerCase().replace(/,/g,'.');
     const nums=text.match(/\d+(?:\.\d+)?/g)||[];
@@ -20,6 +27,7 @@
   function presentationText(v,category=null){
     if(!v)return '—';
     if(isAreaCategory(category)&&v.height)return `${v.label} · ${v.height}`;
+    if(isMaterialCategory(category))return `${v.label}${v.liters?` · ${volumeTextDm3(v.liters)}`:''}`;
     return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString('es-AR')} L`:''}`;
   }
   function prioritizesHeight(product,list){return !!product?.prioritize_height || (list?.length>0 && list.every(v=>!v.liters) && list.some(v=>v.height))}
@@ -27,6 +35,9 @@
     if(!v)return '';
     if(isAreaCategory(category)){
       return `${v.height||'Sin dimensiones'} — ${v.label} — ${money(v.price)}`;
+    }
+    if(isMaterialCategory(category)){
+      return `${v.label} · ${volumeTextDm3(v.liters)} — ${money(v.price)}`;
     }
     if(prioritizesHeight(p, variants.filter(x=>x.product_id===p?.id&&x.active&&x.availability==='in_stock'))){
       return `${v.height||'Sin altura'} — ${presentationText(v,category)} — ${money(v.price)}`;
@@ -56,6 +67,7 @@
     resetSpacing();
     calculate();
     renderCheckout();
+    renderAddonPrompt();
     if(params.get('checkout')==='1')showCheckout();
   }
 
@@ -86,9 +98,70 @@
     const list=variantsForProduct();
     const product=products.find(p=>p.id===$('calcProduct').value);
     const category=cats.find(c=>c.id===$('calcCategory').value);
-    $('calcVariantLabel').textContent=isAreaCategory(category)?'Dimensiones / opción disponible':prioritizesHeight(product,list)?'Altura / opción disponible':'Litros / opción disponible';
+    $('calcVariantLabel').textContent=isMaterialCategory(category)?'Presentación / volumen disponible':isAreaCategory(category)?'Dimensiones / opción disponible':prioritizesHeight(product,list)?'Altura / opción disponible':'Litros / opción disponible';
     $('calcVariant').innerHTML=list.length?list.map(v=>`<option value="${v.id}">${optionText(v,product,category)}</option>`).join(''):`<option value="">Sin opciones en stock</option>`;
     $('addToCartBtn').disabled=!list.length;
+  }
+
+  function latestPlantSuggestion(){
+    if(lastPlantSuggestion)return lastPlantSuggestion;
+    const item=[...window.ViveroCart.get()].reverse().find(x=>!x.material_mode&&!x.area_mode);
+    if(!item)return null;
+    return {
+      quantity:Number(item.quantity||1),
+      depth:Number(item.recommended_hole_depth_cm||0),
+      product_name:item.product_name||'la planta elegida',
+      liters:Number(item.liters||0)
+    };
+  }
+  function materialUseMode(){
+    return document.querySelector('input[name="materialUse"]:checked')?.value||'terrain';
+  }
+  function applyPlantRecommendation(force=false){
+    const suggestion=latestPlantSuggestion();
+    const box=$('materialPlantRecommendation');
+    if(!suggestion){
+      box.querySelector('strong').textContent='Sin recomendación cargada';
+      return;
+    }
+    $('materialHoleCount').value=String(Math.max(1,Math.floor(suggestion.quantity||1)));
+    if(suggestion.depth>0&&(force||!$('materialHoleDepth').dataset.userEdited)){
+      $('materialHoleDepth').value=String(suggestion.depth);
+    }
+    box.querySelector('strong').textContent=suggestion.depth>0
+      ?`${suggestion.product_name}: ${suggestion.depth} cm de profundidad`
+      :`${suggestion.product_name}: sin profundidad recomendada cargada`;
+  }
+  function updateMaterialFields(forceSuggestion=false){
+    const mode=materialUseMode();
+    $('materialTerrainFields').hidden=mode!=='terrain';
+    $('materialHoleFields').hidden=mode!=='holes';
+    if(mode==='holes')applyPlantRecommendation(forceSuggestion);
+  }
+  function renderAddonPrompt(){
+    const category=cats.find(c=>c.slug==='otros');
+    const prompt=$('addonMaterialPrompt');
+    if(!category||current.category?.slug==='otros'){prompt.hidden=true;return}
+    const ids=assocs.filter(a=>a.category_id===category.id).map(a=>a.product_id);
+    const list=products.filter(p=>ids.includes(p.id)&&variants.some(v=>v.product_id===p.id&&v.active&&v.availability==='in_stock'));
+    prompt.hidden=!list.length;
+    if(!list.length)return;
+    $('addonProductSelect').innerHTML=list.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  }
+  function openAddonCalculator(){
+    const category=cats.find(c=>c.slug==='otros');
+    const productId=$('addonProductSelect').value;
+    if(!category||!productId)return;
+    $('calcCategory').value=category.id;
+    renderProducts();
+    $('calcProduct').value=productId;
+    renderVariants();
+    resetSpacing();
+    updateMaterialFields(true);
+    calculate();
+    $('addedChoice').hidden=true;
+    history.replaceState(null,'',`calculadora.html?category=${category.id}&product=${productId}`);
+    scrollTo({top:0,behavior:'smooth'});
   }
 
   function spacingValues(product){
@@ -107,9 +180,12 @@
     const product=products.find(p=>p.id===$('calcProduct').value);
     const linear=category?.calculation_mode==='linear';
     const area=isAreaCategory(category);
+    const material=isMaterialCategory(category);
     $('linearFields').hidden=!linear;
     $('areaFields').hidden=!area;
-    $('unitFields').hidden=linear||area;
+    $('materialFields').hidden=!material;
+    $('unitFields').hidden=linear||area||material;
+    if(material){updateMaterialFields();return}
     if(!linear)return;
     const vals=spacingValues(product);
     $('spacingOptions').innerHTML=[
@@ -146,14 +222,19 @@
     const variant=variants.find(v=>v.id===vid)||null;
     const linear=category?.calculation_mode==='linear';
     const area=isAreaCategory(category);
+    const material=isMaterialCategory(category);
 
     if(product){
       $('calcProductPreview').innerHTML=`${product.image_url?`<img src="${product.image_url}" alt="">`:''}<div><strong>${product.name}</strong><span>${product.description||''}</span></div>`;
     }
     $('selectedPresentation').textContent=presentationText(variant,category);
-    $('selectedOptionPrice').textContent=variant?`${area&&variant.height?`Dim. ${variant.height} · `:prioritizesHeight(product,variantsForProduct())&&variant.height?`Alt. ${variant.height} · `:!prioritizesHeight(product,variantsForProduct())&&variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`:'—';
+    $('selectedOptionPrice').textContent=variant
+      ?`${material&&variant.liters?`${volumeTextDm3(variant.liters)} · `:area&&variant.height?`Dim. ${variant.height} · `:prioritizesHeight(product,variantsForProduct())&&variant.height?`Alt. ${variant.height} · `:!prioritizesHeight(product,variantsForProduct())&&variant.liters?`${Number(variant.liters).toLocaleString('es-AR')} L · `:''}${money(variant.price)}`
+      :'—';
 
-    let qty=0,spacing=null,areaM2=null,paneAreaM2=null;
+    let qty=0,spacing=null,areaM2=null,paneAreaM2=null,materialVolumeDm3=null,materialMode=null;
+    let coverageAreaM2=null,fillDepthCm=null,holeCount=null,holeWidthCm=null,holeDepthCm=null;
+
     if(linear){
       spacing=customMode?Number($('customSpacing').value||0):Number(selectedSpacing||0);
       const length=Number($('calcLength').value||0);
@@ -166,27 +247,68 @@
       $('areaCoverageInfo').innerHTML=paneAreaM2>0
         ?`<p><strong>Cobertura por pan:</strong> ${paneAreaM2.toLocaleString('es-AR',{maximumFractionDigits:3})} m² según dimensiones ${variant?.height||''}.</p><small>La cantidad se redondea hacia arriba para cubrir toda la superficie indicada.</small>`
         :`<p><strong>Dimensiones pendientes:</strong> cargá una medida como 40x40 cm en la opción de venta para poder calcular.</p>`;
+    }else if(material){
+      materialMode=materialUseMode();
+      if(materialMode==='terrain'){
+        coverageAreaM2=Number($('materialArea').value||0);
+        fillDepthCm=Number($('materialDepth').value||0);
+        materialVolumeDm3=coverageAreaM2>0&&fillDepthCm>0?coverageAreaM2*fillDepthCm*10:0;
+      }else{
+        holeCount=Math.max(0,Math.floor(Number($('materialHoleCount').value||0)));
+        holeWidthCm=Number($('materialHoleWidth').value||0);
+        holeDepthCm=Number($('materialHoleDepth').value||0);
+        materialVolumeDm3=holeCount>0&&holeWidthCm>0&&holeDepthCm>0
+          ?(holeCount*holeWidthCm*holeWidthCm*holeDepthCm)/1000
+          :0;
+      }
+      const packageDm3=Number(variant?.liters||0);
+      qty=materialVolumeDm3>0&&packageDm3>0?Math.ceil(materialVolumeDm3/packageDm3):0;
+      const cubicMeters=Number(materialVolumeDm3||0)/1000;
+      $('materialCoverageInfo').innerHTML=packageDm3>0&&materialVolumeDm3>0
+        ?`<p><strong>Volumen estimado:</strong> ${Number(materialVolumeDm3).toLocaleString('es-AR',{maximumFractionDigits:1})} dm³ (${cubicMeters.toLocaleString('es-AR',{maximumFractionDigits:2})} m³).</p><small>Con ${presentationText(variant,category)} necesitás <strong>${qty.toLocaleString('es-AR')}</strong> unidad/es. Se redondea hacia arriba para no quedar corto.</small>`
+        :`<p><strong>Completá las medidas</strong> y elegí una presentación con volumen configurado para obtener la cantidad.</p>`;
     }else{
       qty=Math.max(1,Math.floor(Number($('calcQuantityInput').value||1)));
     }
+
     const unit=Number(variant?.price||0),total=qty*unit;
     $('resultQty').textContent=qty.toLocaleString('es-AR');
     $('resultUnitPrice').textContent=money(unit);
     $('resultTotal').textContent=money(total);
-    $('addToCartBtn').disabled=!variant||qty<1||(linear&&customMode&&!customApproved)||(area&&paneAreaM2<=0);
-    current={category,product,assoc,variant,quantity:qty,total,linear,area,spacing,areaM2,paneAreaM2};
+    $('addToCartBtn').disabled=!variant||qty<1||(linear&&customMode&&!customApproved)||(area&&paneAreaM2<=0)||(material&&materialVolumeDm3<=0);
+    current={category,product,assoc,variant,quantity:qty,total,linear,area,material,spacing,areaM2,paneAreaM2,
+      materialMode,materialVolumeDm3,coverageAreaM2,fillDepthCm,holeCount,holeWidthCm,holeDepthCm};
   }
 
   function addCurrentToCart(){
     calculate();
     if(!current.variant||current.quantity<1)return;
+
+    if(!current.material&&!current.area){
+      lastPlantSuggestion={
+        quantity:Number(current.quantity||1),
+        depth:Number(current.variant.recommended_hole_depth_cm||0),
+        product_name:current.product.name,
+        liters:Number(current.variant.liters||0)
+      };
+    }
+
     window.ViveroCart.add({
       product_id:current.product.id,variant_id:current.variant.id,category_id:current.category.id,
       product_name:current.product.name,variant_label:current.variant.label,liters:current.variant.liters,height:current.variant.height||null,
+      recommended_hole_depth_cm:current.variant.recommended_hole_depth_cm||null,
       category_name:current.category.name,quantity:current.quantity,unit_price:Number(current.variant.price),
       image_url:current.product.image_url||'',length_m:current.linear?Number($('calcLength').value):null,
-      spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null,area_mode:current.area
+      spacing_cm:current.linear?Number(current.spacing):null,area_m2:current.area?Number(current.areaM2):null,area_mode:current.area,
+      material_mode:current.material?current.materialMode:null,
+      material_volume_dm3:current.material?Number(current.materialVolumeDm3):null,
+      coverage_area_m2:current.material&&current.materialMode==='terrain'?Number(current.coverageAreaM2):null,
+      fill_depth_cm:current.material&&current.materialMode==='terrain'?Number(current.fillDepthCm):null,
+      hole_count:current.material&&current.materialMode==='holes'?Number(current.holeCount):null,
+      hole_width_cm:current.material&&current.materialMode==='holes'?Number(current.holeWidthCm):null,
+      hole_depth_cm:current.material&&current.materialMode==='holes'?Number(current.holeDepthCm):null
     });
+    renderAddonPrompt();
     $('addedChoice').hidden=false;$('addedChoice').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
 
@@ -195,7 +317,7 @@
     $('checkoutItems').innerHTML=items.length?items.map(x=>`
       <div class="checkout-item" data-cart-id="${x.id}">
         ${x.image_url?`<img src="${x.image_url}" alt="">`:`<div class="checkout-placeholder">MP</div>`}
-        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}${x.area_m2?`<span>${x.area_m2} m² a cubrir</span>`:''}
+        <div class="checkout-item-copy"><strong>${x.product_name}</strong><span>${x.category_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}</span>${x.length_m?`<span>${x.length_m} m · distancia ${x.spacing_cm} cm</span>`:''}${x.area_m2?`<span>${x.area_m2} m² a cubrir</span>`:''}${x.material_mode==='terrain'?`<span>${x.coverage_area_m2} m² · ${x.fill_depth_cm} cm de profundidad · ${Number(x.material_volume_dm3||0).toLocaleString('es-AR')} dm³</span>`:''}${x.material_mode==='holes'?`<span>${x.hole_count} pozos · ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm · ${Number(x.material_volume_dm3||0).toLocaleString('es-AR')} dm³</span>`:''}
           <label class="checkout-variant-label">Opción / presentación
             <select class="checkout-variant" data-variant-cart-id="${x.id}">${variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock').sort((a,b)=>{const p=products.find(p=>p.id===x.product_id);const list=variants.filter(v=>v.product_id===x.product_id&&v.active&&v.availability==='in_stock');return prioritizesHeight(p,list)?(numericFromText(a.height)-numericFromText(b.height)):(Number(a.liters??999999)-Number(b.liters??999999))}).map(v=>`<option value="${v.id}" ${v.id===x.variant_id?'selected':''}>${optionText(v,products.find(p=>p.id===x.product_id),cats.find(c=>c.id===x.category_id))}</option>`).join('')}</select>
           </label>
@@ -209,8 +331,8 @@
   }
   function showCheckout(){$('checkoutSection').hidden=false;renderCheckout();setTimeout(()=>$('checkoutSection').scrollIntoView({behavior:'smooth',block:'start'}),80)}
 
-  $('calcCategory').addEventListener('change',()=>{renderProducts();renderVariants();resetSpacing();calculate()});
-  $('calcProduct').addEventListener('change',()=>{renderVariants();resetSpacing();calculate()});
+  $('calcCategory').addEventListener('change',()=>{renderProducts();renderVariants();resetSpacing();updateMaterialFields(true);calculate()});
+  $('calcProduct').addEventListener('change',()=>{renderVariants();resetSpacing();updateMaterialFields(true);calculate()});
   $('calcVariant').addEventListener('change',calculate);
   $('calcLength').addEventListener('input',calculate);
   $('calcArea').addEventListener('input',calculate);
@@ -253,6 +375,8 @@
   setupHoldStepper($('calcAreaUp'),()=>adjustStepperValue('calcArea',1,0.1));
   setupHoldStepper($('calcAreaDown'),()=>adjustStepperValue('calcArea',-1,0.1));
   $('calcQuantityInput').addEventListener('input',calculate);
+  document.querySelectorAll('input[name="materialUse"]').forEach(r=>r.addEventListener('change',()=>{updateMaterialFields(true);calculate()}));
+  ['materialArea','materialDepth','materialHoleCount','materialHoleWidth','materialHoleDepth'].forEach(id=>$(id).addEventListener('input',()=>{if(id==='materialHoleDepth')$(id).dataset.userEdited='1';calculate()}));
 
   $('spacingOptions').addEventListener('click',e=>{
     const recommended=e.target.closest('[data-spacing]');
@@ -275,6 +399,7 @@
   });
 
   $('addToCartBtn').addEventListener('click',addCurrentToCart);
+  $('addonProductBtn').addEventListener('click',openAddonCalculator);
   $('keepShoppingBtn').addEventListener('click',()=>{location.href='./#catalogo'});
   $('continueOrderBtn').addEventListener('click',showCheckout);
   $('clearCartBtn').addEventListener('click',()=>{if(confirm('¿Eliminar todos los artículos del carrito?')){window.ViveroCart.clear();renderCheckout()}});
@@ -285,9 +410,14 @@
     const item=window.ViveroCart.get().find(x=>x.id===e.target.dataset.variantCartId);
     const v=variants.find(x=>x.id===e.target.value);
     if(!item||!v)return;
-    const cat=cats.find(c=>c.id===item.category_id),area=isAreaCategory(cat);
+    const cat=cats.find(c=>c.id===item.category_id),area=isAreaCategory(cat),material=isMaterialCategory(cat);
     const paneArea=area?dimensionsAreaM2(v.height):0;
-    const qty=area&&item.area_m2&&paneArea>0?Math.ceil(Number(item.area_m2)/paneArea):item.quantity;
+    const packageDm3=material?Number(v.liters||0):0;
+    const qty=area&&item.area_m2&&paneArea>0
+      ?Math.ceil(Number(item.area_m2)/paneArea)
+      :material&&item.material_volume_dm3&&packageDm3>0
+        ?Math.ceil(Number(item.material_volume_dm3)/packageDm3)
+        :item.quantity;
     window.ViveroCart.update(item.id,{variant_id:v.id,variant_label:v.label,liters:v.liters,height:v.height||null,unit_price:Number(v.price),quantity:qty,area_mode:area});
     renderCheckout();
   });
@@ -303,14 +433,20 @@
     }
     const btn=$('confirmWhatsappBtn');btn.disabled=true;$('orderMessage').textContent='Registrando solicitud...';
     try{
-      const payload=cart.map(x=>({product_id:x.product_id,variant_id:x.variant_id,category_id:x.category_id,quantity:Number(x.quantity),length_m:x.length_m||null,spacing_cm:x.spacing_cm||null}));
+      const payload=cart.map(x=>({
+        product_id:x.product_id,variant_id:x.variant_id,category_id:x.category_id,quantity:Number(x.quantity),
+        length_m:x.length_m||null,spacing_cm:x.spacing_cm||null,
+        coverage_area_m2:x.coverage_area_m2||null,fill_depth_cm:x.fill_depth_cm||null,
+        hole_count:x.hole_count||null,hole_width_cm:x.hole_width_cm||null,hole_depth_cm:x.hole_depth_cm||null,
+        material_volume_dm3:x.material_volume_dm3||null
+      }));
       const {data,error}=await db.rpc('create_cart_order',{p_customer_name:$('customerName').value.trim(),p_phone:phoneNational,p_shipping_address:$('customerAddress').value.trim(),p_postal_code:$('customerPostal').value.trim(),p_general_question:$('customerQuestion').value.trim(),p_items:payload});
       if(error)throw error;
       const order=Array.isArray(data)?data[0]:data,code=order.order_code;
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,'',
         `Cliente: ${$('customerName').value.trim()}`,`Teléfono: +54 9 ${phoneNational}`,`Dirección: ${$('customerAddress').value.trim()} · CP: ${$('customerPostal').value.trim()}`,'','ARTÍCULOS:',
-        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}${x.area_m2?` · ${x.area_m2} m²`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
+        ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:''}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:''}${x.area_m2?` · ${x.area_m2} m²`:''}${x.material_mode==='terrain'?` · ${x.coverage_area_m2} m² a ${x.fill_depth_cm} cm`:''}${x.material_mode==='holes'?` · ${x.hole_count} pozos ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm`:''} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null
       ].filter(x=>x!==null);
