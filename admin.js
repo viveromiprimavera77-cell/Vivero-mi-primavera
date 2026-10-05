@@ -72,14 +72,66 @@
     [...$("variantRows").children].forEach(updateClosureLabels);
   }
 
+  const STANDARD_LITERS=[3,5,7,10,15,20,30,40,50];
+  function normalizePresentationLabel(value){
+    const key=String(value||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    if(key==="plantin")return "Plantín";
+    if(key==="terron")return "Terrón";
+    if(key==="maceta soplada")return "Maceta soplada";
+    return "Maceta soplada";
+  }
+  function variantLitersValue(row){
+    if(row.querySelector(".v-label").value!=="Maceta soplada")return null;
+    const choice=row.querySelector(".v-liters-select").value;
+    if(choice==="other"){
+      const manual=row.querySelector(".v-liters-manual").value;
+      return manual?Number(manual):null;
+    }
+    return choice?Number(choice):null;
+  }
+  function syncVariantPresentation(row){
+    const type=row.querySelector(".v-label").value;
+    const litersSelect=row.querySelector(".v-liters-select");
+    const manual=row.querySelector(".v-liters-manual");
+    const usesLiters=type==="Maceta soplada";
+    litersSelect.disabled=!usesLiters;
+    if(!usesLiters){
+      litersSelect.value="";
+      manual.value="";
+      manual.hidden=true;
+      manual.disabled=true;
+    }else{
+      manual.hidden=litersSelect.value!=="other";
+      manual.disabled=litersSelect.value!=="other";
+    }
+    updateClosureLabels(row);
+  }
+
   function addVariantRow(v={}){
     const div=document.createElement("div");
     div.className="variant-row";
     div.dataset.variantId=v.id||"";
+    const presentation=normalizePresentationLabel(v.label);
+    const litersNumber=v.liters==null?null:Number(v.liters);
+    const standardLiters=litersNumber!=null&&STANDARD_LITERS.includes(litersNumber);
+    const litersChoice=presentation==="Maceta soplada"?(standardLiters?String(litersNumber):(litersNumber!=null?"other":"")):"";
     div.innerHTML=`
       <div class="variant-main-grid">
-        <label>Tipo de presentación<input class="v-label" value="${esc(v.label||"")}" placeholder="Ej.: Maceta soplada, Terrón"></label>
-        <label>Litros <span class="optional-tag">opcional</span><input class="v-liters" type="number" min="0.1" step="0.1" value="${v.liters??""}" placeholder="Ej.: 10"></label>
+        <label>Tipo de presentación
+          <select class="v-label">
+            <option value="Plantín" ${presentation==="Plantín"?"selected":""}>Plantín</option>
+            <option value="Maceta soplada" ${presentation==="Maceta soplada"?"selected":""}>Maceta soplada</option>
+            <option value="Terrón" ${presentation==="Terrón"?"selected":""}>Terrón</option>
+          </select>
+        </label>
+        <label>Litros <span class="optional-tag">opcional</span>
+          <select class="v-liters-select" ${presentation!=="Maceta soplada"?"disabled":""}>
+            <option value="" ${!litersChoice?"selected":""}>Elegir litros</option>
+            ${STANDARD_LITERS.map(l=>`<option value="${l}" ${litersChoice===String(l)?"selected":""}>${l} Lts</option>`).join("")}
+            <option value="other" ${litersChoice==="other"?"selected":""}>Otros envases</option>
+          </select>
+          <input class="v-liters-manual" type="number" min="0.1" step="0.1" value="${litersChoice==="other"&&litersNumber!=null?litersNumber:""}" placeholder="Ingresar litros" ${litersChoice==="other"?"":"hidden disabled"}>
+        </label>
         <label>Altura <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="Ej.: 1,80 m"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
@@ -96,10 +148,12 @@
       if($("variantRows").children.length>1)div.remove();
       else toast("La planta debe tener al menos una opción de venta.");
     });
-    div.querySelector(".v-liters").addEventListener("input",()=>updateClosureLabels(div));
+    div.querySelector(".v-label").addEventListener("change",()=>syncVariantPresentation(div));
+    div.querySelector(".v-liters-select").addEventListener("change",()=>syncVariantPresentation(div));
+    div.querySelector(".v-liters-manual").addEventListener("input",()=>updateClosureLabels(div));
     div.querySelector(".v-height").addEventListener("input",()=>updateClosureLabels(div));
     $("variantRows").appendChild(div);
-    updateClosureLabels(div);
+    syncVariantPresentation(div);
   }
   $("addVariantBtn").addEventListener("click",()=>{
     const rows=[...$("variantRows").children],last=rows.at(-1);
@@ -115,8 +169,8 @@
   function gatherVariants(){
     return [...$("variantRows").children].map((row,i)=>({
       id:row.dataset.variantId||null,
-      label:row.querySelector(".v-label").value.trim(),
-      liters:row.querySelector(".v-liters").value?Number(row.querySelector(".v-liters").value):null,
+      label:row.querySelector(".v-label").value,
+      liters:variantLitersValue(row),
       height:row.querySelector(".v-height").value.trim()||null,
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
@@ -202,18 +256,19 @@
       <article class="summary-wide"><span>Opciones de venta</span><div class="summary-sale-list">${variantsHtml}</div><p>Selector: ${$("productPrioritizeHeight").checked?"priorizar altura":"priorizar litros"} · ${$("productFeatured").checked?"Destacada":"No destacada"} · ${$("productActive").checked?"Visible":"Oculta"}</p></article>`;
   }
 
-  function showProductStep(step,scroll=true){
+  function showProductStep(step,scroll=false){
     productWizardStep=Math.max(0,Math.min(PRODUCT_SUMMARY_STEP,step));
     document.querySelectorAll(".product-wizard-step").forEach(el=>{
       el.hidden=Number(el.dataset.productStep)!==productWizardStep;
     });
+    $("productListPanel").hidden=productWizardStep!==0;
     $("productOmitBtn").hidden=productWizardStep!==3;
     $("productNextBtn").hidden=productWizardStep===PRODUCT_SUMMARY_STEP;
     $("productFinishBtn").hidden=productWizardStep!==PRODUCT_SUMMARY_STEP;
     if(productWizardStep===5)updateAllClosureLabels();
     if(productWizardStep===PRODUCT_SUMMARY_STEP)renderProductSummary();
     msg("productMessage","");
-    if(scroll)$("productForm").scrollIntoView({behavior:"smooth",block:"start"});
+    if(scroll)requestAnimationFrame(()=>$("productForm").scrollIntoView({behavior:"smooth",block:"start"}));
   }
 
   function advanceProductStep(){
@@ -309,7 +364,7 @@
       $("mainImageState").textContent=p.image_url?"Foto actual cargada":"";$("integratedImageState").textContent=p.integrated_image_url?"Foto actual cargada":"";$("infoImageState").textContent=p.info_image_url?"Ficha actual cargada":"";
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
       renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();
-      $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0);
+      $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);
     }
     if(toggle){const p=products.find(x=>x.id===toggle);const {error}=await db.from("products").update({active:!p.active,updated_at:new Date().toISOString()}).eq("id",p.id);if(error)return toast(error.message);await loadAll()}
     if(del){const p=products.find(x=>x.id===del);if(!confirm(`¿Eliminar "${p.name}"?`))return;const {error}=await db.from("products").delete().eq("id",p.id);if(error)return toast(error.message);await loadAll();toast("Planta eliminada")}
