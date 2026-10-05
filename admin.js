@@ -40,7 +40,7 @@
     ]);
     [pr,cr,ar,vr,or,oir].forEach(r=>{if(r.error)throw r.error});
     products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
-    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderOrders();fillSettings();
+    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderOrders();fillSettings();
     if(!$("variantRows").children.length) addVariantRow();
   }
 
@@ -390,20 +390,77 @@
   $("newProductBtn").addEventListener("click",()=>{resetProductForm();$("productName").focus()});
   $("cancelProductEdit").addEventListener("click",resetProductForm);
 
+  function renderCategoryOrderOptions(selected=null){
+    const editing=Boolean($("categoryId").value);
+    const max=Math.max(1,categories.length+(editing?0:1));
+    const fallback=editing?Number(categories.find(c=>c.id===$("categoryId").value)?.sort_order||1):max;
+    const value=Math.min(max,Math.max(1,Number(selected??fallback)||1));
+    $("categoryOrder").innerHTML=Array.from({length:max},(_,i)=>`<option value="${i+1}">${i+1}°</option>`).join("");
+    $("categoryOrder").value=String(value);
+  }
+  async function persistCategorySequence(ids){
+    for(let i=0;i<ids.length;i++){
+      const {error}=await db.from("categories").update({sort_order:i+1,updated_at:new Date().toISOString()}).eq("id",ids[i]);
+      if(error)throw error;
+    }
+  }
+  async function reorderCategory(categoryId,position){
+    const ids=categories
+      .filter(c=>c.id!==categoryId)
+      .sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||a.name.localeCompare(b.name,"es"))
+      .map(c=>c.id);
+    const target=Math.max(0,Math.min(ids.length,Number(position||1)-1));
+    ids.splice(target,0,categoryId);
+    await persistCategorySequence(ids);
+  }
+
   $("categoryForm").addEventListener("submit",async e=>{
     e.preventDefault();msg("categoryMessage","Guardando...");
-    const payload={name:$("categoryName").value.trim(),slug:slugify($("categoryName").value),description:$("categoryDescription").value.trim(),sort_order:Number($("categoryOrder").value||0),calculation_mode:$("categoryMode").value,active:$("categoryActive").checked,updated_at:new Date().toISOString()};
-    const q=$("categoryId").value?db.from("categories").update(payload).eq("id",$("categoryId").value):db.from("categories").insert(payload);const {error}=await q;
-    if(error)return msg("categoryMessage",error.message,"error");resetCategoryForm();await loadAll();toast("Categoría guardada");
+    try{
+      const requestedPosition=Number($("categoryOrder").value||1);
+      const payload={name:$("categoryName").value.trim(),slug:slugify($("categoryName").value),description:$("categoryDescription").value.trim(),sort_order:requestedPosition,calculation_mode:$("categoryMode").value,active:$("categoryActive").checked,updated_at:new Date().toISOString()};
+      let saved;
+      if($("categoryId").value){
+        const {data,error}=await db.from("categories").update(payload).eq("id",$("categoryId").value).select().single();
+        if(error)throw error;saved=data;
+      }else{
+        const {data,error}=await db.from("categories").insert(payload).select().single();
+        if(error)throw error;saved=data;
+      }
+      await reorderCategory(saved.id,requestedPosition);
+      await loadAll();
+      resetCategoryForm();
+      toast("Categoría guardada");
+    }catch(err){
+      msg("categoryMessage",err.message||"No se pudo guardar la categoría.","error");
+    }
   });
-  function resetCategoryForm(){$("categoryForm").reset();$("categoryId").value="";$("categoryOrder").value=0;$("categoryMode").value="unit";$("categoryActive").checked=true;$("categoryFormTitle").textContent="Agregar categoría";$("cancelCategoryEdit").hidden=true;msg("categoryMessage","")}
+  function resetCategoryForm(){
+    $("categoryForm").reset();$("categoryId").value="";$("categoryMode").value="unit";$("categoryActive").checked=true;
+    $("categoryFormTitle").textContent="Agregar categoría";$("cancelCategoryEdit").hidden=true;msg("categoryMessage","");
+    renderCategoryOrderOptions(categories.length+1);
+  }
   function renderCategories(){
-    $("categoryList").innerHTML=categories.map(c=>`<div class="item-row"><div><div class="item-title">${esc(c.name)} ${c.active?"":"· Oculta"}</div><div class="item-meta">${c.calculation_mode==="linear"?"Metros lineales":"Por unidades"} · posición ${c.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-category="${c.id}">Editar</button><button class="small-btn danger" data-delete-category="${c.id}">Eliminar</button></div></div>`).join("");
+    $("categoryList").innerHTML=categories.map(c=>`<div class="item-row"><div><div class="item-title">${esc(c.name)} ${c.active?"":"· Oculta"}</div><div class="item-meta">${c.calculation_mode==="linear"?"Metros lineales":"Por unidades"} · orden ${c.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-category="${c.id}">Editar</button><button class="small-btn danger" data-delete-category="${c.id}">Eliminar</button></div></div>`).join("");
   }
   $("categoryList").addEventListener("click",async e=>{
     const edit=e.target.dataset.editCategory,del=e.target.dataset.deleteCategory;
-    if(edit){const c=categories.find(x=>x.id===edit);$("categoryId").value=c.id;$("categoryName").value=c.name;$("categoryDescription").value=c.description||"";$("categoryOrder").value=c.sort_order;$("categoryMode").value=c.calculation_mode;$("categoryActive").checked=c.active;$("categoryFormTitle").textContent=`Editar: ${c.name}`;$("cancelCategoryEdit").hidden=false;scrollTo({top:220,behavior:"smooth"})}
-    if(del){if(assocs.some(a=>a.category_id===del))return toast("Quitá primero las plantas de esta categoría.");if(!confirm("¿Eliminar categoría?"))return;const {error}=await db.from("categories").delete().eq("id",del);if(error)return toast(error.message);await loadAll()}
+    if(edit){
+      const c=categories.find(x=>x.id===edit);
+      $("categoryId").value=c.id;$("categoryName").value=c.name;$("categoryDescription").value=c.description||"";
+      $("categoryMode").value=c.calculation_mode;$("categoryActive").checked=c.active;
+      $("categoryFormTitle").textContent=`Editar: ${c.name}`;$("cancelCategoryEdit").hidden=false;
+      renderCategoryOrderOptions(c.sort_order);
+      scrollTo({top:220,behavior:"smooth"});
+    }
+    if(del){
+      if(assocs.some(a=>a.category_id===del))return toast("Quitá primero las plantas de esta categoría.");
+      if(!confirm("¿Eliminar categoría?"))return;
+      const {error}=await db.from("categories").delete().eq("id",del);if(error)return toast(error.message);
+      const remaining=categories.filter(c=>c.id!==del).sort((a,b)=>Number(a.sort_order)-Number(b.sort_order)||a.name.localeCompare(b.name,"es")).map(c=>c.id);
+      try{await persistCategorySequence(remaining)}catch(err){return toast(err.message)}
+      await loadAll();resetCategoryForm();
+    }
   });
   $("newCategoryBtn").addEventListener("click",resetCategoryForm);$("cancelCategoryEdit").addEventListener("click",resetCategoryForm);
 
