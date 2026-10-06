@@ -14,6 +14,67 @@
     node.addEventListener("pointermove",e=>{if(down)node.scrollLeft=startLeft-(e.clientX-startX)});
     ["pointerup","pointercancel","pointerleave"].forEach(ev=>node.addEventListener(ev,()=>{down=false;node.classList.remove("dragging")}));
   }
+  function setupPhotoCarousel(carousel){
+    if(!carousel||carousel.dataset.carouselReady)return;
+    carousel.dataset.carouselReady="1";
+    const track=carousel.querySelector(".photo-track");
+    const slides=[...track.querySelectorAll(".photo-slide")];
+    const dots=[...carousel.querySelectorAll(".photo-dots span")];
+    if(!slides.length)return;
+
+    let index=0,startX=0,startY=0,dragX=0,dragging=false;
+
+    const setHeight=()=>{
+      const active=slides[index];
+      if(!active)return;
+      requestAnimationFrame(()=>{
+        const height=Math.ceil(active.scrollHeight);
+        if(height>0)track.style.height=`${height}px`;
+      });
+    };
+
+    const render=(animate=true)=>{
+      index=(index+slides.length)%slides.length;
+      track.style.transition=animate?"transform .28s ease":"none";
+      track.style.transform=`translate3d(-${index*100}%,0,0)`;
+      dots.forEach((dot,i)=>dot.classList.toggle("active",i===index));
+      setHeight();
+    };
+
+    const finishDrag=()=>{
+      if(!dragging)return;
+      dragging=false;
+      carousel.classList.remove("dragging");
+      const threshold=Math.min(70,Math.max(35,carousel.clientWidth*.14));
+      if(Math.abs(dragX)>=threshold)index+=dragX<0?1:-1;
+      dragX=0;
+      render(true);
+    };
+
+    carousel.addEventListener("pointerdown",e=>{
+      if(e.button!==undefined&&e.button!==0)return;
+      dragging=true;dragX=0;startX=e.clientX;startY=e.clientY;
+      carousel.classList.add("dragging");
+      carousel.setPointerCapture?.(e.pointerId);
+      track.style.transition="none";
+    });
+    carousel.addEventListener("pointermove",e=>{
+      if(!dragging)return;
+      const dx=e.clientX-startX,dy=e.clientY-startY;
+      if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>12)return;
+      dragX=dx;
+      track.style.transform=`translate3d(calc(-${index*100}% + ${dx}px),0,0)`;
+    });
+    ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>carousel.addEventListener(ev,finishDrag));
+
+    carousel.querySelector("[data-photo-prev]")?.addEventListener("click",e=>{e.stopPropagation();index--;render(true)});
+    carousel.querySelector("[data-photo-next]")?.addEventListener("click",e=>{e.stopPropagation();index++;render(true)});
+
+    if("ResizeObserver" in window)new ResizeObserver(setHeight).observe(slides[index]);
+    window.addEventListener("resize",setHeight,{passive:true});
+    render(false);
+  }
+
   function closeMenu(){el("sidebar").classList.remove("open");el("menuBackdrop").classList.remove("show");el("mobileMenuBtn").setAttribute("aria-expanded","false")}
   const WELCOME_SESSION_KEY="miPrimaveraWelcomeShown";
   function openWelcome(tagline){
@@ -64,11 +125,14 @@
       p.integrated_image_url?{url:p.integrated_image_url,label:"En jardín"}:null
     ].filter(Boolean);
     const slides=[
-      ...imageSlides.map(x=>`<div class="photo-slide"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`),
+      ...imageSlides.map(x=>`<div class="photo-slide photo-image-slide"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`),
       plantInfoSlide(p)
     ].filter(Boolean);
     if(!slides.length)return "";
-    return `<div class="photo-carousel"><div class="photo-track drag-scroll">${slides.join("")}</div>${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}</div>`;
+    return `<div class="photo-carousel" data-photo-carousel>
+      <div class="photo-track">${slides.join("")}</div>
+      ${slides.length>1?`<button class="photo-arrow photo-prev" type="button" data-photo-prev aria-label="Anterior">‹</button><button class="photo-arrow photo-next" type="button" data-photo-next aria-label="Siguiente">›</button><div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}
+    </div>`;
   }
   function highlights(p){
     const rows=[p.max_height?`<div><span>Altura máxima</span><strong>${esc(p.max_height)}</strong></div>`:"",p.maturity_time?`<div><span>Desarrollo máximo</span><strong>${esc(p.maturity_time)}</strong></div>`:"",p.pruning_per_year?`<div><span>Podas anuales</span><strong>${esc(p.pruning_per_year)}</strong></div>`:""].filter(Boolean);
@@ -192,7 +256,9 @@
       el("categoryNav").innerHTML=cats.length?cats.map(c=>{const ids=assocs.filter(a=>a.category_id===c.id).map(a=>a.product_id),ps=products.filter(p=>ids.includes(p.id));return `<a class="category-link" href="#cat-${esc(c.slug)}">${esc(c.name)}</a>${ps.map(p=>`<a class="plant-link" href="#planta-${esc(p.slug)}">↳ ${esc(p.name)}</a>`).join("")}`}).join(""):`<span class="nav-loading">Sin categorías</span>`;
       el("categoryJump").innerHTML=`<option value="">Todas las categorías</option>${cats.map(c=>`<option value="cat-${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
       el("categories").innerHTML=cats.length?cats.map(c=>{const rows=assocs.filter(a=>a.category_id===c.id).map(a=>({a,p:products.find(p=>p.id===a.product_id)})).filter(x=>x.p);return `<section class="category-section" id="cat-${esc(c.slug)}"><div class="category-header"><h2>${esc(c.name)}</h2><p class="category-description">${esc(c.description||"")}</p></div><div class="plant-grid">${rows.length?rows.map(x=>card(x.p,x.a,variants)).join(""):`<div class="empty-state">Próximamente sumaremos plantas a esta categoría.</div>`}</div></section>`}).join(""):`<div class="empty-state">El catálogo está listo para empezar a cargar plantas.</div>`;
-      document.querySelectorAll(".drag-scroll").forEach(setupDrag);setupVariantSelectors(variants);
+      document.querySelectorAll(".featured-strip.drag-scroll").forEach(setupDrag);
+      document.querySelectorAll("[data-photo-carousel]").forEach(setupPhotoCarousel);
+      setupVariantSelectors(variants);
     }catch(err){console.error(err);el("categories").innerHTML=`<div class="empty-state">No pudimos cargar el catálogo.</div>`}
   }
 
