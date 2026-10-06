@@ -20,10 +20,21 @@
     $("loginView").hidden=true;$("dashboard").hidden=false;$("logoutBtn").hidden=false;msg("loginMessage","");
     await loadAll();
   }
+  function resolveAdminLogin(value){
+    const raw=String(value||"").trim();
+    if(raw.includes("@"))return raw;
+    const key=raw.toLowerCase();
+    const aliases={
+      "miguelvivero":"emergenciamiguel@gmail.com",
+      "viveromiprimavera77":"viveromiprimavera77@gmail.com"
+    };
+    return aliases[key]||raw;
+  }
   $("loginForm").addEventListener("submit",async e=>{
     e.preventDefault();msg("loginMessage","Ingresando...");
-    const {error}=await db.auth.signInWithPassword({email:$("loginEmail").value.trim(),password:$("loginPassword").value});
-    if(error)return msg("loginMessage",error.message,"error");
+    const email=resolveAdminLogin($("loginEmail").value);
+    const {error}=await db.auth.signInWithPassword({email,password:$("loginPassword").value});
+    if(error)return msg("loginMessage","Usuario o contraseña incorrectos.","error");
     await refreshAuth();
   });
   $("logoutBtn").addEventListener("click",async()=>{await db.auth.signOut();location.reload()});
