@@ -18,61 +18,114 @@
     if(!carousel||carousel.dataset.carouselReady)return;
     carousel.dataset.carouselReady="1";
     const track=carousel.querySelector(".photo-track");
-    const slides=[...track.querySelectorAll(".photo-slide")];
+    const originals=[...track.querySelectorAll(".photo-slide")];
     const dots=[...carousel.querySelectorAll(".photo-dots span")];
-    if(!slides.length)return;
+    if(!originals.length)return;
 
-    let index=0,startX=0,startY=0,dragX=0,dragging=false;
+    let index=0,settleTimer=null,wrapping=false;
+    const count=originals.length;
+
+    const setDots=()=>{
+      dots.forEach((dot,i)=>dot.classList.toggle("active",i===index));
+    };
+
+    const activeSlide=()=>{
+      if(count===1)return originals[0];
+      const width=carousel.clientWidth||1;
+      const raw=Math.round(track.scrollLeft/width);
+      return track.children[Math.max(0,Math.min(track.children.length-1,raw))]||originals[index];
+    };
 
     const setHeight=()=>{
-      const active=slides[index];
-      if(!active)return;
+      const slide=activeSlide();
+      if(!slide)return;
       requestAnimationFrame(()=>{
-        const height=Math.ceil(active.scrollHeight);
+        const height=Math.ceil(Math.max(slide.scrollHeight,slide.getBoundingClientRect().height));
         if(height>0)track.style.height=`${height}px`;
       });
     };
 
-    const render=(animate=true)=>{
-      index=(index+slides.length)%slides.length;
-      track.style.transition=animate?"transform .28s ease":"none";
-      track.style.transform=`translate3d(-${index*100}%,0,0)`;
-      dots.forEach((dot,i)=>dot.classList.toggle("active",i===index));
+    if(count===1){
+      index=0;
+      setDots();
+      setHeight();
+      originals[0].querySelectorAll("img").forEach(img=>img.addEventListener("load",setHeight,{once:true}));
+      return;
+    }
+
+    const firstClone=originals[0].cloneNode(true);
+    const lastClone=originals[count-1].cloneNode(true);
+    firstClone.classList.add("carousel-clone");
+    lastClone.classList.add("carousel-clone");
+    firstClone.setAttribute("aria-hidden","true");
+    lastClone.setAttribute("aria-hidden","true");
+    track.prepend(lastClone);
+    track.append(firstClone);
+
+    const jumpToRaw=raw=>{
+      wrapping=true;
+      track.style.scrollBehavior="auto";
+      track.scrollLeft=raw*(carousel.clientWidth||1);
+      requestAnimationFrame(()=>{
+        track.style.scrollBehavior="";
+        wrapping=false;
+        setHeight();
+      });
+    };
+
+    const syncFromScroll=()=>{
+      if(wrapping)return;
+      const width=carousel.clientWidth||1;
+      const raw=Math.round(track.scrollLeft/width);
+      if(raw<=0)index=count-1;
+      else if(raw>=count+1)index=0;
+      else index=raw-1;
+      setDots();
       setHeight();
     };
 
-    const finishDrag=()=>{
-      if(!dragging)return;
-      dragging=false;
-      carousel.classList.remove("dragging");
-      const threshold=Math.min(70,Math.max(35,carousel.clientWidth*.14));
-      if(Math.abs(dragX)>=threshold)index+=dragX<0?1:-1;
-      dragX=0;
-      render(true);
+    const settle=()=>{
+      if(wrapping)return;
+      const width=carousel.clientWidth||1;
+      const raw=Math.round(track.scrollLeft/width);
+      if(raw===0){
+        index=count-1;
+        setDots();
+        jumpToRaw(count);
+      }else if(raw===count+1){
+        index=0;
+        setDots();
+        jumpToRaw(1);
+      }else{
+        index=Math.max(0,Math.min(count-1,raw-1));
+        setDots();
+        setHeight();
+      }
     };
 
-    carousel.addEventListener("pointerdown",e=>{
-      if(e.button!==undefined&&e.button!==0)return;
-      dragging=true;dragX=0;startX=e.clientX;startY=e.clientY;
-      carousel.classList.add("dragging");
-      carousel.setPointerCapture?.(e.pointerId);
-      track.style.transition="none";
-    });
-    carousel.addEventListener("pointermove",e=>{
-      if(!dragging)return;
-      const dx=e.clientX-startX,dy=e.clientY-startY;
-      if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>12)return;
-      dragX=dx;
-      track.style.transform=`translate3d(calc(-${index*100}% + ${dx}px),0,0)`;
-    });
-    ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>carousel.addEventListener(ev,finishDrag));
+    track.addEventListener("scroll",()=>{
+      syncFromScroll();
+      clearTimeout(settleTimer);
+      settleTimer=setTimeout(settle,120);
+    },{passive:true});
 
-    carousel.querySelector("[data-photo-prev]")?.addEventListener("click",e=>{e.stopPropagation();index--;render(true)});
-    carousel.querySelector("[data-photo-next]")?.addEventListener("click",e=>{e.stopPropagation();index++;render(true)});
+    if("onscrollend" in window)track.addEventListener("scrollend",settle,{passive:true});
 
-    if("ResizeObserver" in window)new ResizeObserver(setHeight).observe(slides[index]);
-    window.addEventListener("resize",setHeight,{passive:true});
-    render(false);
+    setupDrag(track);
+    [...track.querySelectorAll("img")].forEach(img=>{
+      if(img.complete)return;
+      img.addEventListener("load",setHeight,{once:true});
+    });
+
+    const resize=()=>{
+      jumpToRaw(index+1);
+    };
+    window.addEventListener("resize",resize,{passive:true});
+
+    requestAnimationFrame(()=>{
+      jumpToRaw(1);
+      setDots();
+    });
   }
 
   function closeMenu(){el("sidebar").classList.remove("open");el("menuBackdrop").classList.remove("show");el("mobileMenuBtn").setAttribute("aria-expanded","false")}
@@ -131,7 +184,7 @@
     if(!slides.length)return "";
     return `<div class="photo-carousel" data-photo-carousel>
       <div class="photo-track">${slides.join("")}</div>
-      ${slides.length>1?`<button class="photo-arrow photo-prev" type="button" data-photo-prev aria-label="Anterior">‹</button><button class="photo-arrow photo-next" type="button" data-photo-next aria-label="Siguiente">›</button><div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}
+      ${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}
     </div>`;
   }
   function highlights(p){
