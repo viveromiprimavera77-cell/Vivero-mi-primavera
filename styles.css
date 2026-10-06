@@ -86,10 +86,11 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.05;color:var(
 .category-description{color:var(--muted);line-height:1.72;margin:2px 0 0}
 .plant-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:24px;align-items:start}
 .plant-card{border:1px solid var(--line);border-radius:19px;background:#fff;overflow:hidden;box-shadow:0 9px 24px rgba(7,94,42,.06)}
-.photo-carousel{position:relative;background:#eaf5e6;overflow:hidden;touch-action:pan-y}
-.photo-carousel.dragging{cursor:grabbing}
-.photo-track{display:flex;align-items:flex-start;overflow:hidden;will-change:transform;transition:transform .28s ease,height .22s ease}
-.photo-slide{flex:0 0 100%;width:100%;background:#edf6ea;position:relative;display:grid;place-items:center;box-sizing:border-box}
+.photo-carousel{position:relative;background:#eaf5e6;overflow:hidden}
+.photo-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;cursor:grab;transition:height .22s ease}
+.photo-track::-webkit-scrollbar{display:none}
+.photo-track.dragging{cursor:grabbing;user-select:none;scroll-snap-type:none}
+.photo-slide{flex:0 0 100%;width:100%;scroll-snap-align:start;background:#edf6ea;position:relative;display:grid;place-items:center;box-sizing:border-box}
 .photo-image-slide{aspect-ratio:4/3}
 .photo-slide img{width:100%;height:100%;object-fit:cover}
 .slide-label{position:absolute;left:12px;top:12px;background:rgba(4,62,26,.86);color:#fff;padding:6px 9px;border-radius:999px;font-size:.72rem;font-weight:850;z-index:3}
@@ -97,8 +98,6 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.05;color:var(
 .photo-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none;z-index:4}
 .photo-dots span{width:7px;height:7px;border-radius:50%;background:rgba(20,86,42,.34);box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .18s ease,background .18s ease}
 .photo-dots span.active{background:#fff;transform:scale(1.3);box-shadow:0 1px 5px rgba(0,0,0,.34)}
-.photo-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:34px;height:42px;border:0;border-radius:12px;background:rgba(255,255,255,.82);color:var(--green-950);font-size:1.7rem;line-height:1;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer}
-.photo-prev{left:8px}.photo-next{right:8px}
 .plant-body{padding:18px 18px 14px}
 .plant-body h3{font-size:1.55rem;margin:0 0 8px}
 .plant-body p{color:var(--muted);line-height:1.55;margin:0 0 12px}
@@ -320,7 +319,7 @@ body.welcome-open{overflow:hidden}
 
 
 /* v14: ficha técnica dentro del carrusel de plantas */
-.plant-info-slide{display:block!important;background:#f7fbf5!important;overflow:visible;padding:50px 17px 38px;min-height:0;aspect-ratio:auto!important}
+.plant-info-slide{display:block!important;background:#f7fbf5!important;overflow:visible;padding:50px 17px 42px;min-height:max-content;aspect-ratio:auto!important}
 .plant-info-content{width:100%;max-width:560px;margin:0 auto}
 .plant-info-head{padding-bottom:10px;border-bottom:1px solid var(--line)}
 .plant-info-head strong{display:block;color:var(--green-950);font-size:1.08rem;line-height:1.25}
@@ -334,7 +333,6 @@ body.welcome-open{overflow:hidden}
 .plant-profile-admin{margin-top:14px}
 @media(max-width:600px){
   .plant-info-slide{padding:47px 14px 38px}
-  .photo-arrow{width:31px;height:39px;font-size:1.55rem}
   .plant-info-facts{gap:6px 10px}
   .plant-info-facts strong{font-size:.74rem}
 }
