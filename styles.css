@@ -87,12 +87,12 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.05;color:var(
 .plant-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:24px;align-items:start}
 .plant-card{border:1px solid var(--line);border-radius:19px;background:#fff;overflow:hidden;box-shadow:0 9px 24px rgba(7,94,42,.06)}
 .photo-carousel{position:relative;background:#eaf5e6;overflow:hidden}
-.photo-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;cursor:grab;transition:height .22s ease}
+.photo-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;cursor:grab}
 .photo-track::-webkit-scrollbar{display:none}
 .photo-track.dragging{cursor:grabbing;user-select:none;scroll-snap-type:none}
 .photo-slide{flex:0 0 100%;width:100%;scroll-snap-align:start;background:#edf6ea;position:relative;display:grid;place-items:center;box-sizing:border-box}
-.photo-image-slide{aspect-ratio:4/3}
-.photo-slide img{width:100%;height:100%;object-fit:cover}
+.photo-image-slide{aspect-ratio:4/3;overflow:hidden}
+.photo-slide img{width:100%;height:100%;object-fit:cover;display:block}
 .slide-label{position:absolute;left:12px;top:12px;background:rgba(4,62,26,.86);color:#fff;padding:6px 9px;border-radius:999px;font-size:.72rem;font-weight:850;z-index:3}
 .plant-placeholder{display:grid;place-items:center;width:100%;height:100%;color:#6b826d;font-family:Georgia,serif;background:linear-gradient(135deg,#e4f2df,#fbfdf9)}
 .photo-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none;z-index:4}
