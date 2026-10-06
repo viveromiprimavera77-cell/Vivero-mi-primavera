@@ -29,27 +29,25 @@
       dots.forEach((dot,i)=>dot.classList.toggle("active",i===index));
     };
 
-    const activeSlide=()=>{
-      if(count===1)return originals[0];
-      const width=carousel.clientWidth||1;
-      const raw=Math.round(track.scrollLeft/width);
-      return track.children[Math.max(0,Math.min(track.children.length-1,raw))]||originals[index];
-    };
-
-    const setHeight=()=>{
-      const slide=activeSlide();
-      if(!slide)return;
+    const measureFixedHeight=()=>{
       requestAnimationFrame(()=>{
-        const height=Math.ceil(Math.max(slide.scrollHeight,slide.getBoundingClientRect().height));
-        if(height>0)track.style.height=`${height}px`;
+        originals.forEach(slide=>slide.style.height="auto");
+        const imageBase=Math.ceil((carousel.clientWidth||1)*3/4);
+        const contentHeights=originals.map(slide=>Math.ceil(slide.scrollHeight||0));
+        const fixed=Math.max(imageBase,...contentHeights);
+        if(fixed>0){
+          track.style.height=`${fixed}px`;
+          [...track.querySelectorAll(".photo-slide")].forEach(slide=>slide.style.height=`${fixed}px`);
+        }
       });
     };
 
     if(count===1){
       index=0;
       setDots();
-      setHeight();
-      originals[0].querySelectorAll("img").forEach(img=>img.addEventListener("load",setHeight,{once:true}));
+      measureFixedHeight();
+      originals[0].querySelectorAll("img").forEach(img=>img.addEventListener("load",measureFixedHeight,{once:true}));
+      window.addEventListener("resize",measureFixedHeight,{passive:true});
       return;
     }
 
@@ -69,7 +67,6 @@
       requestAnimationFrame(()=>{
         track.style.scrollBehavior="";
         wrapping=false;
-        setHeight();
       });
     };
 
@@ -81,7 +78,6 @@
       else if(raw>=count+1)index=0;
       else index=raw-1;
       setDots();
-      setHeight();
     };
 
     const settle=()=>{
@@ -99,7 +95,6 @@
       }else{
         index=Math.max(0,Math.min(count-1,raw-1));
         setDots();
-        setHeight();
       }
     };
 
@@ -110,19 +105,21 @@
     },{passive:true});
 
     if("onscrollend" in window)track.addEventListener("scrollend",settle,{passive:true});
-
     setupDrag(track);
+
     [...track.querySelectorAll("img")].forEach(img=>{
       if(img.complete)return;
-      img.addEventListener("load",setHeight,{once:true});
+      img.addEventListener("load",measureFixedHeight,{once:true});
     });
 
     const resize=()=>{
+      measureFixedHeight();
       jumpToRaw(index+1);
     };
     window.addEventListener("resize",resize,{passive:true});
 
     requestAnimationFrame(()=>{
+      measureFixedHeight();
       jumpToRaw(1);
       setDots();
     });
