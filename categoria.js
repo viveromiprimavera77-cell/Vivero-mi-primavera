@@ -281,6 +281,15 @@
     const card=el("categoryPlantModalContent").querySelector(".plant-card");
     card.querySelectorAll("[data-photo-carousel]").forEach(setupPhotoCarousel);
     setupVariantSelector(card);
+    const dialog=modal.querySelector(".category-plant-dialog");
+    const down=el("categoryModalDown");
+    dialog.scrollTop=0;
+    down.hidden=true;
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        down.hidden=!(dialog.scrollHeight>dialog.clientHeight+40);
+      });
+    });
     if(pushUrl){
       const url=new URL(location.href);
       url.searchParams.set("planta",p.slug);
@@ -291,6 +300,7 @@
 
   function closePlant(){
     el("categoryPlantModal").hidden=true;
+    el("categoryModalDown").hidden=true;
     document.body.classList.remove("category-modal-open");
     el("categoryPlantModalContent").innerHTML="";
     const url=new URL(location.href);
@@ -308,6 +318,7 @@
     }).join(""):`<span class="nav-loading">Sin categorías</span>`;
 
     el("categoryPageSelect").innerHTML=categories.map(c=>`<option value="${esc(c.slug)}" ${currentCategory?.id===c.id?"selected":""}>${esc(c.name)}</option>`).join("");
+    el("categoryPageBottomSelect").innerHTML=`<option value="">Elegí una categoría...</option>${categories.filter(c=>c.id!==currentCategory?.id).map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
   }
 
   function renderCategory(){
@@ -372,9 +383,20 @@
   el("menuBackdrop").addEventListener("click",closeMenu);
   el("categoryNav").addEventListener("click",()=>{if(innerWidth<=900)closeMenu()});
 
-  el("categoryPageSelect").addEventListener("change",e=>{
+  const goCategory=e=>{
     if(!e.target.value)return;
     location.href=`categoria.html?categoria=${encodeURIComponent(e.target.value)}`;
+  };
+  el("categoryPageSelect").addEventListener("change",goCategory);
+  el("categoryPageBottomSelect").addEventListener("change",goCategory);
+
+  const modalDialog=document.querySelector(".category-plant-dialog");
+  modalDialog.addEventListener("scroll",()=>{
+    if(modalDialog.scrollTop>28)el("categoryModalDown").hidden=true;
+  },{passive:true});
+  el("categoryModalDown").addEventListener("click",()=>{
+    modalDialog.scrollBy({top:Math.max(260,modalDialog.clientHeight*.68),behavior:"smooth"});
+    el("categoryModalDown").hidden=true;
   });
 
   el("categoryProductGrid").addEventListener("click",e=>{
