@@ -870,7 +870,7 @@
       const {data,error}=await db.rpc("create_manual_order",{
         p_customer_name:customer,
         p_items:manualDraftItems,
-        p_phone:$("manualPhone").value.trim(),
+        p_phone:(()=>{const d=$("manualPhone").value.replace(/\\D/g,"");return d.length===10?"549"+d:d})(),
         p_shipping_address:$("manualAddress").value.trim(),
         p_postal_code:$("manualPostalCode").value.trim(),
         p_general_question:$("manualQuestion").value.trim(),
