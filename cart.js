@@ -77,7 +77,9 @@
   }
 
   function count() {
-    return load().reduce((s, x) => s + Number(x.quantity || 0), 0);
+    // El indicador del carrito cuenta líneas/pedidos distintos, no unidades.
+    // Ej.: 34 Oleos Verdes = 1; si agrega otro producto distinto = 2.
+    return load().length;
   }
 
   function ensureUI() {
