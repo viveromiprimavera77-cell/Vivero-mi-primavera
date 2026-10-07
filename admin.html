@@ -202,7 +202,47 @@
 
       <section id="ordersTab" class="tab-panel">
         <div class="panel">
-          <div class="panel-heading"><div><span class="eyebrow">VENTAS</span><h2>Pedidos</h2><p>Las solicitudes que llegan desde la web entran como “Pedido a confirmar”.</p></div></div>
+          <div class="panel-heading">
+            <div><span class="eyebrow">VENTAS</span><h2>Pedidos</h2><p>Las solicitudes de la web entran como “Pedido a confirmar”. Las ventas cargadas acá se identifican como “Pedido extra”.</p></div>
+            <button id="toggleManualOrderBtn" class="secondary-btn" type="button">+ Agregar pedido extra</button>
+          </div>
+
+          <form id="manualOrderForm" class="manual-order-box" hidden>
+            <div class="manual-order-head">
+              <div><span class="eyebrow">VENTA FUERA DE LA WEB</span><h3>Nuevo pedido extra</h3><p>Cargalo para que quede registrado y descuente stock cuando lo marques como despachado / finalizado.</p></div>
+              <button id="closeManualOrderBtn" class="small-btn" type="button">Cerrar</button>
+            </div>
+
+            <div class="form-grid">
+              <label>Cliente<input id="manualCustomerName" required placeholder="Nombre del cliente"></label>
+              <label>Teléfono / WhatsApp<input id="manualPhone" inputmode="numeric" placeholder="Opcional"></label>
+              <label>Dirección<input id="manualAddress" placeholder="Opcional"></label>
+              <label>Código postal<input id="manualPostalCode" placeholder="Opcional"></label>
+              <label class="wide">Nota del pedido<textarea id="manualQuestion" rows="2" placeholder="Opcional"></textarea></label>
+            </div>
+
+            <div class="manual-item-builder">
+              <strong>Agregar producto</strong>
+              <div class="manual-item-grid">
+                <label>Producto / presentación<select id="manualVariantSelect"></select></label>
+                <label>Cant.<input id="manualItemQty" type="number" min="1" step="1" value="1"></label>
+                <label>Precio u.<input id="manualItemPrice" type="number" min="0" step="0.01" value="0"></label>
+                <label>Costo u.<input id="manualItemCost" type="number" min="0" step="0.01" value="0"></label>
+                <button id="manualAddItemBtn" class="small-btn" type="button">Agregar</button>
+              </div>
+              <label id="manualCustomNameWrap" class="manual-custom-name">Nombre del ítem personalizado<input id="manualCustomName" placeholder="Ej.: Tierra abonada"></label>
+            </div>
+
+            <div id="manualDraftList" class="manual-draft-list"></div>
+
+            <div class="manual-order-footer">
+              <label>Otros costos<input id="manualExtraCost" type="number" min="0" step="0.01" value="0"></label>
+              <div class="manual-draft-total"><span>Total del pedido</span><strong id="manualOrderTotal">$0</strong></div>
+              <button class="primary-btn" type="submit">Crear pedido extra</button>
+            </div>
+            <p id="manualOrderMessage" class="form-message"></p>
+          </form>
+
           <div id="orderList"></div>
         </div>
         <div class="panel sales-summary-panel">
