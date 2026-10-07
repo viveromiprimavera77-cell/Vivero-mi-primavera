@@ -1077,6 +1077,7 @@
 
 
   ["productSpacing1","productSpacing2","productSpacing3"].forEach(id=>$(id)?.addEventListener("input",updateAllClosureLabels));
+  window.addEventListener("vivero:orders-changed",()=>loadAll().catch(err=>console.error(err)));
   db.auth.onAuthStateChange(()=>setTimeout(refreshAuth,0));
   refreshAuth().catch(err=>console.error(err));
 })();
