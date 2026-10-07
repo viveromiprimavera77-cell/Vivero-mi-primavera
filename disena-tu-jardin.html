@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diseñá tu jardín | Mi Primavera</title>
+  <meta name="description" content="Subí una foto de tu espacio y pedí una propuesta de jardín personalizada de Mi Primavera.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="design-page">
+  <main class="design-shell">
+    <header class="design-header">
+      <a href="./" class="design-brand"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera"><span>Mi Primavera</span></a>
+      <a href="./#catalogo" class="text-link">Volver al catálogo →</a>
+    </header>
+
+    <section class="design-intro">
+      <span class="eyebrow">PROPUESTA SIN CARGO</span>
+      <h1>Visualizá una idea para tu jardín</h1>
+      <p>Subí una foto del espacio y contanos qué buscás. Preparamos una simulación orientativa con plantas del vivero y una lista de compra con presupuesto.</p>
+      <div class="design-steps">
+        <span><b>1</b> Subís la foto</span><span><b>2</b> Preparamos la propuesta</span><span><b>3</b> Te la enviamos por WhatsApp</span>
+      </div>
+    </section>
+
+    <form id="gardenDesignForm" class="design-form">
+      <section class="design-card">
+        <div class="design-card-title"><span>01</span><div><h2>Tu espacio</h2><p>Una foto clara y algunas medidas nos ayudan a hacer una propuesta más útil.</p></div></div>
+        <label class="design-photo-drop" id="designPhotoDrop">
+          <input id="designPhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/avif" required>
+          <strong>Subí una foto del jardín o terreno</strong>
+          <span>JPG, PNG, WebP o AVIF · máximo 8 MB</span>
+          <img id="designPhotoPreview" alt="" hidden>
+        </label>
+        <div class="design-grid">
+          <label>Nombre<input id="designName" maxlength="80" required placeholder="Tu nombre"></label>
+          <label>WhatsApp
+            <div class="phone-input"><span>+54 9</span><input id="designPhone" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required placeholder="1132123567"></div>
+            <small>Sin 0 ni 15. Ej.: 1132123567.</small>
+          </label>
+          <label>Ancho aproximado (m)<input id="designWidth" type="number" min="0.1" step="0.1" placeholder="Ej.: 8"></label>
+          <label>Largo aproximado (m)<input id="designLength" type="number" min="0.1" step="0.1" placeholder="Ej.: 12"></label>
+          <label>Exposición
+            <select id="designSunlight">
+              <option value="unknown">No estoy seguro/a</option>
+              <option value="full_sun">Mucho sol</option>
+              <option value="partial_shade">Sol y media sombra</option>
+              <option value="shade">Mayormente sombra</option>
+            </select>
+          </label>
+          <label>Presupuesto orientativo<input id="designBudget" type="number" min="0" step="1000" placeholder="Opcional"></label>
+          <label class="wide">¿Qué querés lograr?
+            <select id="designGoal">
+              <option value="general">Renovar / mejorar el jardín</option>
+              <option value="privacy">Privacidad / cerco</option>
+              <option value="ornamental">Jardín ornamental</option>
+              <option value="low_maintenance">Bajo mantenimiento</option>
+              <option value="border">Borduras y canteros</option>
+              <option value="tropical">Aspecto tropical</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="design-card">
+        <div class="design-card-title"><span>02</span><div><h2>Elegí cómo diseñarlo</h2><p>Podemos proponerte especies o trabajar con las plantas que más te gusten.</p></div></div>
+        <div class="design-mode-grid">
+          <label class="design-mode active"><input type="radio" name="designMode" value="recommend" checked><strong>Quiero una sugerencia</strong><span>Mi Primavera elige una combinación adecuada.</span></label>
+          <label class="design-mode"><input type="radio" name="designMode" value="selected"><strong>Quiero elegir las plantas</strong><span>Seleccioná especies de nuestro catálogo.</span></label>
+        </div>
+        <div id="designPlantPicker" class="design-plant-picker" hidden>
+          <div class="design-picker-head"><strong>Plantas disponibles</strong><input id="designPlantSearch" type="search" placeholder="Buscar planta..."></div>
+          <div id="designPlantList" class="design-plant-list"><p>Cargando plantas...</p></div>
+        </div>
+        <label class="wide">Comentarios o ideas<textarea id="designNotes" maxlength="1500" rows="4" placeholder="Ej.: quiero tapar la medianera, dejar libre el paso hacia el fondo, prefiero plantas de poco mantenimiento..."></textarea></label>
+      </section>
+
+      <section class="design-card design-consent">
+        <label class="check-label"><input id="designConsent" type="checkbox" required> Autorizo a Mi Primavera a usar esta foto únicamente para preparar la propuesta que solicito.</label>
+        <p>La simulación es orientativa. Las cantidades y el presupuesto se revisan antes de enviarte la propuesta final.</p>
+      </section>
+
+      <button id="designSubmit" class="btn design-submit" type="submit">Enviar solicitud de diseño</button>
+      <p id="designMessage" class="design-message" aria-live="polite"></p>
+    </form>
+
+    <section id="designSuccess" class="design-success" hidden>
+      <span class="eyebrow">SOLICITUD RECIBIDA</span>
+      <h2>Ya tenemos tu proyecto 🌿</h2>
+      <p>Tu código es <strong id="designSuccessCode"></strong>. Vamos a preparar la propuesta y te contactaremos por WhatsApp cuando esté lista.</p>
+      <a href="./#catalogo" class="btn">Seguir viendo plantas</a>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="design.js"></script>
+</body>
+</html>
