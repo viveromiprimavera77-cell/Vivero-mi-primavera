@@ -215,7 +215,7 @@
         <label class="v-height-wrap" ${material?"hidden":""}><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
-        <label>Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" type="number" min="0" step="1" value="${stock}"></label>
+        <label class="variant-stock-field">Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" data-stock-variant="${esc(v.id||"")}" type="number" min="0" step="1" value="${stock}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
@@ -242,6 +242,13 @@
   });
   $("productCategoryChoices").addEventListener("change",e=>{
     if(e.target.matches(".pc-check"))refreshVariantAreaMode();
+  });
+  $("variantRows").addEventListener("change",async e=>{
+    if(!e.target.classList.contains("v-stock"))return;
+    const row=e.target.closest(".variant-row");
+    const variantId=row?.dataset.variantId;
+    if(!variantId)return;
+    await saveInventoryStock(variantId,e.target.value,true);
   });
 
   const IMAGE_SLOTS=[
@@ -437,6 +444,7 @@
     $("productFinishBtn").hidden=productWizardStep!==PRODUCT_SUMMARY_STEP;
     if(productWizardStep===5)updateAllClosureLabels();
     if(productWizardStep===PRODUCT_SUMMARY_STEP)renderProductSummary();
+    renderProductActionStock();
     msg("productMessage","");
     if(scroll)requestAnimationFrame(()=>$("productForm").scrollIntoView({behavior:"smooth",block:"start"}));
   }
@@ -551,7 +559,7 @@
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";
     $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();msg("productMessage","");
-    showProductStep(0,false);
+    showProductStep(0,false);renderProductActionStock();
   }
 
   function renderProducts(){
@@ -559,14 +567,27 @@
     const list=products.filter(p=>!term||p.name.toLowerCase().includes(term));
     $("productList").innerHTML=list.length?list.map(p=>{
       const cs=assocs.filter(a=>a.product_id===p.id).map(a=>categories.find(c=>c.id===a.category_id)?.name).filter(Boolean).join(", ");
-      const vs=variants.filter(v=>v.product_id===p.id).map(v=>{
-        const stock=Number(inventory.find(i=>i.variant_id===v.id)?.stock||0);
-        return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""} · Stock: ${stock.toLocaleString("es-AR")} u.`;
-      }).join(" | ");
-      return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · selector: ${p.prioritize_height?"altura":"litros"} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
+      const pv=variants.filter(v=>v.product_id===p.id);
+      const vs=pv.map(v=>`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""}`).join(" | ");
+      const stockHtml=pv.length?pv.map(v=>`<label class="quick-stock-chip" title="Cambiar stock de ${esc(p.name)} — ${esc(v.label)}">
+          <span>${esc(v.label)}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${esc(v.height)}`:""}</span>
+          <input class="quick-stock-input" data-stock-variant="${v.id}" type="number" min="0" step="1" value="${inventoryStock(v.id)}" aria-label="Stock disponible">
+        </label>`).join(""):'<span class="item-meta">Sin presentaciones</span>';
+      return `<div class="item-row product-item-row">
+        <div class="product-item-main">
+          <div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div>
+          <div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · selector: ${p.prioritize_height?"altura":"litros"} · posición ${p.sort_order}</div>
+          <div class="product-stock-quick"><strong>Stock</strong>${stockHtml}</div>
+        </div>
+        <div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div>
+      </div>`;
     }).join(""):`<p class="form-message">No hay plantas.</p>`;
   }
   $("productSearch").addEventListener("input",renderProducts);
+  $("productList").addEventListener("change",async e=>{
+    if(!e.target.classList.contains("quick-stock-input"))return;
+    await saveInventoryStock(e.target.dataset.stockVariant,e.target.value,true);
+  });
   $("productList").addEventListener("click",async e=>{
     const edit=e.target.dataset.editProduct,toggle=e.target.dataset.toggleProduct,del=e.target.dataset.deleteProduct;
     if(edit){
@@ -580,7 +601,7 @@
       setImageSlot(IMAGE_SLOTS[1],p.integrated_image_url||"");
       const pa=assocs.filter(a=>a.product_id===p.id),selected={},sp={};pa.forEach(a=>{selected[a.category_id]=true;sp[a.category_id]=a.recommended_spacing_cm});
       renderCategoryChoices(selected);$("variantRows").innerHTML="";variants.filter(v=>v.product_id===p.id).forEach(addVariantRow);if(!$("variantRows").children.length)addVariantRow();refreshVariantAreaMode();
-      $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);
+      $("productFormTitle").textContent=`Editar: ${p.name}`;showProductStep(0,true);renderProductActionStock();
     }
     if(toggle){const p=products.find(x=>x.id===toggle);const {error}=await db.from("products").update({active:!p.active,updated_at:new Date().toISOString()}).eq("id",p.id);if(error)return toast(error.message);await loadAll()}
     if(del){const p=products.find(x=>x.id===del);if(!confirm(`¿Eliminar "${p.name}"?`))return;const {error}=await db.from("products").delete().eq("id",p.id);if(error)return toast(error.message);await loadAll();toast("Planta eliminada")}
@@ -770,6 +791,36 @@
   function inventoryStock(variantId){
     return Number(inventory.find(i=>i.variant_id===variantId)?.stock||0);
   }
+  async function saveInventoryStock(variantId,value,notify=false){
+    if(!variantId)return;
+    const stock=Math.max(0,Math.floor(Number(value||0)));
+    const {error}=await db.from("product_inventory").upsert({variant_id:variantId,stock,updated_at:new Date().toISOString()},{onConflict:"variant_id"});
+    if(error){toast(error.message);return false}
+    const current=inventory.find(i=>i.variant_id===variantId);
+    if(current){current.stock=stock;current.updated_at=new Date().toISOString()}
+    else inventory.push({variant_id:variantId,stock,updated_at:new Date().toISOString()});
+    document.querySelectorAll(`[data-stock-variant="${variantId}"]`).forEach(input=>{if(input!==document.activeElement)input.value=stock});
+    if(notify)toast("Stock guardado");
+    renderProductActionStock();
+    return true;
+  }
+  function renderProductActionStock(){
+    const box=$("productActionStock");
+    if(!box)return;
+    const productId=$("productId")?.value;
+    const pv=productId?variants.filter(v=>v.product_id===productId):[];
+    if(!productId||!pv.length){box.hidden=true;box.innerHTML="";return}
+    box.hidden=false;
+    box.innerHTML='<span class="product-action-stock-title">Stock rápido</span>'+pv.map(v=>`
+      <label title="${esc(variantDescription(v))}">
+        <small>${esc(v.label)}${v.liters?` ${Number(v.liters).toLocaleString("es-AR")}L`:""}${v.height?` ${esc(v.height)}`:""}</small>
+        <input class="action-stock-input" data-stock-variant="${v.id}" type="number" min="0" step="1" value="${inventoryStock(v.id)}">
+      </label>`).join("");
+  }
+  $("productActionStock")?.addEventListener("change",async e=>{
+    if(!e.target.classList.contains("action-stock-input"))return;
+    await saveInventoryStock(e.target.dataset.stockVariant,e.target.value,true);
+  });
   function variantDescription(v){
     if(!v)return "";
     const p=products.find(x=>x.id===v.product_id);
@@ -892,7 +943,7 @@
       const items=orderItems.filter(i=>i.order_id===o.id),t=orderTotals(o.id);
       const locked=o.status==="dispatched"||o.status==="cancelled";
       const lockAttr=locked?" disabled":"";
-      const sourceBadge=o.order_source==="manual"?'<span class="badge extra-order">Pedido extra</span>':"";
+      const sourceBadge=o.order_source==="manual"?'<span class="badge extra-order">Pedido extra</span>':o.order_source==="design"?'<span class="badge design-order">Con diseño</span>':"";
       const itemRows=items.map(i=>{
         const v=i.variant_id?variants.find(x=>x.id===i.variant_id):null;
         const stockMeta=v?`<small class="stock-inline">Stock actual: ${inventoryStock(v.id)} u.</small>`:"";
