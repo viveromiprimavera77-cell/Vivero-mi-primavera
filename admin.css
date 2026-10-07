@@ -109,3 +109,39 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
 
 /* v16: ficha técnica de plantas */
 .plant-profile-admin{margin-top:14px}
+
+
+/* Solicitudes de diseño */
+.design-admin-card{border:1px solid var(--line);border-radius:18px;background:#fff;margin:0 0 14px;overflow:hidden}
+.design-admin-summary{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:17px;cursor:pointer}
+.design-admin-summary>div{display:grid;gap:4px}.design-admin-summary span{color:var(--muted);font-size:.83rem}
+.design-admin-summary>div:last-child{text-align:right}
+.design-status{display:inline-block;padding:5px 9px;border-radius:999px;font-size:.75rem;font-weight:850;background:#eef2ec}
+.design-status.pending{background:#fff1c8;color:#7c5800}.design-status.in_design{background:#e3efff;color:#17558f}
+.design-status.ready{background:#e0f5e6;color:#126b32}.design-status.sent{background:#e9e4ff;color:#5540a6}
+.design-status.converted{background:#d8f2df;color:#075d27}.design-status.cancelled{background:#f6dddd;color:#8f2828}
+.design-admin-body{padding:0 17px 20px;border-top:1px solid var(--line)}
+.design-admin-media{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+.design-admin-media>div{display:grid;gap:9px;align-content:start}
+.design-admin-media>div>span{font-size:.78rem;font-weight:900;text-transform:uppercase;color:var(--muted)}
+.design-admin-media img{width:100%;height:260px;object-fit:contain;background:#f4f7f2;border:1px solid var(--line);border-radius:14px}
+.design-result-empty{height:260px;display:grid;place-items:center;text-align:center;padding:16px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);background:#fafcf8}
+.design-upload-label{justify-self:start;cursor:pointer}
+.design-customer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.design-customer-grid div{padding:12px;border-radius:12px;background:#f7faf5}
+.design-customer-grid span,.design-customer-grid strong{display:block}.design-customer-grid span{font-size:.72rem;color:var(--muted);text-transform:uppercase;font-weight:850}
+.design-customer-grid strong{margin-top:4px}
+.design-admin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.design-status-select{border:1px solid var(--line);border-radius:9px;padding:8px;background:#fff}
+.design-proposal-box{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.design-proposal-row{display:grid;grid-template-columns:2fr .55fr 1fr 1.5fr auto;gap:8px;align-items:end;margin-bottom:9px}
+.design-proposal-row label{display:grid;gap:4px;font-size:.72rem;font-weight:800}
+.design-proposal-row input,.design-add-product input,.design-add-product select,.design-proposal-box textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}
+.design-add-product{display:grid;grid-template-columns:2fr 1.5fr .55fr auto;gap:8px;align-items:center;margin:13px 0}
+.design-budget-total{display:flex;justify-content:space-between;align-items:center;padding:15px;border-radius:13px;background:#eff7ec;margin:14px 0}
+.design-budget-total strong{font-size:1.3rem;color:var(--green-900)}
+@media(max-width:760px){
+ .design-admin-summary,.design-admin-media{grid-template-columns:1fr;display:grid}
+ .design-customer-grid{grid-template-columns:1fr 1fr}
+ .design-proposal-row,.design-add-product{grid-template-columns:1fr 1fr}
+}
