@@ -66,6 +66,13 @@
         <div id="categoryProductGrid" class="category-page-grid">
           <div class="empty-state">Cargando productos...</div>
         </div>
+        <div class="category-end-picker category-page-end-picker">
+          <span class="eyebrow">SEGUIR EXPLORANDO</span>
+          <h3>Elegí otra categoría</h3>
+          <label>Ver categoría
+            <select id="categoryPageBottomSelect"><option value="">Elegí una categoría...</option></select>
+          </label>
+        </div>
       </section>
     </main>
 
@@ -82,6 +89,7 @@
       <button class="category-plant-close" type="button" data-close-plant aria-label="Cerrar">×</button>
       <div id="categoryPlantModalContent"></div>
     </div>
+    <button id="categoryModalDown" class="category-modal-down" type="button" aria-label="Ver más información" hidden>↓</button>
   </div>
 
   <a class="whatsapp-float" id="whatsappFloat" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp" hidden>
