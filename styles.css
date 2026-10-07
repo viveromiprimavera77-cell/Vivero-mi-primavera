@@ -458,3 +458,15 @@ body.welcome-open{overflow:hidden}
   .design-step-counter{font-size:.68rem}
   .design-next-btn,.design-submit{font-size:.84rem;padding:0 10px}
 }
+
+
+/* v19: acciones del inicio en una sola fila */
+.hero-actions{display:flex;flex-wrap:nowrap;gap:10px;align-items:stretch}
+.hero-actions .btn{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap}
+@media(max-width:520px){
+  .hero-actions{gap:7px}
+  .hero-actions .btn{padding:0 10px;font-size:.78rem;min-height:44px}
+}
+@media(max-width:390px){
+  .hero-actions .btn{font-size:.72rem;padding:0 7px}
+}
