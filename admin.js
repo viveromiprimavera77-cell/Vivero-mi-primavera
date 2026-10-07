@@ -5,7 +5,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const slugify=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  let products=[],categories=[],assocs=[],variants=[],holeRecommendations=[],settings={},orders=[],orderItems=[],currentUser=null,removingVideo=false;
+  let products=[],categories=[],assocs=[],variants=[],inventory=[],holeRecommendations=[],settings={},orders=[],orderItems=[],currentUser=null,removingVideo=false,manualDraftItems=[];
 
   function toast(m){$("adminToast").textContent=m;$("adminToast").classList.add("show");setTimeout(()=>$("adminToast").classList.remove("show"),2300)}
   function msg(id,m="",type=""){$(id).textContent=m;$(id).className=`form-message ${type}`.trim()}
@@ -40,19 +40,20 @@
   $("logoutBtn").addEventListener("click",async()=>{await db.auth.signOut();location.reload()});
 
   async function loadAll(){
-    const [pr,cr,ar,vr,hr,sr,or,oir]=await Promise.all([
+    const [pr,cr,ar,vr,ir,hr,sr,or,oir]=await Promise.all([
       db.from("products").select("*").order("sort_order").order("name"),
       db.from("categories").select("*").order("sort_order").order("name"),
       db.from("product_categories").select("*").order("sort_order"),
       db.from("product_variants").select("*").order("sort_order"),
+      db.from("product_inventory").select("*"),
       db.from("hole_recommendations").select("*").order("liters"),
       db.from("site_settings").select("*").eq("id",1).maybeSingle(),
       db.from("orders").select("*").order("created_at",{ascending:false}),
       db.from("order_items").select("*").order("created_at")
     ]);
-    [pr,cr,ar,vr,hr,or,oir].forEach(r=>{if(r.error)throw r.error});
-    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];holeRecommendations=hr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
-    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderHoleRecommendations();renderOrders();fillSettings();
+    [pr,cr,ar,vr,ir,hr,or,oir].forEach(r=>{if(r.error)throw r.error});
+    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];inventory=ir.data||[];holeRecommendations=hr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
+    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderHoleRecommendations();renderOrders();renderManualOrderForm();fillSettings();
     if(!$("variantRows").children.length) addVariantRow();
   }
 
@@ -190,6 +191,7 @@
     const litersNumber=v.liters==null?null:Number(v.liters);
     const standardLiters=litersNumber!=null&&STANDARD_LITERS.includes(litersNumber);
     const litersChoice=presentation==="Maceta soplada"?(standardLiters?String(litersNumber):(litersNumber!=null?"other":"")):"";
+    const stock=Number(inventory.find(i=>i.variant_id===v.id)?.stock??v.stock??0);
     div.innerHTML=`
       <div class="variant-main-grid">
         <label>Tipo de presentación
@@ -213,6 +215,7 @@
         <label class="v-height-wrap" ${material?"hidden":""}><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
+        <label>Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" type="number" min="0" step="1" value="${stock}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
@@ -306,6 +309,7 @@
       height:row.querySelector(".v-height").value.trim()||null,
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
+      stock:Math.max(0,Math.floor(Number(row.querySelector(".v-stock").value||0))),
       availability:row.querySelector(".v-availability").value,
       closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
       closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
@@ -405,6 +409,7 @@
         <div class="summary-sale-values">
           <div><span>Precio de venta</span><strong>${money(v.price)}</strong></div>
           <div><span>Costo</span><strong>${money(v.cost)}</strong></div>
+          <div><span>Stock disponible</span><strong>${Number(v.stock||0).toLocaleString("es-AR")} u.</strong></div>
         </div>
         ${closures.length?`<small>${esc(closures.join(" · "))}</small>`:""}
       </div>`;
@@ -515,11 +520,18 @@
         const vp={product_id:product.id,label:v.label,liters:v.liters,height:v.height,price:v.price,cost:v.cost,availability:v.availability,
           closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
           active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
+        let savedVariantId;
         if(v.id){
-          const {error}=await db.from("product_variants").update(vp).eq("id",v.id);if(error)throw error;keep.push(v.id);
+          const {error}=await db.from("product_variants").update(vp).eq("id",v.id);if(error)throw error;keep.push(v.id);savedVariantId=v.id;
         }else{
-          const {data,error}=await db.from("product_variants").insert(vp).select("id").single();if(error)throw error;keep.push(data.id);
+          const {data,error}=await db.from("product_variants").insert(vp).select("id").single();if(error)throw error;keep.push(data.id);savedVariantId=data.id;
         }
+        const {error:inventoryError}=await db.from("product_inventory").upsert({
+          variant_id:savedVariantId,
+          stock:Math.max(0,Math.floor(Number(v.stock||0))),
+          updated_at:new Date().toISOString()
+        },{onConflict:"variant_id"});
+        if(inventoryError)throw inventoryError;
       }
       for(const old of existing){if(!keep.includes(old.id)){const {error}=await db.from("product_variants").delete().eq("id",old.id);if(error)throw error}}
       const newImageUrls={main:main||"",integrated:integrated||""};
@@ -547,7 +559,10 @@
     const list=products.filter(p=>!term||p.name.toLowerCase().includes(term));
     $("productList").innerHTML=list.length?list.map(p=>{
       const cs=assocs.filter(a=>a.product_id===p.id).map(a=>categories.find(c=>c.id===a.category_id)?.name).filter(Boolean).join(", ");
-      const vs=variants.filter(v=>v.product_id===p.id).map(v=>`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""}`).join(", ");
+      const vs=variants.filter(v=>v.product_id===p.id).map(v=>{
+        const stock=Number(inventory.find(i=>i.variant_id===v.id)?.stock||0);
+        return `${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""} · Stock: ${stock.toLocaleString("es-AR")} u.`;
+      }).join(" | ");
       return `<div class="item-row"><div><div class="item-title">${esc(p.name)} ${p.active?"":"· Oculta"}</div><div class="item-meta">${esc(cs||"Sin categoría")} · ${esc(vs||"Sin presentación")} · selector: ${p.prioritize_height?"altura":"litros"} · posición ${p.sort_order}</div></div><div class="item-actions"><button class="small-btn" data-edit-product="${p.id}">Editar</button><button class="small-btn" data-toggle-product="${p.id}">${p.active?"Ocultar":"Mostrar"}</button><button class="small-btn danger" data-delete-product="${p.id}">Eliminar</button></div></div>`;
     }).join(""):`<p class="form-message">No hay plantas.</p>`;
   }
@@ -722,7 +737,7 @@
     if(digits.startsWith('549')&&digits.length===13)return `+54 9 ${digits.slice(3)}`;
     return phone||'Sin teléfono';
   }
-  function statusLabel(s){return s==="pending_confirmation"?"Pedido a confirmar":s==="confirmed"?"Confirmado":s==="dispatched"?"Despachado":"Cancelado"}
+  function statusLabel(s){return s==="pending_confirmation"?"Pedido a confirmar":s==="confirmed"?"Confirmado":s==="dispatched"?"Despachado / finalizado":"Cancelado"}
   function statusClass(s){return s==="pending_confirmation"?"pending":s==="confirmed"?"confirmed":s==="dispatched"?"dispatched":"cancelled"}
   function orderTotals(orderId){
     const o=orders.find(x=>x.id===orderId),items=orderItems.filter(i=>i.order_id===orderId);
@@ -732,7 +747,10 @@
   }
   function catalogOptions(){
     const opts=[];
-    products.forEach(p=>variants.filter(v=>v.product_id===p.id&&v.active).forEach(v=>opts.push(`<option value="${v.id}">${esc(p.name)} — ${esc(v.label)} — ${money(v.price)}</option>`)));
+    products.forEach(p=>variants.filter(v=>v.product_id===p.id&&v.active).forEach(v=>{
+      const stock=Number(inventory.find(i=>i.variant_id===v.id)?.stock||0);
+      opts.push(`<option value="${v.id}">${esc(p.name)} — ${esc(v.label)} — Stock ${stock} — ${money(v.price)}</option>`);
+    }));
     return `<option value="">Ítem personalizado</option>${opts.join("")}`;
   }
   function orderItemCalcMeta(item){
@@ -749,62 +767,238 @@
     return "";
   }
 
+  function inventoryStock(variantId){
+    return Number(inventory.find(i=>i.variant_id===variantId)?.stock||0);
+  }
+  function variantDescription(v){
+    if(!v)return "";
+    const p=products.find(x=>x.id===v.product_id);
+    const details=[v.label,v.liters?Number(v.liters).toLocaleString("es-AR")+" L":"",v.height||""].filter(Boolean).join(" · ");
+    return (p?.name||"Producto")+" — "+details;
+  }
+  function manualVariantOptions(){
+    const opts=['<option value="">Ítem personalizado</option>'];
+    products.forEach(p=>variants.filter(v=>v.product_id===p.id&&v.active).forEach(v=>{
+      opts.push(`<option value="${v.id}">${esc(variantDescription(v))} — Stock ${inventoryStock(v.id)} — ${money(v.price)}</option>`);
+    }));
+    return opts.join("");
+  }
+  function syncManualVariantFields(){
+    const v=variants.find(x=>x.id===$("manualVariantSelect").value);
+    $("manualCustomNameWrap").hidden=!!v;
+    if(v){
+      $("manualItemPrice").value=Number(v.price||0);
+      $("manualItemCost").value=Number(v.cost||0);
+      $("manualCustomName").value="";
+    }else{
+      $("manualItemPrice").value=0;
+      $("manualItemCost").value=0;
+    }
+  }
+  function renderManualOrderDraft(){
+    $("manualDraftList").innerHTML=manualDraftItems.length?manualDraftItems.map((item,index)=>{
+      const v=item.variant_id?variants.find(x=>x.id===item.variant_id):null;
+      const name=v?variantDescription(v):item.item_name;
+      const stock=v?inventoryStock(v.id):null;
+      return `<div class="manual-draft-row">
+        <div><strong>${esc(name)}</strong><small>${v?`Stock actual: ${stock} u. · `:""}${item.quantity} × ${money(item.unit_price)}</small></div>
+        <strong>${money(Number(item.quantity)*Number(item.unit_price))}</strong>
+        <button type="button" class="small-btn danger" data-remove-manual-item="${index}">Quitar</button>
+      </div>`;
+    }).join(""):'<p class="form-message">Todavía no agregaste productos al pedido extra.</p>';
+    const total=manualDraftItems.reduce((sum,item)=>sum+Number(item.quantity)*Number(item.unit_price),0);
+    $("manualOrderTotal").textContent=money(total);
+  }
+  function renderManualOrderForm(){
+    if(!$("manualVariantSelect"))return;
+    const previous=$("manualVariantSelect").value;
+    $("manualVariantSelect").innerHTML=manualVariantOptions();
+    if(previous&&variants.some(v=>v.id===previous))$("manualVariantSelect").value=previous;
+    syncManualVariantFields();
+    renderManualOrderDraft();
+  }
+  function resetManualOrderForm(){
+    $("manualOrderForm").reset();
+    manualDraftItems=[];
+    $("manualExtraCost").value=0;
+    $("manualItemQty").value=1;
+    renderManualOrderForm();
+    msg("manualOrderMessage","");
+  }
+
+  $("toggleManualOrderBtn").addEventListener("click",()=>{
+    $("manualOrderForm").hidden=!$("manualOrderForm").hidden;
+    if(!$("manualOrderForm").hidden){
+      renderManualOrderForm();
+      $("manualCustomerName").focus();
+    }
+  });
+  $("closeManualOrderBtn").addEventListener("click",()=>{$("manualOrderForm").hidden=true});
+  $("manualVariantSelect").addEventListener("change",syncManualVariantFields);
+  $("manualAddItemBtn").addEventListener("click",()=>{
+    const variantId=$("manualVariantSelect").value||null;
+    const qty=Math.max(1,Math.floor(Number($("manualItemQty").value||1)));
+    const price=Math.max(0,Number($("manualItemPrice").value||0));
+    const cost=Math.max(0,Number($("manualItemCost").value||0));
+    let itemName="";
+    if(variantId){
+      const currentQty=manualDraftItems.filter(i=>i.variant_id===variantId).reduce((s,i)=>s+Number(i.quantity),0);
+      const available=inventoryStock(variantId);
+      if(currentQty+qty>available)return toast(`Stock insuficiente. Disponible: ${available} unidades.`);
+    }else{
+      itemName=$("manualCustomName").value.trim();
+      if(!itemName)return toast("Escribí el nombre del ítem personalizado.");
+    }
+    manualDraftItems.push({variant_id:variantId,item_name:itemName,quantity:qty,unit_price:price,unit_cost:cost});
+    $("manualItemQty").value=1;
+    if(!variantId)$("manualCustomName").value="";
+    renderManualOrderDraft();
+  });
+  $("manualDraftList").addEventListener("click",e=>{
+    const idx=e.target.dataset.removeManualItem;
+    if(idx===undefined)return;
+    manualDraftItems.splice(Number(idx),1);
+    renderManualOrderDraft();
+  });
+  $("manualOrderForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    msg("manualOrderMessage","");
+    const customer=$("manualCustomerName").value.trim();
+    if(!customer)return msg("manualOrderMessage","Ingresá el nombre del cliente.","error");
+    if(!manualDraftItems.length)return msg("manualOrderMessage","Agregá al menos un producto.","error");
+    try{
+      const {data,error}=await db.rpc("create_manual_order",{
+        p_customer_name:customer,
+        p_items:manualDraftItems,
+        p_phone:$("manualPhone").value.trim(),
+        p_shipping_address:$("manualAddress").value.trim(),
+        p_postal_code:$("manualPostalCode").value.trim(),
+        p_general_question:$("manualQuestion").value.trim(),
+        p_extra_cost:Number($("manualExtraCost").value||0)
+      });
+      if(error)throw error;
+      resetManualOrderForm();
+      $("manualOrderForm").hidden=true;
+      await loadAll();
+      toast(`Pedido extra ${data?.order_code||""} creado`);
+    }catch(err){
+      console.error(err);
+      msg("manualOrderMessage",err.message||"No se pudo crear el pedido extra.","error");
+    }
+  });
+
   function renderOrders(){
     $("orderList").innerHTML=orders.length?orders.map(o=>{
       const items=orderItems.filter(i=>i.order_id===o.id),t=orderTotals(o.id);
+      const locked=o.status==="dispatched"||o.status==="cancelled";
+      const lockAttr=locked?" disabled":"";
+      const sourceBadge=o.order_source==="manual"?'<span class="badge extra-order">Pedido extra</span>':"";
+      const itemRows=items.map(i=>{
+        const v=i.variant_id?variants.find(x=>x.id===i.variant_id):null;
+        const stockMeta=v?`<small class="stock-inline">Stock actual: ${inventoryStock(v.id)} u.</small>`:"";
+        return `<div class="order-item-row" data-item="${i.id}">
+          <label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}"${lockAttr}>${orderItemCalcMeta(i)?`<small>${esc(orderItemCalcMeta(i))}</small>`:""}${stockMeta}</label>
+          <label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"${lockAttr}></label>
+          <label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"${lockAttr}></label>
+          <label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"${lockAttr}></label>
+          ${locked?"":`<button class="small-btn danger" data-delete-item="${i.id}">Quitar</button>`}
+        </div>`;
+      }).join("");
       return `<details class="order-card collapsible-order" data-order="${o.id}">
         <summary class="order-head">
-          <div><div class="order-code">${esc(o.order_code)}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s) · ${money(t.sales)}</div></div>
+          <div><div class="order-code">${esc(o.order_code)} ${sourceBadge}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s) · ${money(t.sales)}</div></div>
           <div class="order-summary-right"><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span><span class="order-chevron">⌄</span></div>
         </summary>
         <div class="order-body">
           <div class="order-customer">
             <div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div>
-            <div><span>Dirección</span><strong>${esc(o.shipping_address)} <small class="inline-cp">· CP ${esc(o.postal_code)}</small></strong></div>
+            <div><span>Dirección</span><strong>${esc(o.shipping_address||"Sin dirección")} ${o.postal_code?`<small class="inline-cp">· CP ${esc(o.postal_code)}</small>`:""}</strong></div>
             <div><span>Teléfono</span><strong>${esc(displayCustomerPhone(o.phone))}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
           </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
-          <div class="order-items">${items.map(i=>`<div class="order-item-row" data-item="${i.id}"><label>Ítem<input class="oi-name" value="${esc(i.item_name+(i.variant_label?` · ${i.variant_label}`:""))}">${orderItemCalcMeta(i)?`<small>${esc(orderItemCalcMeta(i))}</small>`:""}</label><label>Cant.<input class="oi-qty" type="number" min="1" value="${i.quantity}"></label><label>Precio u.<input class="oi-price" type="number" min="0" step="0.01" value="${i.unit_price}"></label><label>Costo u.<input class="oi-cost" type="number" min="0" step="0.01" value="${i.unit_cost}"></label><button class="small-btn danger" data-delete-item="${i.id}">Quitar</button></div>`).join("")}</div>
+          <div class="order-items">${itemRows}</div>
           <div class="order-total-row"><span>Venta: ${money(t.sales)}</span><span>Costo: ${money(t.cost)}</span><span>Ganancia: ${money(t.profit)}</span></div>
-          <label>Otros costos del pedido<input class="order-extra-cost" type="number" min="0" step="0.01" value="${o.extra_cost||0}"></label>
-          <div class="add-item-box"><strong>Agregar ítem</strong><div class="add-item-grid"><label>Producto / presentación<select class="add-catalog-variant">${catalogOptions()}</select></label><label>Cant.<input class="add-qty" type="number" min="1" value="1"></label><label>Precio<input class="add-price" type="number" min="0" value="0"></label><label>Costo<input class="add-cost" type="number" min="0" value="0"></label><button class="small-btn" data-add-item="${o.id}">Agregar</button></div><label class="custom-name-wrap">Nombre personalizado<input class="add-custom-name" placeholder="Ej.: Tierra abonada"></label></div>
-          <div class="order-actions"><button class="small-btn" data-save-order="${o.id}">Guardar cambios</button>${o.status==="pending_confirmation"?`<button class="status-btn confirm" data-confirm-order="${o.id}">Confirmar pedido</button>`:""}${o.status==="confirmed"?`<button class="status-btn dispatch" data-dispatch-order="${o.id}">Pedido despachado</button>`:""}${o.status!=="dispatched"&&o.status!=="cancelled"?`<button class="status-btn cancel" data-cancel-order="${o.id}">Cancelar</button>`:""}</div>
+          ${locked?`<p class="stock-final-note">${o.status==="dispatched"?"Stock descontado al finalizar este pedido.":"Pedido cancelado; no descontó stock."}</p>`:`
+            <label>Otros costos del pedido<input class="order-extra-cost" type="number" min="0" step="0.01" value="${o.extra_cost||0}"></label>
+            <div class="add-item-box"><strong>Agregar ítem</strong><div class="add-item-grid"><label>Producto / presentación<select class="add-catalog-variant">${catalogOptions()}</select></label><label>Cant.<input class="add-qty" type="number" min="1" value="1"></label><label>Precio<input class="add-price" type="number" min="0" value="0"></label><label>Costo<input class="add-cost" type="number" min="0" value="0"></label><button class="small-btn" data-add-item="${o.id}">Agregar</button></div><label class="custom-name-wrap">Nombre personalizado<input class="add-custom-name" placeholder="Ej.: Tierra abonada"></label></div>
+            <div class="order-actions"><button class="small-btn" data-save-order="${o.id}">Guardar cambios</button>${o.status==="pending_confirmation"?`<button class="status-btn confirm" data-confirm-order="${o.id}">Confirmar pedido</button>`:""}${o.status==="confirmed"?`<button class="status-btn dispatch" data-dispatch-order="${o.id}">Despachado / finalizado</button>`:""}${o.status!=="dispatched"&&o.status!=="cancelled"?`<button class="status-btn cancel" data-cancel-order="${o.id}">Cancelar</button>`:""}</div>
+          `}
         </div>
       </details>`;
     }).join(""):`<p class="form-message">Todavía no hay pedidos.</p>`;
 
-    document.querySelectorAll(".add-catalog-variant").forEach(sel=>sel.addEventListener("change",()=>{const card=sel.closest(".order-card"),v=variants.find(x=>x.id===sel.value),p=v?products.find(x=>x.id===v.product_id):null;card.querySelector(".add-price").value=v?.price||0;card.querySelector(".add-cost").value=v?.cost||0;card.querySelector(".custom-name-wrap").hidden=!!v;if(!v)card.querySelector(".add-custom-name").value=""}));
-    const dispatched=orders.filter(o=>o.status==="dispatched" && o.status!=="cancelled"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
+    document.querySelectorAll(".add-catalog-variant").forEach(sel=>sel.addEventListener("change",()=>{
+      const card=sel.closest(".order-card"),v=variants.find(x=>x.id===sel.value);
+      card.querySelector(".add-price").value=v?.price||0;
+      card.querySelector(".add-cost").value=v?.cost||0;
+      card.querySelector(".custom-name-wrap").hidden=!!v;
+      if(!v)card.querySelector(".add-custom-name").value="";
+    }));
+    const dispatched=orders.filter(o=>o.status==="dispatched"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
     $("summaryDispatched").textContent=dispatched.length;$("summarySales").textContent=money(tot.sales);$("summaryCosts").textContent=money(tot.cost);$("summaryProfit").textContent=money(tot.profit);
   }
 
   $("orderList").addEventListener("click",async e=>{
     const card=e.target.closest(".order-card");if(!card)return;const orderId=card.dataset.order;
+    const order=orders.find(o=>o.id===orderId);
+    if(order?.status==="dispatched"||order?.status==="cancelled")return;
+
     if(e.target.dataset.deleteItem){
       if(orderItems.filter(i=>i.order_id===orderId).length<=1)return toast("El pedido debe conservar al menos un ítem.");
-      if(!confirm("¿Quitar este ítem?"))return;const {error}=await db.from("order_items").delete().eq("id",e.target.dataset.deleteItem);if(error)return toast(error.message);await loadAll();return;
+      if(!confirm("¿Quitar este ítem?"))return;
+      const {error}=await db.from("order_items").delete().eq("id",e.target.dataset.deleteItem);
+      if(error)return toast(error.message);
+      await loadAll();return;
     }
+
     if(e.target.dataset.saveOrder){
       try{
         for(const row of card.querySelectorAll(".order-item-row")){
           const id=row.dataset.item,rawName=row.querySelector(".oi-name").value.trim();
-          const {error}=await db.from("order_items").update({item_name:rawName,variant_label:null,quantity:Number(row.querySelector(".oi-qty").value||1),unit_price:Number(row.querySelector(".oi-price").value||0),unit_cost:Number(row.querySelector(".oi-cost").value||0),updated_at:new Date().toISOString()}).eq("id",id);if(error)throw error;
+          const {error}=await db.from("order_items").update({
+            item_name:rawName,variant_label:null,quantity:Number(row.querySelector(".oi-qty").value||1),
+            unit_price:Number(row.querySelector(".oi-price").value||0),unit_cost:Number(row.querySelector(".oi-cost").value||0),
+            updated_at:new Date().toISOString()
+          }).eq("id",id);
+          if(error)throw error;
         }
-        const {error}=await db.from("orders").update({extra_cost:Number(card.querySelector(".order-extra-cost").value||0),updated_at:new Date().toISOString()}).eq("id",orderId);if(error)throw error;
+        const {error}=await db.from("orders").update({extra_cost:Number(card.querySelector(".order-extra-cost").value||0),updated_at:new Date().toISOString()}).eq("id",orderId);
+        if(error)throw error;
         await loadAll();toast("Pedido actualizado");
-      }catch(err){toast(err.message)}return;
+      }catch(err){toast(err.message)}
+      return;
     }
+
     if(e.target.dataset.addItem){
       const sel=card.querySelector(".add-catalog-variant"),v=variants.find(x=>x.id===sel.value),p=v?products.find(x=>x.id===v.product_id):null;
-      const qty=Number(card.querySelector(".add-qty").value||1),price=Number(card.querySelector(".add-price").value||0),cost=Number(card.querySelector(".add-cost").value||0);
+      const qty=Math.max(1,Math.floor(Number(card.querySelector(".add-qty").value||1)));
+      const price=Number(card.querySelector(".add-price").value||0),cost=Number(card.querySelector(".add-cost").value||0);
+      if(v){
+        const already=orderItems.filter(i=>i.order_id===orderId&&i.variant_id===v.id).reduce((s,i)=>s+Number(i.quantity),0);
+        if(already+qty>inventoryStock(v.id))return toast(`Stock insuficiente. Disponible: ${inventoryStock(v.id)} unidades.`);
+      }
       const name=v?p.name:card.querySelector(".add-custom-name").value.trim();if(!name)return toast("Escribí el nombre del ítem.");
       const payload={order_id:orderId,product_id:p?.id||null,variant_id:v?.id||null,item_name:name,variant_label:v?.label||null,quantity:qty,unit_price:price,unit_cost:cost,updated_at:new Date().toISOString()};
-      const {error}=await db.from("order_items").insert(payload);if(error)return toast(error.message);await loadAll();toast("Ítem agregado");return;
+      const {error}=await db.from("order_items").insert(payload);if(error)return toast(error.message);
+      await loadAll();toast("Ítem agregado");return;
     }
-    const status=e.target.dataset.confirmOrder?"confirmed":e.target.dataset.dispatchOrder?"dispatched":e.target.dataset.cancelOrder?"cancelled":null;
+
+    if(e.target.dataset.dispatchOrder){
+      if(!confirm("¿Marcar este pedido como despachado / finalizado? Al hacerlo se descontará el stock y el pedido quedará bloqueado."))return;
+      const {error}=await db.rpc("dispatch_order_and_decrement_stock",{p_order_id:orderId});
+      if(error)return toast(error.message);
+      await loadAll();toast("Pedido finalizado y stock descontado");
+      return;
+    }
+
+    const status=e.target.dataset.confirmOrder?"confirmed":e.target.dataset.cancelOrder?"cancelled":null;
     if(status){
-      const patch={status,updated_at:new Date().toISOString()};if(status==="confirmed")patch.confirmed_at=new Date().toISOString();if(status==="dispatched")patch.dispatched_at=new Date().toISOString();if(status==="cancelled")patch.dispatched_at=null;
-      const {error}=await db.from("orders").update(patch).eq("id",orderId);if(error)return toast(error.message);await loadAll();toast(status==="dispatched"?"Pedido marcado como despachado":"Estado actualizado");
+      const patch={status,updated_at:new Date().toISOString()};
+      if(status==="confirmed")patch.confirmed_at=new Date().toISOString();
+      if(status==="cancelled")patch.dispatched_at=null;
+      const {error}=await db.from("orders").update(patch).eq("id",orderId);
+      if(error)return toast(error.message);
+      await loadAll();toast("Estado actualizado");
     }
   });
 
