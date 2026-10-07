@@ -215,7 +215,7 @@
         <label class="v-height-wrap" ${material?"hidden":""}><span class="v-height-label-text">${area?"Dimensiones":"Altura"}</span> <span class="optional-tag">opcional</span><input class="v-height" value="${esc(v.height||"")}" placeholder="${area?"Ej.: 40x40 cm":"Ej.: 1,80 m"}"></label>
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
-        <label class="variant-stock-field">Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" data-stock-variant="${esc(v.id||"")}" type="number" step="1" value="${stock}"></label>
+        <label class="variant-stock-field">Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" data-stock-variant="${esc(v.id||"")}" type="number" min="0" step="1" value="${stock}"></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
@@ -316,7 +316,7 @@
       height:row.querySelector(".v-height").value.trim()||null,
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
-      stock:Math.floor(Number(row.querySelector(".v-stock").value||0)),
+      stock:Math.max(0,Math.floor(Number(row.querySelector(".v-stock").value||0))),
       availability:row.querySelector(".v-availability").value,
       closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
       closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
@@ -536,7 +536,7 @@
         }
         const {error:inventoryError}=await db.from("product_inventory").upsert({
           variant_id:savedVariantId,
-          stock:Math.floor(Number(v.stock||0)),
+          stock:Math.max(0,Math.floor(Number(v.stock||0))),
           updated_at:new Date().toISOString()
         },{onConflict:"variant_id"});
         if(inventoryError)throw inventoryError;
@@ -571,7 +571,7 @@
       const vs=pv.map(v=>`${v.label}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${v.height}`:""}`).join(" | ");
       const stockHtml=pv.length?pv.map(v=>`<label class="quick-stock-chip" title="Cambiar stock de ${esc(p.name)} — ${esc(v.label)}">
           <span>${esc(v.label)}${v.liters?` · ${Number(v.liters).toLocaleString("es-AR")} L`:""}${v.height?` · ${esc(v.height)}`:""}</span>
-          <input class="quick-stock-input" data-stock-variant="${v.id}" type="number" step="1" value="${inventoryStock(v.id)}" aria-label="Stock disponible">
+          <input class="quick-stock-input" data-stock-variant="${v.id}" type="number" min="0" step="1" value="${inventoryStock(v.id)}" aria-label="Stock disponible">
         </label>`).join(""):'<span class="item-meta">Sin presentaciones</span>';
       return `<div class="item-row product-item-row">
         <div class="product-item-main">
@@ -793,7 +793,7 @@
   }
   async function saveInventoryStock(variantId,value,notify=false){
     if(!variantId)return;
-    const stock=Math.floor(Number(value||0));
+    const stock=Math.max(0,Math.floor(Number(value||0)));
     const {error}=await db.from("product_inventory").upsert({variant_id:variantId,stock,updated_at:new Date().toISOString()},{onConflict:"variant_id"});
     if(error){toast(error.message);return false}
     const current=inventory.find(i=>i.variant_id===variantId);
@@ -814,7 +814,7 @@
     box.innerHTML='<span class="product-action-stock-title">Stock rápido</span>'+pv.map(v=>`
       <label title="${esc(variantDescription(v))}">
         <small>${esc(v.label)}${v.liters?` ${Number(v.liters).toLocaleString("es-AR")}L`:""}${v.height?` ${esc(v.height)}`:""}</small>
-        <input class="action-stock-input" data-stock-variant="${v.id}" type="number" step="1" value="${inventoryStock(v.id)}">
+        <input class="action-stock-input" data-stock-variant="${v.id}" type="number" min="0" step="1" value="${inventoryStock(v.id)}">
       </label>`).join("");
   }
   $("productActionStock")?.addEventListener("change",async e=>{
