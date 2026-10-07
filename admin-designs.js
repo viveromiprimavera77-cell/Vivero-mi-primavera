@@ -109,7 +109,9 @@
       html+='<div class="design-budget-total"><span>Presupuesto</span><strong>'+money(total(r.id))+'</strong></div>';
       html+='<div class="design-admin-actions"><button class="small-btn" data-save-proposal>Guardar lista y presupuesto</button>';
       if(result)html+='<button class="status-btn confirm" data-send-whatsapp>Abrir WhatsApp con propuesta</button>';
-      html+='<button class="small-btn" data-convert-order>Marcar convertido en pedido</button></div></div></div></details>';
+      if(r.status==="converted")html+='<button class="small-btn" type="button" disabled>Pedido creado</button>';
+      else html+='<button class="small-btn" data-convert-order>Convertir en pedido</button>';
+      html+='</div></div></div></details>';
     }
     root.innerHTML=html||'<p class="form-message">No hay solicitudes en este estado.</p>';
     root.querySelectorAll(".design-add-variant").forEach(sel=>sel.addEventListener("change",()=>{
@@ -214,7 +216,13 @@
       if(e.target.hasAttribute("data-save-proposal")){await saveProposal(card,r);return await load();}
       if(e.target.hasAttribute("data-send-whatsapp"))return await sendWhatsapp(card,r);
       if(e.target.hasAttribute("data-convert-order")){
-        const res=await db.from("garden_design_requests").update({status:"converted",converted_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",r.id);if(res.error)throw res.error;return await load();
+        await saveProposal(card,r);
+        const res=await db.rpc("convert_design_to_order",{p_request_id:r.id});
+        if(res.error)throw res.error;
+        window.dispatchEvent(new CustomEvent("vivero:orders-changed"));
+        await load();
+        alert("Pedido creado correctamente. Ya aparece en Pedidos con la etiqueta “Con diseño”.");
+        return;
       }
     }catch(err){alert(err.message||"No se pudo completar la acción.");}
   });
