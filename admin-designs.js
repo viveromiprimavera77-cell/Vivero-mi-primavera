@@ -172,7 +172,22 @@
     msg+="\\n\\nSi querés avanzar con el pedido, respondeme por acá y coordinamos.";
     await db.from("garden_design_requests").update({status:"sent",sent_at:new Date().toISOString(),quoted_total:sum,updated_at:new Date().toISOString()}).eq("id",r.id);
     const phone=String(r.phone||"").replace(/\D/g,"");
+    if(r.result_image_path&&navigator.share&&navigator.canShare){
+      try{
+        const down=await db.storage.from("garden-designs").download(r.result_image_path);
+        if(!down.error&&down.data){
+          const ext=(r.result_image_path.split(".").pop()||"jpg").toLowerCase();
+          const mime=ext==="png"?"image/png":ext==="webp"?"image/webp":ext==="avif"?"image/avif":"image/jpeg";
+          const file=new File([down.data],"propuesta-mi-primavera."+ext,{type:mime});
+          if(navigator.canShare({files:[file]})){
+            await navigator.share({files:[file],text:msg,title:"Propuesta Mi Primavera"});
+            await load();return;
+          }
+        }
+      }catch(_err){}
+    }
     window.open("https://wa.me/"+phone+"?text="+encodeURIComponent(msg),"_blank");
+    alert("WhatsApp se abrió con el mensaje listo. En PC adjuntá la imagen de propuesta descargándola desde esta solicitud.");
     await load();
   }
 
