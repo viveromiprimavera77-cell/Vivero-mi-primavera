@@ -463,7 +463,7 @@
     const cart=window.ViveroCart.get();if(!cart.length)return;
     const phoneNational=String($('customerPhone').value||'').replace(/\D/g,'');
     if(phoneNational.length!==10||phoneNational.startsWith('0')){
-      $('orderMessage').textContent='Ingresá 10 dígitos: código de área sin 0 + número sin 15. Ejemplo: 1132123567.';
+      $('orderMessage').textContent='Ingresá 10 dígitos: código de área sin 0 + número sin 15. Ejemplo: 11XXXXXXXX.';
       $('customerPhone').focus();return;
     }
     const btn=$('confirmWhatsappBtn');btn.disabled=true;$('orderMessage').textContent='Registrando solicitud...';
