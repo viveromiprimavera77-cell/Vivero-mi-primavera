@@ -113,7 +113,7 @@
     document.getElementById("cartContinue").addEventListener("click", close);
     document.getElementById("cartCheckout").addEventListener("click", () => {
       if (!load().length) return;
-      location.href = "calculadora.html?checkout=1";
+      location.href = "pedido.html";
     });
     document.getElementById("cartDrawerItems").addEventListener("click", e => {
       const id = e.target.dataset.removeCart;
