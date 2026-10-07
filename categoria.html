@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f8f3c">
+  <meta name="description" content="Categoría de plantas de Vivero Mi Primavera.">
+  <title>Categoría | Mi Primavera</title>
+  <link rel="icon" href="/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="category-page">
+  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span><span></span></button>
+  <div class="menu-backdrop" id="menuBackdrop"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="brand" aria-label="Volver al inicio"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></a>
+    <nav class="side-nav" aria-label="Navegación principal">
+      <a href="index.html" class="nav-main">Inicio</a>
+      <details open class="nav-details">
+        <summary>Categorías</summary>
+        <div id="categoryNav" class="category-nav"><span class="nav-loading">Cargando...</span></div>
+      </details>
+      <a href="disena-tu-jardin.html" class="nav-main">Diseñá tu jardín</a>
+      <a href="index.html#envios" class="nav-main">Envíos</a>
+      <a href="index.html#nosotros" class="nav-main">Acerca de nosotros</a>
+      <details class="nav-details contact-details">
+        <summary>Contactanos</summary>
+        <div class="contact-menu-content">
+          <span>Email</span>
+          <a href="mailto:viveromiprimavera77@gmail.com">viveromiprimavera77@gmail.com</a>
+        </div>
+      </details>
+    </nav>
+    <div class="sidebar-bottom"><span>Mi Primavera</span><small>Naturaleza que transforma tu espacio</small></div>
+  </aside>
+
+  <div class="page-shell category-page-shell">
+    <header class="category-site-header">
+      <a class="category-site-logo" href="index.html" aria-label="Volver al inicio">
+        <img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero">
+      </a>
+      <div class="category-header-actions">
+        <label>Ver otra categoría
+          <select id="categoryPageSelect"><option value="">Cargando...</option></select>
+        </label>
+      </div>
+    </header>
+
+    <main class="category-main">
+      <section class="category-page-intro">
+        <span class="eyebrow">CATÁLOGO · MI PRIMAVERA</span>
+        <h1 id="categoryPageTitle">Cargando categoría...</h1>
+        <p id="categoryPageDescription"></p>
+        <a class="text-link" href="index.html#catalogo">← Volver al catálogo completo</a>
+      </section>
+
+      <section class="category-products-section">
+        <div class="category-products-heading">
+          <div>
+            <span class="eyebrow">PLANTAS Y PRODUCTOS</span>
+            <h2 id="categoryProductsTitle">Opciones disponibles</h2>
+          </div>
+          <span id="categoryProductCount" class="category-product-count"></span>
+        </div>
+        <div id="categoryProductGrid" class="category-page-grid">
+          <div class="empty-state">Cargando productos...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a class="footer-brand" href="index.html"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></a>
+      <div><strong>Medios de pago</strong><div class="payment-list"><span>Efectivo</span><span>Transferencias</span><span>Mercado Pago</span></div></div>
+      <div><strong>Contacto</strong><p>Consultas, pedidos y coordinación de entregas por WhatsApp.</p></div>
+    </footer>
+  </div>
+
+  <div class="category-plant-modal" id="categoryPlantModal" hidden>
+    <div class="category-plant-backdrop" data-close-plant></div>
+    <div class="category-plant-dialog" role="dialog" aria-modal="true" aria-labelledby="categoryPlantModalTitle">
+      <button class="category-plant-close" type="button" data-close-plant aria-label="Cerrar">×</button>
+      <div id="categoryPlantModalContent"></div>
+    </div>
+  </div>
+
+  <a class="whatsapp-float" id="whatsappFloat" href="#" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp" hidden>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8C18.75 8 8 18.35 8 31.13c0 4.55 1.39 8.82 3.78 12.4L8.5 55.5l12.5-3.2A24.7 24.7 0 0 0 32 54.26c13.25 0 24-10.35 24-23.13S45.25 8 32 8Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M24.5 20.5c-1.35 0-2.4.65-3.05 1.9-.75 1.45-1.3 3.65.75 7.4 2.55 4.7 6.6 8.55 11.45 10.85 3.65 1.75 6 1.45 7.45.55 1.1-.7 2.05-2.05 2.35-3.35.2-.85-.1-1.35-.75-1.7l-5.1-2.4c-.55-.25-1-.15-1.35.3l-1.8 2.2c-.3.35-.65.45-1.05.25-2.25-1.05-4.2-2.55-5.8-4.4-1.25-1.45-2.15-2.85-2.75-4.2-.2-.45-.1-.8.2-1.1l1.8-1.9c.45-.45.55-.9.35-1.45l-1.8-5.05c-.2-.6-.45-.9-.9-.9Z" fill="currentColor"/></svg>
+  </a>
+
+  <button class="back-to-top" id="backToTop" type="button" aria-label="Volver al inicio">↑</button>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="cart.js"></script>
+  <script src="categoria.js"></script>
+</body>
+</html>
