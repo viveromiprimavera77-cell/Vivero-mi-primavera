@@ -76,7 +76,7 @@
     calculate();
     renderCheckout();
     renderAddonPrompt();
-    if(params.get('checkout')==='1')showCheckout();
+    if(params.get('checkout')==='1'){location.replace('pedido.html');return}
   }
 
   function productListForCategory(){
@@ -436,7 +436,7 @@
   $('addToCartBtn').addEventListener('click',addCurrentToCart);
   $('addonProductBtn').addEventListener('click',openAddonCalculator);
   $('keepShoppingBtn').addEventListener('click',()=>{location.href='index.html#catalogo'});
-  $('continueOrderBtn').addEventListener('click',showCheckout);
+  $('continueOrderBtn').addEventListener('click',()=>{location.href='pedido.html'});
   $('clearCartBtn').addEventListener('click',()=>{if(confirm('¿Eliminar todos los artículos del carrito?')){window.ViveroCart.clear();renderCheckout()}});
   window.addEventListener('viverocartchange',renderCheckout);
   $('checkoutItems').addEventListener('input',e=>{if(e.target.matches('.checkout-qty'))window.ViveroCart.updateQty(e.target.dataset.qtyId,e.target.value)});
