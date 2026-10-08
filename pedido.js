@@ -57,38 +57,59 @@
   function shippingNormalize(v){
     return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
   }
-  function localityFromGeorefDepartment(x){
+  function localityFromGeoref(x){
     const lat=Number((x&&x.centroide&&x.centroide.lat)!=null?x.centroide.lat:x&&x.centroide_lat);
     const lon=Number((x&&x.centroide&&x.centroide.lon)!=null?x.centroide.lon:x&&x.centroide_lon);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
     const name=String(x&&x.nombre||"").trim();
-    if(!name)return null;
-    return {
+    const department=String(
+      (x&&x.departamento&&x.departamento.nombre)||
+      (x&&x.departamento_nombre)||
+      (x&&x.municipio&&x.municipio.nombre)||
+      (x&&x.municipio_nombre)||
+      ""
+    ).trim();
+    const departmentId=String(
+      (x&&x.departamento&&x.departamento.id)||
+      (x&&x.departamento_id)||
+      ""
+    ).trim();
+    const localityCensalId=String(
+      (x&&x.localidad_censal&&x.localidad_censal.id)||
+      (x&&x.localidad_censal_id)||
+      ""
+    ).trim();
+    return name?{
       id:String(x&&x.id||""),
-      name:name,
-      department:name,
-      lat:Number.isFinite(lat)?lat:null,
-      lon:Number.isFinite(lon)?lon:null,
+      name,
+      department,
+      departmentId,
+      localityCensalId,
+      lat,
+      lon,
       isCaba:false,
       provinceCode:"06"
-    };
+    }:null;
   }
   function isAmbaLocality(l){
-    return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.name));
+    return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.department));
   }
   async function fetchGeorefLocalities(){
-    const cacheKey="miPrimaveraShippingDepartmentsV2";
+    const cacheKey="miPrimaveraShippingLocalitiesV3";
     try{
       const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
       if(Array.isArray(cached)&&cached.length)return cached;
     }catch{}
-    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/departamentos?provincia=06&max=500");
+    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=06&max=5000");
     if(!res.ok)throw new Error("No se pudieron cargar las localidades");
     const data=await res.json();
-    const list=(data.departamentos||[]).map(localityFromGeorefDepartment).filter(Boolean);
+    const list=(data.localidades||[]).map(localityFromGeoref).filter(Boolean);
     list.push({
       id:"02",
       name:"Ciudad Autónoma de Buenos Aires",
-      department:"",
+      department:"CABA",
+      departmentId:"",
+      localityCensalId:"",
       lat:-34.6037,
       lon:-58.3816,
       isCaba:true,
@@ -96,20 +117,24 @@
     });
     const dedup=new Map();
     list.forEach(function(l){
-      const key=shippingNormalize(l.name);
+      const key=shippingNormalize(l.name)+"|"+shippingNormalize(l.department)+"|"+(l.isCaba?"caba":"");
       if(!dedup.has(key))dedup.set(key,l);
     });
     const values=Array.from(dedup.values());
     try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
     return values;
   }
-  function localityLabel(l){return l.name}
+  function localityLabel(l){
+    return l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)
+      ?l.name+" — "+l.department
+      :l.name;
+  }
   function availableLocalities(){
     const region=$("shippingRegion").value;
     if(!region)return [];
     return shippingLocalities
       .filter(function(l){return region==="amba"?isAmbaLocality(l):!isAmbaLocality(l)})
-      .sort(function(a,b){return a.name.localeCompare(b.name,"es")});
+      .sort(function(a,b){return a.name.localeCompare(b.name,"es")||a.department.localeCompare(b.department,"es")});
   }
   function closeLocalitySuggestions(){
     $("shippingLocalitySuggestions").hidden=true;
@@ -125,7 +150,7 @@
     const input=$("shippingStreetSearch");
     input.value="";
     input.disabled=!selectedShippingLocality;
-    input.placeholder=selectedShippingLocality?"Escribí la calle":"Primero elegí la localidad";
+    input.placeholder=selectedShippingLocality?"Ej.: Rivadavia":"Primero elegí la localidad";
     $("customerAddressNumber").value="";
     closeStreetSuggestions();
     invalidateShippingQuote();
@@ -144,7 +169,10 @@
     if(input.disabled){closeLocalitySuggestions();return}
     const all=availableLocalities();
     const matches=(term
-      ?all.filter(function(l){return shippingNormalize(l.name).includes(term)})
+      ?all.filter(function(l){
+        const hay=shippingNormalize(l.name+" "+l.department);
+        return hay.includes(term);
+      })
       :all
     ).slice(0,12);
     box.innerHTML=matches.length
@@ -185,8 +213,10 @@
     if(!selectedShippingLocality)return null;
     return {
       name:selectedShippingLocality.name,
+      locality_id:selectedShippingLocality.id||"",
+      locality_censal_id:selectedShippingLocality.localityCensalId||"",
       department:selectedShippingLocality.department||"",
-      department_id:selectedShippingLocality.id||"",
+      department_id:selectedShippingLocality.departmentId||"",
       province_code:selectedShippingLocality.provinceCode||"06",
       is_caba:!!selectedShippingLocality.isCaba
     };
@@ -196,7 +226,11 @@
     const url=new URL("https://apis.datos.gob.ar/georef/api/v2.0/calles");
     url.searchParams.set("provincia",selectedShippingLocality.provinceCode||"06");
     if(!selectedShippingLocality.isCaba){
-      url.searchParams.set("departamento",selectedShippingLocality.id||selectedShippingLocality.name);
+      if(selectedShippingLocality.localityCensalId){
+        url.searchParams.set("localidad_censal",selectedShippingLocality.localityCensalId);
+      }else if(selectedShippingLocality.departmentId||selectedShippingLocality.department){
+        url.searchParams.set("departamento",selectedShippingLocality.departmentId||selectedShippingLocality.department);
+      }
     }
     url.searchParams.set("nombre",term.trim());
     url.searchParams.set("max","15");
@@ -297,6 +331,8 @@
           items:items,
           shipping_region:region,
           shipping_locality:dest.name,
+          shipping_locality_id:dest.locality_id,
+          shipping_locality_censal_id:dest.locality_censal_id,
           shipping_locality_department:dest.department,
           shipping_locality_department_id:dest.department_id,
           shipping_province_code:dest.province_code,
@@ -540,6 +576,8 @@
           items:payload,
           shipping_region:region,
           shipping_locality:dest.name,
+          shipping_locality_id:dest.locality_id,
+          shipping_locality_censal_id:dest.locality_censal_id,
           shipping_locality_department:dest.department,
           shipping_locality_department_id:dest.department_id,
           shipping_province_code:dest.province_code
