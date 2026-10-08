@@ -5,7 +5,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const slugify=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  let products=[],categories=[],assocs=[],variants=[],inventory=[],holeRecommendations=[],settings={},orders=[],orderItems=[],currentUser=null,removingVideo=false,manualDraftItems=[];
+  let products=[],categories=[],assocs=[],variants=[],inventory=[],holeRecommendations=[],settings={},shippingSettings={},orders=[],orderItems=[],currentUser=null,removingVideo=false,manualDraftItems=[];
 
   function toast(m){$("adminToast").textContent=m;$("adminToast").classList.add("show");setTimeout(()=>$("adminToast").classList.remove("show"),2300)}
   function msg(id,m="",type=""){$(id).textContent=m;$(id).className=`form-message ${type}`.trim()}
@@ -40,7 +40,7 @@
   $("logoutBtn").addEventListener("click",async()=>{await db.auth.signOut();location.reload()});
 
   async function loadAll(){
-    const [pr,cr,ar,vr,ir,hr,sr,or,oir]=await Promise.all([
+    const [pr,cr,ar,vr,ir,hr,sr,shr,or,oir]=await Promise.all([
       db.from("products").select("*").order("sort_order").order("name"),
       db.from("categories").select("*").order("sort_order").order("name"),
       db.from("product_categories").select("*").order("sort_order"),
@@ -48,12 +48,13 @@
       db.from("product_inventory").select("*"),
       db.from("hole_recommendations").select("*").order("liters"),
       db.from("site_settings").select("*").eq("id",1).maybeSingle(),
+      db.from("shipping_settings").select("*").eq("id",1).maybeSingle(),
       db.from("orders").select("*").order("created_at",{ascending:false}),
       db.from("order_items").select("*").order("created_at")
     ]);
-    [pr,cr,ar,vr,ir,hr,or,oir].forEach(r=>{if(r.error)throw r.error});
-    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];inventory=ir.data||[];holeRecommendations=hr.data||[];settings=sr.data||{};orders=or.data||[];orderItems=oir.data||[];
-    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderHoleRecommendations();renderOrders();renderManualOrderForm();fillSettings();
+    [pr,cr,ar,vr,ir,hr,shr,or,oir].forEach(r=>{if(r.error)throw r.error});
+    products=pr.data||[];categories=cr.data||[];assocs=ar.data||[];variants=vr.data||[];inventory=ir.data||[];holeRecommendations=hr.data||[];settings=sr.data||{};shippingSettings=shr.data||{};orders=or.data||[];orderItems=oir.data||[];
+    renderStats();renderCategoryChoices();renderProducts();renderCategories();renderCategoryOrderOptions();renderHoleRecommendations();renderOrders();renderManualOrderForm();fillSettings();fillShippingSettings();
     if(!$("variantRows").children.length) addVariantRow();
   }
 
@@ -216,6 +217,9 @@
         <label>Precio venta<input class="v-price" type="number" min="0" step="0.01" value="${v.price??0}"></label>
         <label>Costo<input class="v-cost" type="number" min="0" step="0.01" value="${v.cost??0}"></label>
         <label class="variant-stock-field">Stock disponible <span class="optional-tag">solo admin</span><input class="v-stock" data-stock-variant="${esc(v.id||"")}" type="number" min="0" step="1" value="${stock}"></label>
+        <label>Peso para envío (kg) <span class="optional-tag">solo admin</span><input class="v-shipping-weight" type="number" min="0" step="0.1" value="${v.shipping_weight_kg??""}" placeholder="Ej.: 12,5"><small>Si es tierra abonada o corteza y queda vacío, se usa el volumen en dm³ como estimación.</small></label>
+        <label>Vehículo de envío <span class="optional-tag">solo admin</span><select class="v-shipping-vehicle"><option value="" ${!v.shipping_vehicle_override?"selected":""}>Automático por peso</option><option value="camioneta" ${v.shipping_vehicle_override==="camioneta"?"selected":""}>Camioneta</option><option value="camion" ${v.shipping_vehicle_override==="camion"?"selected":""}>Camión</option><option value="camion_grande" ${v.shipping_vehicle_override==="camion_grande"?"selected":""}>Camión grande</option></select></label>
+        <label class="variant-shipping-separate"><span>Viaje separado <span class="optional-tag">solo admin</span></span><span class="check-label"><input class="v-shipping-separate" type="checkbox" ${v.shipping_separate?"checked":""}> Esta presentación viaja aparte</span><small>Usalo para tierra negra u otros productos que requieren su propio vehículo.</small></label>
         <label>Estado<select class="v-availability"><option value="in_stock" ${v.availability!=="consult"?"selected":""}>🟢 En stock</option><option value="consult" ${v.availability==="consult"?"selected":""}>Consultar</option></select></label>
         <button type="button" class="variant-remove">✕</button>
       </div>
@@ -317,6 +321,9 @@
       price:Number(row.querySelector(".v-price").value||0),
       cost:Number(row.querySelector(".v-cost").value||0),
       stock:Math.max(0,Math.floor(Number(row.querySelector(".v-stock").value||0))),
+      shipping_weight_kg:row.querySelector(".v-shipping-weight").value!==""?Math.max(0,Number(row.querySelector(".v-shipping-weight").value)):null,
+      shipping_vehicle_override:row.querySelector(".v-shipping-vehicle").value||null,
+      shipping_separate:row.querySelector(".v-shipping-separate").checked,
       availability:row.querySelector(".v-availability").value,
       closure_months_1:row.querySelector(".v-close-1").value?Number(row.querySelector(".v-close-1").value):null,
       closure_months_2:row.querySelector(".v-close-2").value?Number(row.querySelector(".v-close-2").value):null,
@@ -417,7 +424,10 @@
           <div><span>Precio de venta</span><strong>${money(v.price)}</strong></div>
           <div><span>Costo</span><strong>${money(v.cost)}</strong></div>
           <div><span>Stock disponible</span><strong>${Number(v.stock||0).toLocaleString("es-AR")} u.</strong></div>
+          <div><span>Peso envío</span><strong>${v.shipping_weight_kg!=null?`${Number(v.shipping_weight_kg).toLocaleString("es-AR")} kg`:"Sin definir"}</strong></div>
+          <div><span>Vehículo</span><strong>${esc(v.shipping_vehicle_override==="camioneta"?"Camioneta":v.shipping_vehicle_override==="camion"?"Camión":v.shipping_vehicle_override==="camion_grande"?"Camión grande":"Automático")}</strong></div>
         </div>
+        ${v.shipping_separate?'<small class="shipping-separate-summary">Viaje separado.</small>':""}
         ${closures.length?`<small>${esc(closures.join(" · "))}</small>`:""}
       </div>`;
     }).join("");
@@ -526,6 +536,7 @@
       const existing=variants.filter(v=>v.product_id===product.id),keep=[];
       for(const v of vrows){
         const vp={product_id:product.id,label:v.label,liters:v.liters,height:v.height,price:v.price,cost:v.cost,availability:v.availability,
+          shipping_weight_kg:v.shipping_weight_kg,shipping_vehicle_override:v.shipping_vehicle_override,shipping_separate:!!v.shipping_separate,
           closure_months_1:v.closure_months_1,closure_months_2:v.closure_months_2,closure_months_3:v.closure_months_3,
           active:true,sort_order:v.sort_order,updated_at:new Date().toISOString()};
         let savedVariantId;
@@ -961,6 +972,7 @@
             <div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div>
             <div><span>Dirección</span><strong>${esc(o.shipping_address||"Sin dirección")} ${o.postal_code?`<small class="inline-cp">· CP ${esc(o.postal_code)}</small>`:""}</strong></div>
             <div><span>Teléfono</span><strong>${esc(displayCustomerPhone(o.phone))}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
+            ${o.shipping_locality?`<div><span>Envío</span><strong>${esc(o.shipping_locality)} · ${o.shipping_region==="amba"?"AMBA":"Buenos Aires"}</strong><small>${o.shipping_price!=null?`${money(o.shipping_price)} · `:""}${o.shipping_distance_km!=null?`${Number(o.shipping_distance_km).toLocaleString("es-AR")} km · `:""}${o.shipping_weight_kg!=null?`${Number(o.shipping_weight_kg).toLocaleString("es-AR")} kg · `:""}${esc(o.shipping_vehicle||"")}</small></div>`:""}
           </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
           <div class="order-items">${itemRows}</div>
@@ -1060,6 +1072,100 @@
       const payload={nursery_name:$("settingName").value.trim()||"Mi Primavera",tagline:$("settingTagline").value.trim(),whatsapp:$("settingWhatsapp").value.trim(),hero_video_url:hero,shipping_title:$("settingShippingTitle").value.trim(),shipping_text:$("settingShippingText").value.trim(),about_title:$("settingAboutTitle").value.trim(),about_text:$("settingAboutText").value.trim(),instagram_url:$("settingInstagram").value.trim(),facebook_url:$("settingFacebook").value.trim(),updated_at:new Date().toISOString()};
       const {error}=await db.from("site_settings").update(payload).eq("id",1);if(error)throw error;settings={...settings,...payload};fillSettings();msg("settingsMessage","Configuración guardada.","success");toast("Sitio actualizado");
     }catch(err){msg("settingsMessage",err.message,"error")}
+  });
+
+  function fillShippingSettings(){
+    const s=shippingSettings||{};
+    $("shippingEnabled").checked=!!s.enabled;
+    $("shippingOriginRegion").value=s.origin_region||"buenos_aires";
+    $("shippingOriginLocality").value=s.origin_locality||"";
+    $("shippingOriginPostal").value=s.origin_postal_code||"";
+    $("shippingOriginLat").value=s.origin_lat??"";
+    $("shippingOriginLon").value=s.origin_lon??"";
+    $("shippingRoadFactor").value=s.road_factor??1.18;
+    $("shippingVanMax").value=s.van_max_kg??700;
+    $("shippingTruckMax").value=s.truck_max_kg??3500;
+    $("shippingVanBase").value=s.van_base??0;
+    $("shippingVanPerKm").value=s.van_per_km??0;
+    $("shippingVanMinimum").value=s.van_minimum??0;
+    $("shippingTruckBase").value=s.truck_base??0;
+    $("shippingTruckPerKm").value=s.truck_per_km??0;
+    $("shippingTruckMinimum").value=s.truck_minimum??0;
+    $("shippingLargeTruckBase").value=s.large_truck_base??0;
+    $("shippingLargeTruckPerKm").value=s.large_truck_per_km??0;
+    $("shippingLargeTruckMinimum").value=s.large_truck_minimum??0;
+    const hasCoords=s.origin_lat!=null&&s.origin_lon!=null;
+    $("shippingOriginStatus").textContent=hasCoords
+      ?`Ubicación guardada: ${s.origin_locality||"origen"} · ${Number(s.origin_lat).toFixed(5)}, ${Number(s.origin_lon).toFixed(5)}`
+      :"Todavía no hay una ubicación calculada.";
+  }
+
+  function georefCoords(item){
+    const lat=Number(item?.centroide?.lat??item?.centroide_lat);
+    const lon=Number(item?.centroide?.lon??item?.centroide_lon);
+    return Number.isFinite(lat)&&Number.isFinite(lon)?{lat,lon}:null;
+  }
+
+  async function searchGeorefLocality(name,provinceId){
+    const url=`https://apis.datos.gob.ar/georef/api/v2.0/localidades?nombre=${encodeURIComponent(name)}&provincia=${provinceId}&max=10`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error("No se pudo consultar la base de localidades.");
+    const data=await res.json();
+    return (data.localidades||[]).map(x=>({raw:x,coords:georefCoords(x)})).filter(x=>x.coords);
+  }
+
+  $("shippingFindOriginBtn").addEventListener("click",async()=>{
+    const name=$("shippingOriginLocality").value.trim();
+    if(name.length<2)return msg("shippingSettingsMessage","Escribí la localidad de salida.","error");
+    msg("shippingSettingsMessage","Buscando localidad...");
+    $("shippingFindOriginBtn").disabled=true;
+    try{
+      let matches=await searchGeorefLocality(name,"06");
+      if(!matches.length&&$("shippingOriginRegion").value==="amba")matches=await searchGeorefLocality(name,"02");
+      if(!matches.length)throw new Error("No encontramos esa localidad. Revisá el nombre.");
+      const exact=matches.find(x=>String(x.raw.nombre||"").toLowerCase()===name.toLowerCase())||matches[0];
+      $("shippingOriginLat").value=exact.coords.lat;
+      $("shippingOriginLon").value=exact.coords.lon;
+      $("shippingOriginLocality").value=exact.raw.nombre||name;
+      $("shippingOriginStatus").textContent=`Ubicación encontrada: ${exact.raw.nombre||name} · ${exact.coords.lat.toFixed(5)}, ${exact.coords.lon.toFixed(5)}`;
+      msg("shippingSettingsMessage","Ubicación encontrada. Guardá la configuración.","success");
+    }catch(err){msg("shippingSettingsMessage",err.message||"No se pudo buscar la localidad.","error")}
+    finally{$("shippingFindOriginBtn").disabled=false}
+  });
+
+  $("shippingSettingsForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    msg("shippingSettingsMessage","Guardando...");
+    const vanMax=Number($("shippingVanMax").value||0),truckMax=Number($("shippingTruckMax").value||0);
+    const lat=$("shippingOriginLat").value!==""?Number($("shippingOriginLat").value):null;
+    const lon=$("shippingOriginLon").value!==""?Number($("shippingOriginLon").value):null;
+    if(vanMax<=0||truckMax<=vanMax)return msg("shippingSettingsMessage","El límite del camión debe ser mayor que el de la camioneta.","error");
+    if($("shippingEnabled").checked&&(lat==null||lon==null))return msg("shippingSettingsMessage","Buscá y guardá primero la ubicación de salida.","error");
+    const payload={
+      enabled:$("shippingEnabled").checked,
+      origin_region:$("shippingOriginRegion").value,
+      origin_locality:$("shippingOriginLocality").value.trim(),
+      origin_postal_code:$("shippingOriginPostal").value.trim(),
+      origin_lat:lat,origin_lon:lon,
+      road_factor:Math.max(1,Number($("shippingRoadFactor").value||1.18)),
+      van_max_kg:vanMax,truck_max_kg:truckMax,
+      van_base:Math.max(0,Number($("shippingVanBase").value||0)),
+      van_per_km:Math.max(0,Number($("shippingVanPerKm").value||0)),
+      van_minimum:Math.max(0,Number($("shippingVanMinimum").value||0)),
+      truck_base:Math.max(0,Number($("shippingTruckBase").value||0)),
+      truck_per_km:Math.max(0,Number($("shippingTruckPerKm").value||0)),
+      truck_minimum:Math.max(0,Number($("shippingTruckMinimum").value||0)),
+      large_truck_base:Math.max(0,Number($("shippingLargeTruckBase").value||0)),
+      large_truck_per_km:Math.max(0,Number($("shippingLargeTruckPerKm").value||0)),
+      large_truck_minimum:Math.max(0,Number($("shippingLargeTruckMinimum").value||0)),
+      updated_at:new Date().toISOString()
+    };
+    const {data,error}=await db.from("shipping_settings").update(payload).eq("id",1).select().single();
+    if(error)return msg("shippingSettingsMessage",error.message,"error");
+    shippingSettings=data||payload;
+    fillShippingSettings();
+    msg("shippingSettingsMessage","Calculadora de envíos guardada.","success");
+    toast("Envíos actualizados");
   });
 
   document.querySelectorAll(".tab-btn").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));btn.classList.add("active");$(btn.dataset.tab).classList.add("active")}));
