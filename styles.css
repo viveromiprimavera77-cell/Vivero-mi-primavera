@@ -619,3 +619,21 @@ body.category-modal-open{overflow:hidden}
 .shipping-quote-box>div{display:grid;gap:4px}
 .shipping-attribution{font-size:.68rem!important;font-weight:600!important;color:var(--muted)!important}
 .shipping-attribution a{color:inherit;text-decoration:underline}
+
+
+/* v26: cálculo manual de envío y buscador de localidades */
+.shipping-locality-field{position:relative}
+.shipping-locality-suggestions{position:absolute;z-index:35;left:0;right:0;top:calc(100% - 1px);max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.14);padding:6px}
+.shipping-locality-suggestions button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 11px;border-radius:8px;font:inherit;color:var(--ink);cursor:pointer}
+.shipping-locality-suggestions button:hover,.shipping-locality-suggestions button:focus{background:#eef8ea;outline:none}
+.shipping-locality-suggestions span{display:block;padding:10px;color:var(--muted);font-size:.82rem}
+.shipping-postal-calc{display:grid;grid-template-columns:minmax(120px,210px) auto;gap:10px;align-items:end;justify-content:start}
+.shipping-postal-calc label{margin:0}
+.shipping-calc-btn{min-height:46px;padding:0 18px;border:0;border-radius:11px;background:var(--green-800);color:#fff;font-weight:900;cursor:pointer}
+.shipping-calc-btn:disabled{opacity:.65;cursor:wait}
+.shipping-quote-message{margin:0;padding:12px 14px;border-radius:11px;font-weight:800}
+.shipping-quote-error{border:1px solid #efc2bd;background:#fff2f0;color:#9d2b20}
+@media(max-width:560px){
+  .shipping-postal-calc{grid-template-columns:minmax(105px,1fr) auto}
+  .shipping-calc-btn{padding:0 12px;font-size:.82rem}
+}
