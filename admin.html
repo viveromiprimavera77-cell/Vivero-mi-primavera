@@ -293,6 +293,77 @@
             <p id="settingsMessage" class="form-message wide"></p>
           </form>
         </div>
+
+        <div class="panel shipping-admin-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">LOGÍSTICA</span>
+              <h2>Calculadora de envíos</h2>
+              <p>Configura el punto de salida, los límites de peso y las tarifas. El cliente solo verá el valor final del envío.</p>
+            </div>
+          </div>
+          <form id="shippingSettingsForm">
+            <label class="shipping-enable-row"><input id="shippingEnabled" type="checkbox"> <strong>Activar cálculo automático de envío</strong></label>
+
+            <div class="shipping-admin-section">
+              <h3>Punto de salida</h3>
+              <div class="form-grid">
+                <label>Zona de salida
+                  <select id="shippingOriginRegion">
+                    <option value="amba">AMBA</option>
+                    <option value="buenos_aires">Buenos Aires</option>
+                  </select>
+                </label>
+                <label>Localidad de salida<input id="shippingOriginLocality" placeholder="Ej.: Merlo"></label>
+                <label>Código postal de salida<input id="shippingOriginPostal" placeholder="Ej.: 1722"></label>
+                <label>Factor de distancia vial<input id="shippingRoadFactor" type="number" min="1" max="3" step="0.01" value="1.18"><small>Se aplica sobre la distancia geográfica para aproximar el recorrido real.</small></label>
+              </div>
+              <div class="shipping-origin-actions">
+                <button id="shippingFindOriginBtn" class="secondary-btn" type="button">Buscar ubicación de salida</button>
+                <span id="shippingOriginStatus" class="item-meta">Todavía no hay una ubicación calculada.</span>
+              </div>
+              <input id="shippingOriginLat" type="hidden">
+              <input id="shippingOriginLon" type="hidden">
+            </div>
+
+            <div class="shipping-admin-section">
+              <h3>Vehículo según peso</h3>
+              <div class="shipping-threshold-grid">
+                <label>Camioneta hasta (kg)<input id="shippingVanMax" type="number" min="1" step="1" value="700"></label>
+                <label>Camión hasta (kg)<input id="shippingTruckMax" type="number" min="1" step="1" value="3500"></label>
+                <div class="shipping-threshold-note">Por encima del límite de camión se usa <strong>camión grande</strong>.</div>
+              </div>
+            </div>
+
+            <div class="shipping-admin-section">
+              <h3>Tarifas por vehículo</h3>
+              <p class="field-help">Fórmula: base + precio por km, respetando el mínimo. Cargá el valor por km contemplando ida/vuelta si así presupuestás tus entregas.</p>
+              <div class="shipping-rate-grid">
+                <div class="shipping-rate-card">
+                  <strong>Camioneta</strong>
+                  <label>Base<input id="shippingVanBase" type="number" min="0" step="1"></label>
+                  <label>Por km<input id="shippingVanPerKm" type="number" min="0" step="1"></label>
+                  <label>Mínimo<input id="shippingVanMinimum" type="number" min="0" step="1"></label>
+                </div>
+                <div class="shipping-rate-card">
+                  <strong>Camión</strong>
+                  <label>Base<input id="shippingTruckBase" type="number" min="0" step="1"></label>
+                  <label>Por km<input id="shippingTruckPerKm" type="number" min="0" step="1"></label>
+                  <label>Mínimo<input id="shippingTruckMinimum" type="number" min="0" step="1"></label>
+                </div>
+                <div class="shipping-rate-card">
+                  <strong>Camión grande</strong>
+                  <label>Base<input id="shippingLargeTruckBase" type="number" min="0" step="1"></label>
+                  <label>Por km<input id="shippingLargeTruckPerKm" type="number" min="0" step="1"></label>
+                  <label>Mínimo<input id="shippingLargeTruckMinimum" type="number" min="0" step="1"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions shipping-save-actions"><button class="primary-btn" type="submit">Guardar calculadora de envíos</button></div>
+            <p id="shippingSettingsMessage" class="form-message"></p>
+          </form>
+        </div>
       </section>
 
       <section id="profitTab" class="tab-panel">
