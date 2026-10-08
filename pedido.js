@@ -7,6 +7,14 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let cats=[],products=[],assocs=[],variants=[],settings={};
+  let shippingLocalities=[],shippingQuote=null,shippingQuoteTimer=null,shippingQuoteSeq=0;
+  const AMBA_PARTIDOS=new Set([
+    "almirante brown","avellaneda","berazategui","berisso","brandsen","campana","canuelas","ensenada","escobar",
+    "esteban echeverria","exaltacion de la cruz","ezeiza","florencio varela","general las heras","general rodriguez",
+    "general san martin","hurlingham","ituzaingo","jose c paz","la matanza","la plata","lanus","lomas de zamora",
+    "lujan","malvinas argentinas","marcos paz","merlo","moreno","moron","pilar","presidente peron","quilmes",
+    "san fernando","san isidro","san miguel","san vicente","tigre","tres de febrero","vicente lopez","zarate"
+  ]);
 
   function closeMenu(){
     $("sidebar").classList.remove("open");
@@ -43,6 +51,128 @@
     if(prioritizesHeight(p,list))return `${v.height||"Sin altura"} — ${presentationText(v,category)} — ${money(v.price)}`;
     const size=v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:v.height?`Alt. ${v.height}`:"Opción única";
     return `${size} — ${v.label} — ${money(v.price)}`;
+  }
+
+
+  function shippingNormalize(v){
+    return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  }
+  function localityFromGeoref(x){
+    const lat=Number((x&&x.centroide&&x.centroide.lat)!=null?x.centroide.lat:x&&x.centroide_lat);
+    const lon=Number((x&&x.centroide&&x.centroide.lon)!=null?x.centroide.lon:x&&x.centroide_lon);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+    const name=String(x&&x.nombre||"").trim();
+    const department=String(
+      (x&&x.departamento&&x.departamento.nombre)||
+      (x&&x.departamento_nombre)||
+      (x&&x.municipio&&x.municipio.nombre)||
+      (x&&x.municipio_nombre)||
+      ""
+    ).trim();
+    return name?{name:name,department:department,lat:lat,lon:lon,isCaba:false}:null;
+  }
+  function isAmbaLocality(l){
+    return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.department));
+  }
+  async function fetchGeorefLocalities(){
+    const cacheKey="miPrimaveraShippingLocalitiesV1";
+    try{
+      const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
+      if(Array.isArray(cached)&&cached.length)return cached;
+    }catch{}
+    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=06&max=5000");
+    if(!res.ok)throw new Error("No se pudieron cargar las localidades");
+    const data=await res.json();
+    const list=(data.localidades||[]).map(localityFromGeoref).filter(Boolean);
+    list.push({name:"Ciudad Autónoma de Buenos Aires",department:"CABA",lat:-34.6037,lon:-58.3816,isCaba:true});
+    const dedup=new Map();
+    list.forEach(function(l){
+      const key=shippingNormalize(l.name)+"|"+shippingNormalize(l.department)+"|"+(l.isCaba?"caba":"");
+      if(!dedup.has(key))dedup.set(key,l);
+    });
+    const values=Array.from(dedup.values());
+    try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
+    return values;
+  }
+  function useLocalityFallback(message){
+    const select=$("shippingLocality"),fallback=$("shippingLocalityFallback");
+    select.hidden=true;select.disabled=true;select.required=false;
+    fallback.hidden=false;fallback.required=true;
+    fallback.placeholder=message||"Escribí la localidad";
+  }
+  function renderLocalityOptions(){
+    const region=$("shippingRegion").value;
+    const select=$("shippingLocality"),fallback=$("shippingLocalityFallback");
+    shippingQuote=null;$("shippingQuoteBox").hidden=true;
+    if(!region){
+      select.hidden=false;select.disabled=true;select.required=true;
+      fallback.hidden=true;fallback.required=false;
+      select.innerHTML='<option value="">Primero elegí la zona</option>';
+      return;
+    }
+    const list=shippingLocalities.filter(function(l){return region==="amba"?isAmbaLocality(l):!isAmbaLocality(l)})
+      .sort(function(a,b){return a.name.localeCompare(b.name,"es")||a.department.localeCompare(b.department,"es")});
+    if(!list.length){useLocalityFallback("Escribí la localidad");return}
+    select.hidden=false;select.disabled=false;select.required=true;
+    fallback.hidden=true;fallback.required=false;fallback.value="";
+    select.innerHTML='<option value="">Elegí la localidad</option>'+list.map(function(l){
+      const label=l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)?l.name+" — "+l.department:l.name;
+      return '<option value="'+esc(label)+'" data-lat="'+l.lat+'" data-lon="'+l.lon+'">'+esc(label)+'</option>';
+    }).join("");
+  }
+  async function loadShippingLocalities(){
+    try{
+      shippingLocalities=await fetchGeorefLocalities();
+      renderLocalityOptions();
+    }catch(err){
+      console.warn(err);
+      shippingLocalities=[];
+      if($("shippingRegion").value)useLocalityFallback("Escribí la localidad");
+    }
+  }
+  function selectedDestination(){
+    const fallback=$("shippingLocalityFallback");
+    if(!fallback.hidden){
+      const name=fallback.value.trim();
+      return name?{name:name,lat:null,lon:null}:null;
+    }
+    const opt=$("shippingLocality").selectedOptions&&$("shippingLocality").selectedOptions[0];
+    if(!opt||!opt.value)return null;
+    const lat=Number(opt.dataset.lat),lon=Number(opt.dataset.lon);
+    return {name:opt.value,lat:Number.isFinite(lat)?lat:null,lon:Number.isFinite(lon)?lon:null};
+  }
+  function cartPayload(){
+    return window.ViveroCart.get().map(function(x){
+      return {
+        product_id:x.product_id,variant_id:x.variant_id,category_id:x.category_id,quantity:Number(x.quantity),
+        length_m:x.length_m||null,spacing_cm:x.spacing_cm||null,
+        coverage_area_m2:x.coverage_area_m2||null,fill_depth_cm:x.fill_depth_cm||null,
+        hole_count:x.hole_count||null,hole_width_cm:x.hole_width_cm||null,hole_depth_cm:x.hole_depth_cm||null,
+        material_volume_dm3:x.material_volume_dm3||null
+      };
+    });
+  }
+  async function quoteShipping(){
+    clearTimeout(shippingQuoteTimer);
+    const region=$("shippingRegion").value,dest=selectedDestination();
+    const cp=$("customerPostal").value.trim(),address=$("customerAddress").value.trim(),items=cartPayload();
+    const seq=++shippingQuoteSeq;
+    shippingQuote=null;$("shippingQuoteBox").hidden=true;
+    if(!items.length||!region||!dest||!cp||address.length<4||dest.lat==null||dest.lon==null)return;
+    const result=await db.rpc("calculate_shipping_quote",{
+      p_items:items,p_region:region,p_locality:dest.name,p_postal_code:cp,p_dest_lat:dest.lat,p_dest_lon:dest.lon
+    });
+    if(seq!==shippingQuoteSeq)return;
+    if(result.error){console.warn(result.error);return}
+    if(result.data&&result.data.ready){
+      shippingQuote=result.data;
+      $("shippingQuoteValue").textContent=money(result.data.price);
+      $("shippingQuoteBox").hidden=false;
+    }
+  }
+  function scheduleShippingQuote(){
+    clearTimeout(shippingQuoteTimer);
+    shippingQuoteTimer=setTimeout(function(){quoteShipping().catch(function(err){console.warn(err)})},320);
   }
 
   function renderNavigation(){
