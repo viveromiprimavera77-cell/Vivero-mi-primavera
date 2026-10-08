@@ -613,3 +613,9 @@ body.category-modal-open{overflow:hidden}
   .shipping-quote-box{padding:14px 15px}
   .shipping-quote-box strong{font-size:1.3rem}
 }
+
+
+/* v25: atribución requerida para Geoapify */
+.shipping-quote-box>div{display:grid;gap:4px}
+.shipping-attribution{font-size:.68rem!important;font-weight:600!important;color:var(--muted)!important}
+.shipping-attribution a{color:inherit;text-decoration:underline}
