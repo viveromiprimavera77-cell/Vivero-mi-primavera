@@ -230,9 +230,16 @@
       }
       shippingQuote=result.data;
       lastShippingQuoteKey=quoteKey;
-      $("shippingQuoteValue").textContent=money(result.data.price);
-      $("shippingQuoteBox").hidden=false;
-      $("shippingQuoteMessage").hidden=true;
+      if(result.data.test_mode&&!result.data.rates_configured){
+        $("shippingQuoteBox").hidden=true;
+        $("shippingQuoteMessage").textContent="Ruta validada correctamente: "+Number(result.data.distance_km||0).toLocaleString("es-AR")+" km. Falta configurar las tarifas de envío.";
+        $("shippingQuoteMessage").className="shipping-quote-message shipping-quote-success full";
+        $("shippingQuoteMessage").hidden=false;
+      }else{
+        $("shippingQuoteValue").textContent=money(result.data.price);
+        $("shippingQuoteBox").hidden=false;
+        $("shippingQuoteMessage").hidden=true;
+      }
     }catch(err){
       console.warn(err);
       showShippingFailure();
