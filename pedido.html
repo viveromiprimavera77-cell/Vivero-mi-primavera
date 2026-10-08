@@ -65,8 +65,23 @@
               <input id="customerPhone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required placeholder="11XXXXXXXX">
               <small>Ingresá 10 dígitos: código de área sin 0 + número sin 15. No escribas +54 9: lo agregamos automáticamente.</small>
             </label>
+            <label>Zona de entrega
+              <select id="shippingRegion" required>
+                <option value="">Elegí una zona</option>
+                <option value="amba">AMBA</option>
+                <option value="buenos_aires">Buenos Aires</option>
+              </select>
+            </label>
+            <label>Localidad
+              <select id="shippingLocality" required disabled><option value="">Primero elegí la zona</option></select>
+              <input id="shippingLocalityFallback" hidden placeholder="Escribí la localidad">
+            </label>
             <label>Dirección de envío<input id="customerAddress" required></label>
-            <label>Código postal<input id="customerPostal" required></label>
+            <label>Código postal<input id="customerPostal" required inputmode="numeric"></label>
+            <div id="shippingQuoteBox" class="shipping-quote-box full" hidden>
+              <span>Valor estimado del envío</span>
+              <strong id="shippingQuoteValue">$0</strong>
+            </div>
             <label class="full">Duda o aclaración general<textarea id="customerQuestion" rows="4" placeholder="Opcional"></textarea></label>
           </div>
           <button id="confirmWhatsappBtn" class="whatsapp-order-btn" type="submit">Confirmar pedido por WhatsApp</button>
