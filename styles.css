@@ -637,3 +637,5 @@ body.category-modal-open{overflow:hidden}
   .shipping-postal-calc{grid-template-columns:minmax(105px,1fr) auto}
   .shipping-calc-btn{padding:0 12px;font-size:.82rem}
 }
+
+.shipping-quote-success{border:1px solid #b9dcb0;background:#eef8ea;color:var(--green-900)}
