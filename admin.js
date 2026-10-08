@@ -1080,9 +1080,10 @@
     $("shippingOriginRegion").value=s.origin_region||"buenos_aires";
     $("shippingOriginLocality").value=s.origin_locality||"";
     $("shippingOriginPostal").value=s.origin_postal_code||"";
+    $("shippingOriginAddress").value=s.origin_address||"";
+    $("shippingOriginAddressAlt").value=s.origin_address_alt||"";
     $("shippingOriginLat").value=s.origin_lat??"";
     $("shippingOriginLon").value=s.origin_lon??"";
-    $("shippingRoadFactor").value=s.road_factor??1.18;
     $("shippingVanMax").value=s.van_max_kg??700;
     $("shippingTruckMax").value=s.truck_max_kg??3500;
     $("shippingVanBase").value=s.van_base??0;
@@ -1096,41 +1097,41 @@
     $("shippingLargeTruckMinimum").value=s.large_truck_minimum??0;
     const hasCoords=s.origin_lat!=null&&s.origin_lon!=null;
     $("shippingOriginStatus").textContent=hasCoords
-      ?`Ubicación guardada: ${s.origin_locality||"origen"} · ${Number(s.origin_lat).toFixed(5)}, ${Number(s.origin_lon).toFixed(5)}`
-      :"Todavía no hay una ubicación calculada.";
-  }
-
-  function georefCoords(item){
-    const lat=Number(item?.centroide?.lat??item?.centroide_lat);
-    const lon=Number(item?.centroide?.lon??item?.centroide_lon);
-    return Number.isFinite(lat)&&Number.isFinite(lon)?{lat,lon}:null;
-  }
-
-  async function searchGeorefLocality(name,provinceId){
-    const url=`https://apis.datos.gob.ar/georef/api/v2.0/localidades?nombre=${encodeURIComponent(name)}&provincia=${provinceId}&max=10`;
-    const res=await fetch(url);
-    if(!res.ok)throw new Error("No se pudo consultar la base de localidades.");
-    const data=await res.json();
-    return (data.localidades||[]).map(x=>({raw:x,coords:georefCoords(x)})).filter(x=>x.coords);
+      ?`Origen validado: ${s.origin_formatted_address||s.origin_address||s.origin_locality||"origen"}`
+      :"Todavía no hay una ubicación validada.";
   }
 
   $("shippingFindOriginBtn").addEventListener("click",async()=>{
-    const name=$("shippingOriginLocality").value.trim();
-    if(name.length<2)return msg("shippingSettingsMessage","Escribí la localidad de salida.","error");
-    msg("shippingSettingsMessage","Buscando localidad...");
+    const address=$("shippingOriginAddress").value.trim();
+    const alternate=$("shippingOriginAddressAlt").value.trim();
+    if(address.length<5)return msg("shippingSettingsMessage","Escribí la dirección principal de salida.","error");
+    msg("shippingSettingsMessage","Validando dirección con Google...");
     $("shippingFindOriginBtn").disabled=true;
     try{
-      let matches=await searchGeorefLocality(name,"06");
-      if(!matches.length&&$("shippingOriginRegion").value==="amba")matches=await searchGeorefLocality(name,"02");
-      if(!matches.length)throw new Error("No encontramos esa localidad. Revisá el nombre.");
-      const exact=matches.find(x=>String(x.raw.nombre||"").toLowerCase()===name.toLowerCase())||matches[0];
-      $("shippingOriginLat").value=exact.coords.lat;
-      $("shippingOriginLon").value=exact.coords.lon;
-      $("shippingOriginLocality").value=exact.raw.nombre||name;
-      $("shippingOriginStatus").textContent=`Ubicación encontrada: ${exact.raw.nombre||name} · ${exact.coords.lat.toFixed(5)}, ${exact.coords.lon.toFixed(5)}`;
-      msg("shippingSettingsMessage","Ubicación encontrada. Guardá la configuración.","success");
-    }catch(err){msg("shippingSettingsMessage",err.message||"No se pudo buscar la localidad.","error")}
-    finally{$("shippingFindOriginBtn").disabled=false}
+      const {data,error}=await db.functions.invoke("shipping-route",{
+        body:{action:"validate_origin",address,alternate_address:alternate}
+      });
+      if(error)throw error;
+      if(!data?.ok)throw new Error("No pudimos validar la dirección de salida.");
+      $("shippingOriginLat").value=data.lat;
+      $("shippingOriginLon").value=data.lon;
+      $("shippingOriginStatus").textContent=`Origen validado: ${data.formatted_address}`;
+      $("shippingOriginStatus").dataset.formattedAddress=data.formatted_address||"";
+      msg("shippingSettingsMessage","Dirección validada. Guardá la configuración.","success");
+    }catch(err){
+      msg("shippingSettingsMessage",err.message||"No se pudo validar la dirección con Google.","error");
+    }finally{
+      $("shippingFindOriginBtn").disabled=false;
+    }
+  });
+
+  ["shippingOriginAddress","shippingOriginAddressAlt","shippingOriginLocality"].forEach(id=>{
+    $(id).addEventListener("input",()=>{
+      $("shippingOriginLat").value="";
+      $("shippingOriginLon").value="";
+      $("shippingOriginStatus").textContent="Dirección modificada: volvé a validarla antes de activar los envíos.";
+      $("shippingOriginStatus").dataset.formattedAddress="";
+    });
   });
 
   $("shippingSettingsForm").addEventListener("submit",async e=>{
@@ -1140,14 +1141,16 @@
     const lat=$("shippingOriginLat").value!==""?Number($("shippingOriginLat").value):null;
     const lon=$("shippingOriginLon").value!==""?Number($("shippingOriginLon").value):null;
     if(vanMax<=0||truckMax<=vanMax)return msg("shippingSettingsMessage","El límite del camión debe ser mayor que el de la camioneta.","error");
-    if($("shippingEnabled").checked&&(lat==null||lon==null))return msg("shippingSettingsMessage","Buscá y guardá primero la ubicación de salida.","error");
+    if($("shippingEnabled").checked&&(lat==null||lon==null))return msg("shippingSettingsMessage","Validá primero la dirección exacta de salida con Google.","error");
     const payload={
       enabled:$("shippingEnabled").checked,
       origin_region:$("shippingOriginRegion").value,
       origin_locality:$("shippingOriginLocality").value.trim(),
       origin_postal_code:$("shippingOriginPostal").value.trim(),
+      origin_address:$("shippingOriginAddress").value.trim(),
+      origin_address_alt:$("shippingOriginAddressAlt").value.trim(),
+      origin_formatted_address:$("shippingOriginStatus").dataset.formattedAddress||shippingSettings.origin_formatted_address||"",
       origin_lat:lat,origin_lon:lon,
-      road_factor:Math.max(1,Number($("shippingRoadFactor").value||1.18)),
       van_max_kg:vanMax,truck_max_kg:truckMax,
       van_base:Math.max(0,Number($("shippingVanBase").value||0)),
       van_per_km:Math.max(0,Number($("shippingVanPerKm").value||0)),
