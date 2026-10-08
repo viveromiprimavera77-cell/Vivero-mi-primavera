@@ -127,8 +127,20 @@
 
   function closeMenu(){el("sidebar").classList.remove("open");el("menuBackdrop").classList.remove("show");el("mobileMenuBtn").setAttribute("aria-expanded","false")}
   const WELCOME_SESSION_KEY="miPrimaveraWelcomeShown";
+  function cameFromThisSite(){
+    try{return !!document.referrer&&new URL(document.referrer).origin===location.origin}catch{return false}
+  }
   function openWelcome(tagline){
-    if(sessionStorage.getItem(WELCOME_SESSION_KEY)==="1")return;
+    const navType=performance.getEntriesByType?.("navigation")?.[0]?.type||"";
+    const alreadyShown=sessionStorage.getItem(WELCOME_SESSION_KEY)==="1";
+    const internalReturn=cameFromThisSite();
+    const isReload=navType==="reload";
+    if(alreadyShown||internalReturn||isReload){
+      sessionStorage.setItem(WELCOME_SESSION_KEY,"1");
+      el("welcomeModal").hidden=true;
+      document.body.classList.remove("welcome-open");
+      return;
+    }
     el("welcomeSlogan").textContent=tagline||"Naturaleza que transforma tu espacio";
     el("welcomeModal").hidden=false;
     document.body.classList.add("welcome-open");
