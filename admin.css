@@ -236,3 +236,34 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
   .product-wizard-step.field-box{padding:15px}
   .quick-stock-input{width:72px!important;min-width:72px}
 }
+
+
+/* v19: configuración de logística y peso de envío */
+.variant-shipping-separate{display:grid;align-content:start;gap:6px;border:1px solid #d9e7d7;border-radius:10px;padding:9px;background:#f8fbf7}
+.variant-shipping-separate .check-label{display:flex;align-items:center;gap:7px;font-weight:800}
+.variant-shipping-separate .check-label input{width:auto;margin:0}
+.variant-shipping-separate small{color:var(--muted);line-height:1.35}
+.shipping-separate-summary{display:block;margin-top:7px;color:#805d13;font-weight:850}
+.shipping-admin-panel{margin-top:20px}
+.shipping-admin-panel .panel-heading p{max-width:760px;color:var(--muted);line-height:1.55}
+.shipping-enable-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border:1px solid #cfe0ca;border-radius:12px;background:#f4faf1}
+.shipping-enable-row input{width:auto;margin:0;transform:scale(1.15)}
+.shipping-admin-section{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:15px;background:#fbfdf9}
+.shipping-admin-section h3{margin:0 0 13px;color:var(--green)}
+.shipping-origin-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:13px}
+.shipping-origin-actions .item-meta{margin:0}
+.shipping-threshold-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.shipping-threshold-note{grid-column:1/-1;color:var(--muted);font-size:.86rem}
+.shipping-rate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.shipping-rate-card{display:grid;gap:10px;border:1px solid #d9e7d7;border-radius:13px;padding:14px;background:#fff}
+.shipping-rate-card>strong{font-size:1rem;color:var(--green)}
+.shipping-rate-card label{font-size:.83rem;font-weight:800}
+.shipping-rate-card input{width:100%;margin-top:5px}
+.shipping-save-actions{margin-top:16px}
+@media(max-width:900px){
+  .shipping-rate-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .shipping-threshold-grid{grid-template-columns:1fr}
+  .shipping-admin-section{padding:14px}
+}
