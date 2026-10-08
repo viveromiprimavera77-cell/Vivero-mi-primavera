@@ -7,7 +7,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let cats=[],products=[],assocs=[],variants=[],settings={};
-  let shippingLocalities=[],shippingQuote=null,shippingQuoteTimer=null,shippingQuoteSeq=0,lastShippingQuoteKey="";
+  let shippingLocalities=[],shippingQuote=null,shippingQuoteSeq=0,lastShippingQuoteKey="",selectedShippingLocality=null;
   const AMBA_PARTIDOS=new Set([
     "almirante brown","avellaneda","berazategui","berisso","brandsen","campana","canuelas","ensenada","escobar",
     "esteban echeverria","exaltacion de la cruz","ezeiza","florencio varela","general las heras","general rodriguez",
@@ -94,31 +94,62 @@
     try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
     return values;
   }
-  function useLocalityFallback(message){
-    const select=$("shippingLocality"),fallback=$("shippingLocalityFallback");
-    select.hidden=true;select.disabled=true;select.required=false;
-    fallback.hidden=false;fallback.required=true;
-    fallback.placeholder=message||"Escribí la localidad";
+  function localityLabel(l){
+    return l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)
+      ?l.name+" — "+l.department
+      :l.name;
+  }
+  function availableLocalities(){
+    const region=$("shippingRegion").value;
+    if(!region)return [];
+    return shippingLocalities
+      .filter(function(l){return region==="amba"?isAmbaLocality(l):!isAmbaLocality(l)})
+      .sort(function(a,b){return a.name.localeCompare(b.name,"es")||a.department.localeCompare(b.department,"es")});
+  }
+  function closeLocalitySuggestions(){
+    $("shippingLocalitySuggestions").hidden=true;
+    $("shippingLocalitySuggestions").innerHTML="";
+  }
+  function resetLocality(){
+    selectedShippingLocality=null;
+    $("shippingLocalitySearch").value="";
+    closeLocalitySuggestions();
+    invalidateShippingQuote();
+  }
+  function renderLocalitySuggestions(){
+    const input=$("shippingLocalitySearch");
+    const box=$("shippingLocalitySuggestions");
+    const term=shippingNormalize(input.value);
+    if(input.disabled){closeLocalitySuggestions();return}
+    const all=availableLocalities();
+    const matches=(term
+      ?all.filter(function(l){
+        const hay=shippingNormalize(l.name+" "+l.department);
+        return hay.includes(term);
+      })
+      :all
+    ).slice(0,10);
+    box.innerHTML=matches.length
+      ?matches.map(function(l,i){
+        return '<button type="button" data-locality-index="'+i+'">'+esc(localityLabel(l))+'</button>';
+      }).join("")
+      :'<span>No encontramos coincidencias.</span>';
+    box._matches=matches;
+    box.hidden=false;
   }
   function renderLocalityOptions(){
-    const region=$("shippingRegion").value;
-    const select=$("shippingLocality"),fallback=$("shippingLocalityFallback");
-    shippingQuote=null;$("shippingQuoteBox").hidden=true;
-    if(!region){
-      select.hidden=false;select.disabled=true;select.required=true;
-      fallback.hidden=true;fallback.required=false;
-      select.innerHTML='<option value="">Primero elegí la zona</option>';
-      return;
+    const input=$("shippingLocalitySearch");
+    selectedShippingLocality=null;
+    input.value="";
+    closeLocalitySuggestions();
+    invalidateShippingQuote();
+    if(!$("shippingRegion").value){
+      input.disabled=true;
+      input.placeholder="Primero elegí la zona";
+    }else{
+      input.disabled=false;
+      input.placeholder="Escribí la localidad";
     }
-    const list=shippingLocalities.filter(function(l){return region==="amba"?isAmbaLocality(l):!isAmbaLocality(l)})
-      .sort(function(a,b){return a.name.localeCompare(b.name,"es")||a.department.localeCompare(b.department,"es")});
-    if(!list.length){useLocalityFallback("Escribí la localidad");return}
-    select.hidden=false;select.disabled=false;select.required=true;
-    fallback.hidden=true;fallback.required=false;fallback.value="";
-    select.innerHTML='<option value="">Elegí la localidad</option>'+list.map(function(l){
-      const label=l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)?l.name+" — "+l.department:l.name;
-      return '<option value="'+esc(label)+'" data-lat="'+l.lat+'" data-lon="'+l.lon+'">'+esc(label)+'</option>';
-    }).join("");
   }
   async function loadShippingLocalities(){
     try{
@@ -127,18 +158,13 @@
     }catch(err){
       console.warn(err);
       shippingLocalities=[];
-      if($("shippingRegion").value)useLocalityFallback("Escribí la localidad");
+      $("shippingLocalitySearch").disabled=false;
+      $("shippingLocalitySearch").placeholder="No se pudo cargar la lista";
     }
   }
   function selectedDestination(){
-    const fallback=$("shippingLocalityFallback");
-    if(!fallback.hidden){
-      const name=fallback.value.trim();
-      return name?{name:name}:null;
-    }
-    const opt=$("shippingLocality").selectedOptions&&$("shippingLocality").selectedOptions[0];
-    if(!opt||!opt.value)return null;
-    return {name:opt.value};
+    if(!selectedShippingLocality)return null;
+    return {name:selectedShippingLocality.name,department:selectedShippingLocality.department||""};
   }
   function cartPayload(){
     return window.ViveroCart.get().map(function(x){
@@ -151,42 +177,69 @@
       };
     });
   }
+  function invalidateShippingQuote(){
+    shippingQuote=null;
+    lastShippingQuoteKey="";
+    $("shippingQuoteBox").hidden=true;
+    $("shippingQuoteMessage").hidden=true;
+    $("shippingQuoteMessage").textContent="";
+  }
+  function showShippingFailure(){
+    shippingQuote=null;
+    $("shippingQuoteBox").hidden=true;
+    $("shippingQuoteMessage").textContent="No se pudo calcular el envío, coordinar por WhatsApp.";
+    $("shippingQuoteMessage").className="shipping-quote-message shipping-quote-error full";
+    $("shippingQuoteMessage").hidden=false;
+  }
   async function quoteShipping(){
-    clearTimeout(shippingQuoteTimer);
     const region=$("shippingRegion").value,dest=selectedDestination();
     const cp=$("customerPostal").value.trim(),address=$("customerAddress").value.trim(),items=cartPayload();
+    const btn=$("calculateShippingBtn");
     const seq=++shippingQuoteSeq;
-    shippingQuote=null;$("shippingQuoteBox").hidden=true;
-    if(!items.length||!region||!dest||!cp||address.length<4)return;
+    invalidateShippingQuote();
+
+    if(!items.length||!region||!dest||!cp||address.length<4){
+      showShippingFailure();
+      return;
+    }
 
     const quoteKey=JSON.stringify({
-      region:region,locality:dest.name,cp:cp,address:address,
+      region:region,locality:dest.name,department:dest.department,cp:cp,address:address,
       items:items.map(x=>[x.product_id,x.variant_id,x.category_id,x.quantity])
     });
-    if(quoteKey===lastShippingQuoteKey&&shippingQuote)return;
 
-    const result=await db.functions.invoke("shipping-route",{
-      body:{
-        action:"quote",
-        items:items,
-        shipping_region:region,
-        shipping_locality:dest.name,
-        postal_code:cp,
-        shipping_address:address
+    btn.disabled=true;
+    btn.textContent="Calculando...";
+    try{
+      const result=await db.functions.invoke("shipping-route",{
+        body:{
+          action:"quote",
+          items:items,
+          shipping_region:region,
+          shipping_locality:dest.name,
+          shipping_locality_department:dest.department,
+          postal_code:cp,
+          shipping_address:address
+        }
+      });
+      if(seq!==shippingQuoteSeq)return;
+      if(result.error||!result.data||!result.data.ready){
+        console.warn(result.error||result.data);
+        showShippingFailure();
+        return;
       }
-    });
-    if(seq!==shippingQuoteSeq)return;
-    if(result.error){console.warn(result.error);return}
-    if(result.data&&result.data.ready){
       shippingQuote=result.data;
       lastShippingQuoteKey=quoteKey;
       $("shippingQuoteValue").textContent=money(result.data.price);
       $("shippingQuoteBox").hidden=false;
+      $("shippingQuoteMessage").hidden=true;
+    }catch(err){
+      console.warn(err);
+      showShippingFailure();
+    }finally{
+      btn.disabled=false;
+      btn.textContent="Calcular envío";
     }
-  }
-  function scheduleShippingQuote(){
-    clearTimeout(shippingQuoteTimer);
-    shippingQuoteTimer=setTimeout(function(){quoteShipping().catch(function(err){console.warn(err)})},320);
   }
 
   function renderNavigation(){
@@ -235,7 +288,7 @@
 
     $("checkoutTotal").textContent=money(window.ViveroCart.total());
     $("confirmWhatsappBtn").disabled=!items.length;
-    scheduleShippingQuote();
+    invalidateShippingQuote();
   }
 
   async function load(){
@@ -270,16 +323,36 @@
     location.href="index.html";
   });
 
-  $("shippingRegion").addEventListener("change",()=>{
-    renderLocalityOptions();
-    scheduleShippingQuote();
+  $("shippingRegion").addEventListener("change",renderLocalityOptions);
+
+  $("shippingLocalitySearch").addEventListener("input",()=>{
+    selectedShippingLocality=null;
+    invalidateShippingQuote();
+    renderLocalitySuggestions();
   });
-  $("shippingLocality").addEventListener("change",scheduleShippingQuote);
-  $("shippingLocalityFallback").addEventListener("change",scheduleShippingQuote);
-  $("customerPostal").addEventListener("change",scheduleShippingQuote);
-  $("customerPostal").addEventListener("blur",scheduleShippingQuote);
-  $("customerAddress").addEventListener("change",scheduleShippingQuote);
-  $("customerAddress").addEventListener("blur",scheduleShippingQuote);
+  $("shippingLocalitySearch").addEventListener("focus",renderLocalitySuggestions);
+  $("shippingLocalitySearch").addEventListener("keydown",e=>{
+    if(e.key==="Escape")closeLocalitySuggestions();
+  });
+  $("shippingLocalitySuggestions").addEventListener("click",e=>{
+    const btn=e.target.closest("button[data-locality-index]");
+    if(!btn)return;
+    const matches=$("shippingLocalitySuggestions")._matches||[];
+    const locality=matches[Number(btn.dataset.localityIndex)];
+    if(!locality)return;
+    selectedShippingLocality=locality;
+    $("shippingLocalitySearch").value=localityLabel(locality);
+    closeLocalitySuggestions();
+    invalidateShippingQuote();
+  });
+  document.addEventListener("click",e=>{
+    if(!e.target.closest(".shipping-locality-field"))closeLocalitySuggestions();
+  });
+
+  ["customerPostal","customerAddress"].forEach(id=>{
+    $(id).addEventListener("input",invalidateShippingQuote);
+  });
+  $("calculateShippingBtn").addEventListener("click",()=>quoteShipping());
 
   window.addEventListener("viverocartchange",renderCheckout);
   $("checkoutItems").addEventListener("input",e=>{
@@ -342,7 +415,8 @@
           general_question:$("customerQuestion").value.trim(),
           items:payload,
           shipping_region:region,
-          shipping_locality:dest.name
+          shipping_locality:dest.name,
+          shipping_locality_department:dest.department
         }
       });
       if(result.error)throw result.error;
