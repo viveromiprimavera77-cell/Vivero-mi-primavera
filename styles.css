@@ -601,3 +601,15 @@ body.category-modal-open{overflow:hidden}
 /* v23: selector de categorías debajo de CATÁLOGO */
 .catalog-top-picker{display:block;margin-top:10px;min-width:260px;max-width:360px}
 .catalog-top-picker select{margin-top:7px}
+
+
+/* v24: calculadora de envío en resumen de pedido */
+.shipping-quote-box{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px 18px;border:1px solid #b9dcb0;border-radius:14px;background:#eef8ea}
+.shipping-quote-box span{font-size:.85rem;font-weight:850;color:var(--green-900)}
+.shipping-quote-box strong{font-size:1.45rem;color:var(--green-950)}
+.public-form-grid select{width:100%;margin-top:7px;padding:12px;border:1px solid var(--line);border-radius:11px;outline:none;background:#fff}
+.public-form-grid select:focus{border-color:var(--green-600);box-shadow:0 0 0 3px rgba(24,169,77,.12)}
+@media(max-width:600px){
+  .shipping-quote-box{padding:14px 15px}
+  .shipping-quote-box strong{font-size:1.3rem}
+}
