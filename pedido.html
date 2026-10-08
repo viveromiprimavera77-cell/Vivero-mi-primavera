@@ -79,7 +79,10 @@
             <label>Dirección de envío<input id="customerAddress" required></label>
             <label>Código postal<input id="customerPostal" required inputmode="numeric"></label>
             <div id="shippingQuoteBox" class="shipping-quote-box full" hidden>
-              <span>Valor estimado del envío</span>
+              <div>
+                <span>Valor estimado del envío</span>
+                <small class="shipping-attribution">Rutas y geocodificación: <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> · datos © OpenStreetMap contributors</small>
+              </div>
               <strong id="shippingQuoteValue">$0</strong>
             </div>
             <label class="full">Duda o aclaración general<textarea id="customerQuestion" rows="4" placeholder="Opcional"></textarea></label>
