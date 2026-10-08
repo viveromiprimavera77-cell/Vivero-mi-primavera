@@ -7,7 +7,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let cats=[],products=[],assocs=[],variants=[],settings={};
-  let shippingLocalities=[],shippingQuote=null,shippingQuoteSeq=0,lastShippingQuoteKey="",selectedShippingLocality=null;
+  let shippingLocalities=[],shippingQuote=null,shippingQuoteSeq=0,lastShippingQuoteKey="",selectedShippingLocality=null,selectedShippingStreet=null,streetSearchTimer=null,streetSearchSeq=0;
   const AMBA_PARTIDOS=new Set([
     "almirante brown","avellaneda","berazategui","berisso","brandsen","campana","canuelas","ensenada","escobar",
     "esteban echeverria","exaltacion de la cruz","ezeiza","florencio varela","general las heras","general rodriguez",
@@ -57,63 +57,84 @@
   function shippingNormalize(v){
     return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
   }
-  function localityFromGeoref(x){
+  function localityFromGeorefDepartment(x){
     const lat=Number((x&&x.centroide&&x.centroide.lat)!=null?x.centroide.lat:x&&x.centroide_lat);
     const lon=Number((x&&x.centroide&&x.centroide.lon)!=null?x.centroide.lon:x&&x.centroide_lon);
-    if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
     const name=String(x&&x.nombre||"").trim();
-    const department=String(
-      (x&&x.departamento&&x.departamento.nombre)||
-      (x&&x.departamento_nombre)||
-      (x&&x.municipio&&x.municipio.nombre)||
-      (x&&x.municipio_nombre)||
-      ""
-    ).trim();
-    return name?{name:name,department:department,lat:lat,lon:lon,isCaba:false}:null;
+    if(!name)return null;
+    return {
+      id:String(x&&x.id||""),
+      name:name,
+      department:name,
+      lat:Number.isFinite(lat)?lat:null,
+      lon:Number.isFinite(lon)?lon:null,
+      isCaba:false,
+      provinceCode:"06"
+    };
   }
   function isAmbaLocality(l){
-    return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.department));
+    return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.name));
   }
   async function fetchGeorefLocalities(){
-    const cacheKey="miPrimaveraShippingLocalitiesV1";
+    const cacheKey="miPrimaveraShippingDepartmentsV2";
     try{
       const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
       if(Array.isArray(cached)&&cached.length)return cached;
     }catch{}
-    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=06&max=5000");
+    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/departamentos?provincia=06&max=500");
     if(!res.ok)throw new Error("No se pudieron cargar las localidades");
     const data=await res.json();
-    const list=(data.localidades||[]).map(localityFromGeoref).filter(Boolean);
-    list.push({name:"Ciudad Autónoma de Buenos Aires",department:"CABA",lat:-34.6037,lon:-58.3816,isCaba:true});
+    const list=(data.departamentos||[]).map(localityFromGeorefDepartment).filter(Boolean);
+    list.push({
+      id:"02",
+      name:"Ciudad Autónoma de Buenos Aires",
+      department:"",
+      lat:-34.6037,
+      lon:-58.3816,
+      isCaba:true,
+      provinceCode:"02"
+    });
     const dedup=new Map();
     list.forEach(function(l){
-      const key=shippingNormalize(l.name)+"|"+shippingNormalize(l.department)+"|"+(l.isCaba?"caba":"");
+      const key=shippingNormalize(l.name);
       if(!dedup.has(key))dedup.set(key,l);
     });
     const values=Array.from(dedup.values());
     try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
     return values;
   }
-  function localityLabel(l){
-    return l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)
-      ?l.name+" — "+l.department
-      :l.name;
-  }
+  function localityLabel(l){return l.name}
   function availableLocalities(){
     const region=$("shippingRegion").value;
     if(!region)return [];
     return shippingLocalities
       .filter(function(l){return region==="amba"?isAmbaLocality(l):!isAmbaLocality(l)})
-      .sort(function(a,b){return a.name.localeCompare(b.name,"es")||a.department.localeCompare(b.department,"es")});
+      .sort(function(a,b){return a.name.localeCompare(b.name,"es")});
   }
   function closeLocalitySuggestions(){
     $("shippingLocalitySuggestions").hidden=true;
     $("shippingLocalitySuggestions").innerHTML="";
   }
+  function closeStreetSuggestions(){
+    $("shippingStreetSuggestions").hidden=true;
+    $("shippingStreetSuggestions").innerHTML="";
+  }
+  function resetStreet(){
+    selectedShippingStreet=null;
+    clearTimeout(streetSearchTimer);
+    const input=$("shippingStreetSearch");
+    input.value="";
+    input.disabled=!selectedShippingLocality;
+    input.placeholder=selectedShippingLocality?"Escribí la calle":"Primero elegí la localidad";
+    $("customerAddressNumber").value="";
+    closeStreetSuggestions();
+    invalidateShippingQuote();
+  }
   function resetLocality(){
     selectedShippingLocality=null;
     $("shippingLocalitySearch").value="";
     closeLocalitySuggestions();
+    resetStreet();
     invalidateShippingQuote();
   }
   function renderLocalitySuggestions(){
@@ -123,12 +144,9 @@
     if(input.disabled){closeLocalitySuggestions();return}
     const all=availableLocalities();
     const matches=(term
-      ?all.filter(function(l){
-        const hay=shippingNormalize(l.name+" "+l.department);
-        return hay.includes(term);
-      })
+      ?all.filter(function(l){return shippingNormalize(l.name).includes(term)})
       :all
-    ).slice(0,10);
+    ).slice(0,12);
     box.innerHTML=matches.length
       ?matches.map(function(l,i){
         return '<button type="button" data-locality-index="'+i+'">'+esc(localityLabel(l))+'</button>';
@@ -142,6 +160,7 @@
     selectedShippingLocality=null;
     input.value="";
     closeLocalitySuggestions();
+    resetStreet();
     invalidateShippingQuote();
     if(!$("shippingRegion").value){
       input.disabled=true;
@@ -164,7 +183,68 @@
   }
   function selectedDestination(){
     if(!selectedShippingLocality)return null;
-    return {name:selectedShippingLocality.name,department:selectedShippingLocality.department||""};
+    return {
+      name:selectedShippingLocality.name,
+      department:selectedShippingLocality.department||"",
+      department_id:selectedShippingLocality.id||"",
+      province_code:selectedShippingLocality.provinceCode||"06",
+      is_caba:!!selectedShippingLocality.isCaba
+    };
+  }
+  async function fetchStreetMatches(term){
+    if(!selectedShippingLocality||shippingNormalize(term).length<2)return [];
+    const url=new URL("https://apis.datos.gob.ar/georef/api/v2.0/calles");
+    url.searchParams.set("provincia",selectedShippingLocality.provinceCode||"06");
+    if(!selectedShippingLocality.isCaba){
+      url.searchParams.set("departamento",selectedShippingLocality.id||selectedShippingLocality.name);
+    }
+    url.searchParams.set("nombre",term.trim());
+    url.searchParams.set("max","15");
+    const res=await fetch(url.toString());
+    if(!res.ok)throw new Error("No se pudieron buscar calles");
+    const data=await res.json();
+    const dedup=new Map();
+    (data.calles||[]).forEach(function(x){
+      const name=String(x&&x.nombre||"").trim();
+      if(!name)return;
+      const key=shippingNormalize(name);
+      if(!dedup.has(key))dedup.set(key,{
+        id:String(x&&x.id||""),
+        name:name,
+        category:String(x&&x.categoria||""),
+        nomenclature:String(x&&x.nomenclatura||"")
+      });
+    });
+    return Array.from(dedup.values()).slice(0,12);
+  }
+  async function renderStreetSuggestions(){
+    const input=$("shippingStreetSearch");
+    const box=$("shippingStreetSuggestions");
+    const term=input.value.trim();
+    const seq=++streetSearchSeq;
+    if(input.disabled||shippingNormalize(term).length<2){closeStreetSuggestions();return}
+    try{
+      const matches=await fetchStreetMatches(term);
+      if(seq!==streetSearchSeq)return;
+      box.innerHTML=matches.length
+        ?matches.map(function(s,i){
+          return '<button type="button" data-street-index="'+i+'">'+esc(s.name)+'</button>';
+        }).join("")
+        :'<span>No encontramos esa calle en la localidad elegida.</span>';
+      box._matches=matches;
+      box.hidden=false;
+    }catch(err){
+      console.warn(err);
+      if(seq!==streetSearchSeq)return;
+      box.innerHTML='<span>No se pudo buscar la calle. Intentá nuevamente.</span>';
+      box._matches=[];
+      box.hidden=false;
+    }
+  }
+  function selectedShippingAddress(){
+    const number=$("customerAddressNumber").value.trim();
+    if(!selectedShippingStreet||!number)return "";
+    return selectedShippingStreet.name+" "+number;
   }
   function cartPayload(){
     return window.ViveroCart.get().map(function(x){
@@ -193,7 +273,7 @@
   }
   async function quoteShipping(){
     const region=$("shippingRegion").value,dest=selectedDestination();
-    const cp=$("customerPostal").value.trim(),address=$("customerAddress").value.trim(),items=cartPayload();
+    const cp=$("customerPostal").value.trim(),address=selectedShippingAddress(),items=cartPayload();
     const btn=$("calculateShippingBtn");
     const seq=++shippingQuoteSeq;
     invalidateShippingQuote();
@@ -218,8 +298,13 @@
           shipping_region:region,
           shipping_locality:dest.name,
           shipping_locality_department:dest.department,
+          shipping_locality_department_id:dest.department_id,
+          shipping_province_code:dest.province_code,
           postal_code:cp,
-          shipping_address:address
+          shipping_address:address,
+          shipping_street:selectedShippingStreet?selectedShippingStreet.name:"",
+          shipping_street_id:selectedShippingStreet?selectedShippingStreet.id:"",
+          shipping_number:$("customerAddressNumber").value.trim()
         }
       });
       if(seq!==shippingQuoteSeq)return;
@@ -334,6 +419,7 @@
 
   $("shippingLocalitySearch").addEventListener("input",()=>{
     selectedShippingLocality=null;
+    resetStreet();
     invalidateShippingQuote();
     renderLocalitySuggestions();
   });
@@ -350,13 +436,41 @@
     selectedShippingLocality=locality;
     $("shippingLocalitySearch").value=localityLabel(locality);
     closeLocalitySuggestions();
-    invalidateShippingQuote();
-  });
-  document.addEventListener("click",e=>{
-    if(!e.target.closest(".shipping-locality-field"))closeLocalitySuggestions();
+    resetStreet();
+    $("shippingStreetSearch").focus();
   });
 
-  ["customerPostal","customerAddress"].forEach(id=>{
+  $("shippingStreetSearch").addEventListener("input",()=>{
+    selectedShippingStreet=null;
+    invalidateShippingQuote();
+    clearTimeout(streetSearchTimer);
+    streetSearchTimer=setTimeout(()=>renderStreetSuggestions(),220);
+  });
+  $("shippingStreetSearch").addEventListener("focus",()=>{
+    if($("shippingStreetSearch").value.trim().length>=2)renderStreetSuggestions();
+  });
+  $("shippingStreetSearch").addEventListener("keydown",e=>{
+    if(e.key==="Escape")closeStreetSuggestions();
+  });
+  $("shippingStreetSuggestions").addEventListener("click",e=>{
+    const btn=e.target.closest("button[data-street-index]");
+    if(!btn)return;
+    const matches=$("shippingStreetSuggestions")._matches||[];
+    const street=matches[Number(btn.dataset.streetIndex)];
+    if(!street)return;
+    selectedShippingStreet=street;
+    $("shippingStreetSearch").value=street.name;
+    closeStreetSuggestions();
+    invalidateShippingQuote();
+    $("customerAddressNumber").focus();
+  });
+
+  document.addEventListener("click",e=>{
+    if(!e.target.closest(".shipping-locality-field"))closeLocalitySuggestions();
+    if(!e.target.closest(".shipping-street-field"))closeStreetSuggestions();
+  });
+
+  ["customerPostal","customerAddressNumber"].forEach(id=>{
     $(id).addEventListener("input",invalidateShippingQuote);
   });
   $("calculateShippingBtn").addEventListener("click",()=>quoteShipping());
@@ -417,13 +531,18 @@
           action:"submit_order",
           customer_name:$("customerName").value.trim(),
           phone:phoneNational,
-          shipping_address:$("customerAddress").value.trim(),
+          shipping_address:selectedShippingAddress(),
+          shipping_street:selectedShippingStreet?selectedShippingStreet.name:"",
+          shipping_street_id:selectedShippingStreet?selectedShippingStreet.id:"",
+          shipping_number:$("customerAddressNumber").value.trim(),
           postal_code:$("customerPostal").value.trim(),
           general_question:$("customerQuestion").value.trim(),
           items:payload,
           shipping_region:region,
           shipping_locality:dest.name,
-          shipping_locality_department:dest.department
+          shipping_locality_department:dest.department,
+          shipping_locality_department_id:dest.department_id,
+          shipping_province_code:dest.province_code
         }
       });
       if(result.error)throw result.error;
@@ -441,7 +560,7 @@
         `Cliente: ${$("customerName").value.trim()}`,
         `Teléfono: +54 9 ${phoneNational}`,
         `Entrega: ${region==="amba"?"AMBA":"Buenos Aires"} · ${dest.name}`,
-        `Dirección: ${$("customerAddress").value.trim()} · CP: ${$("customerPostal").value.trim()}`,"","ARTÍCULOS:",
+        `Dirección: ${selectedShippingAddress()} · CP: ${$("customerPostal").value.trim()}`,"","ARTÍCULOS:",
         ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:""}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:""}${x.area_m2?` · ${x.area_m2} m²`:""}${x.material_mode==="terrain"?` · ${x.coverage_area_m2} m² a ${x.fill_depth_cm} cm`:""}${x.material_mode==="holes"?` · ${x.hole_count} pozos${x.hole_reference_liters?` (ref. ${x.hole_reference_liters} L)`:""} ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm`:""} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         "",
         `Total productos: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
