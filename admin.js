@@ -58,10 +58,22 @@
     if(!$("variantRows").children.length) addVariantRow();
   }
 
+  async function renderVisitStats(){
+    const today=new Date();
+    today.setHours(0,0,0,0);
+    const [totalRes,todayRes]=await Promise.all([
+      db.from("site_visitors").select("visitor_hash",{count:"exact",head:true}),
+      db.from("site_visitors").select("visitor_hash",{count:"exact",head:true}).gte("last_seen",today.toISOString())
+    ]);
+    if(!totalRes.error)$("statVisitorsTotal").textContent=Number(totalRes.count||0).toLocaleString("es-AR");
+    if(!todayRes.error)$("statVisitorsToday").textContent=Number(todayRes.count||0).toLocaleString("es-AR");
+  }
+
   function renderStats(){
     $("statPending").textContent=orders.filter(o=>o.status==="pending_confirmation").length;
     $("statConfirmed").textContent=orders.filter(o=>o.status==="confirmed").length;
     $("statDispatched").textContent=orders.filter(o=>o.status==="dispatched").length;
+    renderVisitStats().catch(console.error);
   }
   function renderCategoryChoices(selected={}){
     $("productCategoryChoices").innerHTML=categories.length?categories.map(c=>`
