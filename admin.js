@@ -1105,7 +1105,7 @@
     const address=$("shippingOriginAddress").value.trim();
     const alternate=$("shippingOriginAddressAlt").value.trim();
     if(address.length<5)return msg("shippingSettingsMessage","Escribí la dirección principal de salida.","error");
-    msg("shippingSettingsMessage","Validando dirección con Google...");
+    msg("shippingSettingsMessage","Validando dirección con Geoapify...");
     $("shippingFindOriginBtn").disabled=true;
     try{
       const {data,error}=await db.functions.invoke("shipping-route",{
@@ -1119,7 +1119,7 @@
       $("shippingOriginStatus").dataset.formattedAddress=data.formatted_address||"";
       msg("shippingSettingsMessage","Dirección validada. Guardá la configuración.","success");
     }catch(err){
-      msg("shippingSettingsMessage",err.message||"No se pudo validar la dirección con Google.","error");
+      msg("shippingSettingsMessage",err.message||"No se pudo validar la dirección con Geoapify.","error");
     }finally{
       $("shippingFindOriginBtn").disabled=false;
     }
@@ -1141,7 +1141,7 @@
     const lat=$("shippingOriginLat").value!==""?Number($("shippingOriginLat").value):null;
     const lon=$("shippingOriginLon").value!==""?Number($("shippingOriginLon").value):null;
     if(vanMax<=0||truckMax<=vanMax)return msg("shippingSettingsMessage","El límite del camión debe ser mayor que el de la camioneta.","error");
-    if($("shippingEnabled").checked&&(lat==null||lon==null))return msg("shippingSettingsMessage","Validá primero la dirección exacta de salida con Google.","error");
+    if($("shippingEnabled").checked&&(lat==null||lon==null))return msg("shippingSettingsMessage","Validá primero la dirección exacta de salida con Geoapify.","error");
     const payload={
       enabled:$("shippingEnabled").checked,
       origin_region:$("shippingOriginRegion").value,
