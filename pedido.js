@@ -7,7 +7,7 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let cats=[],products=[],assocs=[],variants=[],settings={};
-  let shippingLocalities=[],shippingQuote=null,shippingQuoteTimer=null,shippingQuoteSeq=0;
+  let shippingLocalities=[],shippingQuote=null,shippingQuoteTimer=null,shippingQuoteSeq=0,lastShippingQuoteKey="";
   const AMBA_PARTIDOS=new Set([
     "almirante brown","avellaneda","berazategui","berisso","brandsen","campana","canuelas","ensenada","escobar",
     "esteban echeverria","exaltacion de la cruz","ezeiza","florencio varela","general las heras","general rodriguez",
@@ -134,12 +134,11 @@
     const fallback=$("shippingLocalityFallback");
     if(!fallback.hidden){
       const name=fallback.value.trim();
-      return name?{name:name,lat:null,lon:null}:null;
+      return name?{name:name}:null;
     }
     const opt=$("shippingLocality").selectedOptions&&$("shippingLocality").selectedOptions[0];
     if(!opt||!opt.value)return null;
-    const lat=Number(opt.dataset.lat),lon=Number(opt.dataset.lon);
-    return {name:opt.value,lat:Number.isFinite(lat)?lat:null,lon:Number.isFinite(lon)?lon:null};
+    return {name:opt.value};
   }
   function cartPayload(){
     return window.ViveroCart.get().map(function(x){
@@ -158,14 +157,29 @@
     const cp=$("customerPostal").value.trim(),address=$("customerAddress").value.trim(),items=cartPayload();
     const seq=++shippingQuoteSeq;
     shippingQuote=null;$("shippingQuoteBox").hidden=true;
-    if(!items.length||!region||!dest||!cp||address.length<4||dest.lat==null||dest.lon==null)return;
-    const result=await db.rpc("calculate_shipping_quote",{
-      p_items:items,p_region:region,p_locality:dest.name,p_postal_code:cp,p_dest_lat:dest.lat,p_dest_lon:dest.lon
+    if(!items.length||!region||!dest||!cp||address.length<4)return;
+
+    const quoteKey=JSON.stringify({
+      region:region,locality:dest.name,cp:cp,address:address,
+      items:items.map(x=>[x.product_id,x.variant_id,x.category_id,x.quantity])
+    });
+    if(quoteKey===lastShippingQuoteKey&&shippingQuote)return;
+
+    const result=await db.functions.invoke("shipping-route",{
+      body:{
+        action:"quote",
+        items:items,
+        shipping_region:region,
+        shipping_locality:dest.name,
+        postal_code:cp,
+        shipping_address:address
+      }
     });
     if(seq!==shippingQuoteSeq)return;
     if(result.error){console.warn(result.error);return}
     if(result.data&&result.data.ready){
       shippingQuote=result.data;
+      lastShippingQuoteKey=quoteKey;
       $("shippingQuoteValue").textContent=money(result.data.price);
       $("shippingQuoteBox").hidden=false;
     }
@@ -261,9 +275,11 @@
     scheduleShippingQuote();
   });
   $("shippingLocality").addEventListener("change",scheduleShippingQuote);
-  $("shippingLocalityFallback").addEventListener("input",scheduleShippingQuote);
-  $("customerPostal").addEventListener("input",scheduleShippingQuote);
-  $("customerAddress").addEventListener("input",scheduleShippingQuote);
+  $("shippingLocalityFallback").addEventListener("change",scheduleShippingQuote);
+  $("customerPostal").addEventListener("change",scheduleShippingQuote);
+  $("customerPostal").addEventListener("blur",scheduleShippingQuote);
+  $("customerAddress").addEventListener("change",scheduleShippingQuote);
+  $("customerAddress").addEventListener("blur",scheduleShippingQuote);
 
   window.addEventListener("viverocartchange",renderCheckout);
   $("checkoutItems").addEventListener("input",e=>{
@@ -312,27 +328,33 @@
 
     const btn=$("confirmWhatsappBtn");
     btn.disabled=true;
-    $("orderMessage").textContent="Registrando solicitud...";
+    $("orderMessage").textContent="Calculando recorrido y registrando solicitud...";
 
     try{
       const payload=cartPayload();
-      const {data,error}=await db.rpc("create_cart_order_shipping",{
-        p_customer_name:$("customerName").value.trim(),
-        p_phone:phoneNational,
-        p_shipping_address:$("customerAddress").value.trim(),
-        p_postal_code:$("customerPostal").value.trim(),
-        p_general_question:$("customerQuestion").value.trim(),
-        p_items:payload,
-        p_shipping_region:region,
-        p_shipping_locality:dest.name,
-        p_dest_lat:dest.lat,
-        p_dest_lon:dest.lon
+      const result=await db.functions.invoke("shipping-route",{
+        body:{
+          action:"submit_order",
+          customer_name:$("customerName").value.trim(),
+          phone:phoneNational,
+          shipping_address:$("customerAddress").value.trim(),
+          postal_code:$("customerPostal").value.trim(),
+          general_question:$("customerQuestion").value.trim(),
+          items:payload,
+          shipping_region:region,
+          shipping_locality:dest.name
+        }
       });
-      if(error)throw error;
+      if(result.error)throw result.error;
+      if(!result.data||!result.data.ok){
+        const reason=result.data&&result.data.reason;
+        if(reason==="missing_weight")throw new Error("No pudimos calcular el envío automáticamente para uno de los productos. Contactanos para cotizarlo.");
+        if(reason==="destination_not_found")throw new Error("No pudimos ubicar esa dirección. Revisá calle, altura, localidad y código postal.");
+        throw new Error("No pudimos calcular el envío o registrar la solicitud.");
+      }
 
-      const order=Array.isArray(data)?data[0]:data;
-      const code=order.order_code;
-      const finalShipping=order.shipping_price!=null?Number(order.shipping_price):(shippingQuote&&shippingQuote.ready?Number(shippingQuote.price):null);
+      const code=result.data.order_code;
+      const finalShipping=Number(result.data.shipping_price||0);
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,"",
         `Cliente: ${$("customerName").value.trim()}`,
@@ -342,7 +364,7 @@
         ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:""}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:""}${x.area_m2?` · ${x.area_m2} m²`:""}${x.material_mode==="terrain"?` · ${x.coverage_area_m2} m² a ${x.fill_depth_cm} cm`:""}${x.material_mode==="holes"?` · ${x.hole_count} pozos${x.hole_reference_liters?` (ref. ${x.hole_reference_liters} L)`:""} ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm`:""} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         "",
         `Total productos: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
-        finalShipping!=null?`Envío estimado: ${money(finalShipping)}`:null,
+        `Envío estimado: ${money(finalShipping)}`,
         $("customerQuestion").value.trim()?`Consulta: ${$("customerQuestion").value.trim()}`:null
       ].filter(x=>x!==null);
 
