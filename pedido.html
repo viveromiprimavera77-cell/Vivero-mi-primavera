@@ -72,12 +72,17 @@
                 <option value="buenos_aires">Buenos Aires</option>
               </select>
             </label>
-            <label>Localidad
-              <select id="shippingLocality" required disabled><option value="">Primero elegí la zona</option></select>
-              <input id="shippingLocalityFallback" hidden placeholder="Escribí la localidad">
+            <label class="shipping-locality-field">Localidad
+              <input id="shippingLocalitySearch" type="text" autocomplete="off" placeholder="Primero elegí la zona" disabled required>
+              <div id="shippingLocalitySuggestions" class="shipping-locality-suggestions" hidden></div>
+              <small>Escribí para filtrar y elegí una localidad de la lista.</small>
             </label>
-            <label>Dirección de envío<input id="customerAddress" required></label>
-            <label>Código postal<input id="customerPostal" required inputmode="numeric"></label>
+            <label>Dirección de envío<input id="customerAddress" required placeholder="Ej.: San Martín 847"></label>
+            <div class="shipping-postal-calc full">
+              <label>Código postal<input id="customerPostal" required inputmode="text" maxlength="8" placeholder="Ej.: 1704"></label>
+              <button id="calculateShippingBtn" class="shipping-calc-btn" type="button">Calcular envío</button>
+            </div>
+            <p id="shippingQuoteMessage" class="shipping-quote-message full" hidden></p>
             <div id="shippingQuoteBox" class="shipping-quote-box full" hidden>
               <div>
                 <span>Valor estimado del envío</span>
