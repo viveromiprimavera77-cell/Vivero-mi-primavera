@@ -596,3 +596,8 @@ body.category-modal-open{overflow:hidden}
   .order-page-back{font-size:.8rem}
   .order-page-main{padding:24px 12px 55px}
 }
+
+
+/* v23: selector de categorías debajo de CATÁLOGO */
+.catalog-top-picker{display:block;margin-top:10px;min-width:260px;max-width:360px}
+.catalog-top-picker select{margin-top:7px}
