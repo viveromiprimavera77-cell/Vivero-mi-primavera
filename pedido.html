@@ -75,9 +75,18 @@
             <label class="shipping-locality-field">Localidad
               <input id="shippingLocalitySearch" type="text" autocomplete="off" placeholder="Primero elegí la zona" disabled required>
               <div id="shippingLocalitySuggestions" class="shipping-locality-suggestions" hidden></div>
-              <small>Escribí para filtrar y elegí una localidad de la lista.</small>
+              <small>Escribí y elegí la localidad general o partido, por ejemplo Merlo.</small>
             </label>
-            <label>Dirección de envío<input id="customerAddress" required placeholder="Ej.: San Martín 847"></label>
+            <div class="shipping-address-grid full">
+              <label class="shipping-street-field">Calle
+                <input id="shippingStreetSearch" type="text" autocomplete="off" placeholder="Primero elegí la localidad" disabled required>
+                <div id="shippingStreetSuggestions" class="shipping-locality-suggestions shipping-street-suggestions" hidden></div>
+                <small>Escribí el nombre y elegí la calle sugerida.</small>
+              </label>
+              <label class="shipping-number-field">Altura
+                <input id="customerAddressNumber" required inputmode="numeric" maxlength="10" placeholder="847">
+              </label>
+            </div>
             <div class="shipping-postal-calc full">
               <label>Código postal<input id="customerPostal" required inputmode="text" maxlength="8" placeholder="Ej.: 1704"></label>
               <button id="calculateShippingBtn" class="shipping-calc-btn" type="button">Calcular envío</button>
