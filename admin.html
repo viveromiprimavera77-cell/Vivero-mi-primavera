@@ -316,11 +316,12 @@
                 </label>
                 <label>Localidad de salida<input id="shippingOriginLocality" placeholder="Ej.: Merlo"></label>
                 <label>Código postal de salida<input id="shippingOriginPostal" placeholder="Ej.: 1722"></label>
-                <label>Factor de distancia vial<input id="shippingRoadFactor" type="number" min="1" max="3" step="0.01" value="1.18"><small>Se aplica sobre la distancia geográfica para aproximar el recorrido real.</small></label>
+                <label class="wide">Dirección principal de salida<input id="shippingOriginAddress" placeholder="Ej.: Albarellos 6256, Merlo, Buenos Aires"></label>
+                <label class="wide">Dirección alternativa / alias<input id="shippingOriginAddressAlt" placeholder="Ej.: Almirante Brown 6334, Merlo, Buenos Aires"><small>Se usa como respaldo si Google no encuentra la dirección principal.</small></label>
               </div>
               <div class="shipping-origin-actions">
-                <button id="shippingFindOriginBtn" class="secondary-btn" type="button">Buscar ubicación de salida</button>
-                <span id="shippingOriginStatus" class="item-meta">Todavía no hay una ubicación calculada.</span>
+                <button id="shippingFindOriginBtn" class="secondary-btn" type="button">Validar dirección con Google</button>
+                <span id="shippingOriginStatus" class="item-meta">Todavía no hay una ubicación validada.</span>
               </div>
               <input id="shippingOriginLat" type="hidden">
               <input id="shippingOriginLon" type="hidden">
