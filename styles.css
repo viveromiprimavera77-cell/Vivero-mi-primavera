@@ -639,3 +639,14 @@ body.category-modal-open{overflow:hidden}
 }
 
 .shipping-quote-success{border:1px solid #b9dcb0;background:#eef8ea;color:var(--green-900)}
+
+
+/* v27: localidad general + calle autocompletada + altura separada */
+.shipping-address-grid{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:12px;align-items:start}
+.shipping-street-field{position:relative}
+.shipping-number-field input{text-align:center}
+.shipping-street-suggestions{z-index:36}
+@media(max-width:560px){
+  .shipping-address-grid{grid-template-columns:minmax(0,1fr) 96px;gap:8px}
+  .shipping-number-field input{padding-left:8px;padding-right:8px}
+}
