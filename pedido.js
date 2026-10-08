@@ -221,6 +221,7 @@
 
     $("checkoutTotal").textContent=money(window.ViveroCart.total());
     $("confirmWhatsappBtn").disabled=!items.length;
+    scheduleShippingQuote();
   }
 
   async function load(){
@@ -235,6 +236,7 @@
     cats=cr.data||[];products=pr.data||[];assocs=ar.data||[];variants=vr.data||[];settings=sr.data||{};
     renderNavigation();
     renderCheckout();
+    await loadShippingLocalities();
 
     const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");
     if(wa){$("whatsappFloat").href=wa;$("whatsappFloat").hidden=false}
@@ -253,6 +255,15 @@
     window.ViveroCart.clear();
     location.href="index.html";
   });
+
+  $("shippingRegion").addEventListener("change",()=>{
+    renderLocalityOptions();
+    scheduleShippingQuote();
+  });
+  $("shippingLocality").addEventListener("change",scheduleShippingQuote);
+  $("shippingLocalityFallback").addEventListener("input",scheduleShippingQuote);
+  $("customerPostal").addEventListener("input",scheduleShippingQuote);
+  $("customerAddress").addEventListener("input",scheduleShippingQuote);
 
   window.addEventListener("viverocartchange",renderCheckout);
   $("checkoutItems").addEventListener("input",e=>{
@@ -292,38 +303,46 @@
       return;
     }
 
+    const region=$("shippingRegion").value;
+    const dest=selectedDestination();
+    if(!region||!dest){
+      $("orderMessage").textContent="Elegí la zona y la localidad de entrega.";
+      return;
+    }
+
     const btn=$("confirmWhatsappBtn");
     btn.disabled=true;
     $("orderMessage").textContent="Registrando solicitud...";
 
     try{
-      const payload=cart.map(x=>({
-        product_id:x.product_id,variant_id:x.variant_id,category_id:x.category_id,quantity:Number(x.quantity),
-        length_m:x.length_m||null,spacing_cm:x.spacing_cm||null,
-        coverage_area_m2:x.coverage_area_m2||null,fill_depth_cm:x.fill_depth_cm||null,
-        hole_count:x.hole_count||null,hole_width_cm:x.hole_width_cm||null,hole_depth_cm:x.hole_depth_cm||null,
-        material_volume_dm3:x.material_volume_dm3||null
-      }));
-
-      const {data,error}=await db.rpc("create_cart_order",{
+      const payload=cartPayload();
+      const {data,error}=await db.rpc("create_cart_order_shipping",{
         p_customer_name:$("customerName").value.trim(),
         p_phone:phoneNational,
         p_shipping_address:$("customerAddress").value.trim(),
         p_postal_code:$("customerPostal").value.trim(),
         p_general_question:$("customerQuestion").value.trim(),
-        p_items:payload
+        p_items:payload,
+        p_shipping_region:region,
+        p_shipping_locality:dest.name,
+        p_dest_lat:dest.lat,
+        p_dest_lon:dest.lon
       });
       if(error)throw error;
 
       const order=Array.isArray(data)?data[0]:data;
       const code=order.order_code;
+      const finalShipping=order.shipping_price!=null?Number(order.shipping_price):(shippingQuote&&shippingQuote.ready?Number(shippingQuote.price):null);
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,"",
         `Cliente: ${$("customerName").value.trim()}`,
         `Teléfono: +54 9 ${phoneNational}`,
+        `Entrega: ${region==="amba"?"AMBA":"Buenos Aires"} · ${dest.name}`,
         `Dirección: ${$("customerAddress").value.trim()} · CP: ${$("customerPostal").value.trim()}`,"","ARTÍCULOS:",
         ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:""}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:""}${x.area_m2?` · ${x.area_m2} m²`:""}${x.material_mode==="terrain"?` · ${x.coverage_area_m2} m² a ${x.fill_depth_cm} cm`:""}${x.material_mode==="holes"?` · ${x.hole_count} pozos${x.hole_reference_liters?` (ref. ${x.hole_reference_liters} L)`:""} ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm`:""} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
-        "",`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
+        "",
+        `Total productos: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
+        finalShipping!=null?`Envío estimado: ${money(finalShipping)}`:null,
         $("customerQuestion").value.trim()?`Consulta: ${$("customerQuestion").value.trim()}`:null
       ].filter(x=>x!==null);
 
