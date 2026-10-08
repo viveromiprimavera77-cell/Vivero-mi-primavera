@@ -312,6 +312,7 @@
       const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");["shippingWhatsapp","whatsappFloat"].forEach(id=>{if(wa){el(id).href=wa;el(id).hidden=false}});
       const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id),cat=a?cats.find(c=>c.id===a.category_id):null;const href=cat?`categoria.html?categoria=${encodeURIComponent(cat.slug)}&planta=${encodeURIComponent(p.slug)}`:"#catalogo";return `<a class="featured-card" href="${href}">${firstProductImage(p)?`<img src="${esc(firstProductImage(p))}" alt="${esc(p.name)}">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
       el("categoryNav").innerHTML=cats.length?cats.map(c=>{const ids=assocs.filter(a=>a.category_id===c.id).map(a=>a.product_id),ps=products.filter(p=>ids.includes(p.id));const categoryUrl=`categoria.html?categoria=${encodeURIComponent(c.slug)}`;return `<a class="category-link" href="${categoryUrl}">${esc(c.name)}</a>${ps.map(p=>`<a class="plant-link" href="${categoryUrl}&planta=${encodeURIComponent(p.slug)}">↳ ${esc(p.name)}</a>`).join("")}`}).join(""):`<span class="nav-loading">Sin categorías</span>`;
+      el("categoryTopJump").innerHTML=`<option value="">Elegí una categoría...</option>${cats.map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
       el("categoryJump").innerHTML=`<option value="">Elegí una categoría...</option>${cats.slice(1).map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
       if(cats.length){const c=cats[0],rows=assocs.filter(a=>a.category_id===c.id).map(a=>({a,p:products.find(p=>p.id===a.product_id)})).filter(x=>x.p);el("categories").innerHTML=`<section class="category-section home-single-category" id="cat-${esc(c.slug)}"><div class="category-header"><h2>${esc(c.name)}</h2><p class="category-description">${esc(c.description||"")}</p></div><div class="plant-grid">${rows.length?rows.map(x=>card(x.p,x.a,variants)).join(""):`<div class="empty-state">Próximamente sumaremos plantas a esta categoría.</div>`}</div></section>`}else el("categories").innerHTML=`<div class="empty-state">El catálogo está listo para empezar a cargar plantas.</div>`;
       document.querySelectorAll(".featured-strip.drag-scroll").forEach(setupDrag);
@@ -326,7 +327,9 @@
   el("plantSearch").addEventListener("keydown",e=>{if(e.key!=="Enter")return;e.preventDefault();const matches=applySearch();if(matches.length)goToSearchProduct(matches[0].id)});
   el("searchResults").addEventListener("click",e=>{const btn=e.target.closest("[data-search-product]");if(btn)goToSearchProduct(btn.dataset.searchProduct)});
   el("clearPlantSearch").addEventListener("click",()=>{el("plantSearch").value="";applySearch();el("plantSearch").focus()});
-  el("categoryJump").addEventListener("change",e=>{if(!e.target.value)return;location.href=`categoria.html?categoria=${encodeURIComponent(e.target.value)}`});
+  const openCategory=e=>{if(!e.target.value)return;location.href=`categoria.html?categoria=${encodeURIComponent(e.target.value)}`};
+  el("categoryTopJump").addEventListener("change",openCategory);
+  el("categoryJump").addEventListener("change",openCategory);
   el("welcomeClose").addEventListener("click",closeWelcome);
   el("welcomeStart").addEventListener("click",closeWelcome);
   el("welcomeModal").addEventListener("click",e=>{if(e.target===el("welcomeModal"))closeWelcome()});
