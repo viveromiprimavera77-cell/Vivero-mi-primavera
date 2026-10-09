@@ -22,13 +22,6 @@
         const facebook=safeUrl(data.facebook_url);
         if(!instagram&&!facebook)return;
 
-        let contact=[...footer.children].find(el=>{
-          const strong=el.querySelector&&el.querySelector("strong");
-          return strong&&/contact/i.test(strong.textContent||"");
-        });
-        if(!contact)contact=footer.lastElementChild;
-        if(!contact)return;
-
         const wrap=document.createElement("div");
         wrap.className="footer-socials";
         wrap.setAttribute("aria-label","Redes sociales");
@@ -51,7 +44,7 @@
           a.innerHTML=facebookSvg;
           wrap.appendChild(a);
         }
-        if(wrap.children.length)contact.appendChild(wrap);
+        if(wrap.children.length)footer.appendChild(wrap);
       })
       .catch(()=>{});
   } catch {}
