@@ -657,3 +657,18 @@ body.category-modal-open{overflow:hidden}
 .footer-social-link{width:40px;height:40px;border:1px solid rgba(255,255,255,.28);border-radius:50%;display:grid;place-items:center;color:#eff8ef;text-decoration:none;transition:transform .18s ease,background .18s ease,border-color .18s ease}
 .footer-social-link:hover,.footer-social-link:focus{transform:translateY(-2px);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5);outline:none}
 .footer-social-link svg{width:22px;height:22px;display:block}
+
+
+/* v29: redes sociales arriba a la derecha del pie */
+.footer{position:relative}
+.footer-socials{
+  position:absolute;
+  top:16px;
+  right:clamp(18px,3vw,42px);
+  margin-top:0;
+  z-index:2;
+}
+@media(max-width:700px){
+  .footer{padding-top:70px}
+  .footer-socials{top:16px;right:18px}
+}
