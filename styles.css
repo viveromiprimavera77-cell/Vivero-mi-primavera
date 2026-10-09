@@ -650,3 +650,10 @@ body.category-modal-open{overflow:hidden}
   .shipping-address-grid{grid-template-columns:minmax(0,1fr) 96px;gap:8px}
   .shipping-number-field input{padding-left:8px;padding-right:8px}
 }
+
+
+/* v28: redes sociales en el pie de página */
+.footer-socials{display:flex;align-items:center;gap:10px;margin-top:14px}
+.footer-social-link{width:40px;height:40px;border:1px solid rgba(255,255,255,.28);border-radius:50%;display:grid;place-items:center;color:#eff8ef;text-decoration:none;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.footer-social-link:hover,.footer-social-link:focus{transform:translateY(-2px);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5);outline:none}
+.footer-social-link svg{width:22px;height:22px;display:block}
