@@ -113,6 +113,9 @@
     if(key==="plantin")return "Plantín";
     if(key==="terron")return "Terrón";
     if(key==="maceta soplada")return "Maceta soplada";
+    if(key==="envase 10"||key==="envase10")return "Envase 10";
+    if(key==="envase 12"||key==="envase12"||key==="maceta 12")return "Envase 12";
+    if(key==="consultar presentacion"||key==="consultar presentación")return "Consultar presentación";
     if(key==="panes cuadrados"||key==="pan cuadrado")return "Panes cuadrados";
     if(key==="camion"||key==="camión")return "Camión";
     if(key==="bolsa")return "Bolsa";
@@ -212,6 +215,9 @@
             <option value="" ${!presentation?"selected":""}>Elegir presentación</option>
             <option value="Plantín" ${presentation==="Plantín"?"selected":""}>Plantín</option>
             <option value="Maceta soplada" ${presentation==="Maceta soplada"?"selected":""}>Maceta soplada</option>
+            <option value="Envase 10" ${presentation==="Envase 10"?"selected":""}>Envase 10</option>
+            <option value="Envase 12" ${presentation==="Envase 12"?"selected":""}>Envase 12</option>
+            <option value="Consultar presentación" ${presentation==="Consultar presentación"?"selected":""}>Consultar presentación</option>
             <option value="Terrón" ${presentation==="Terrón"?"selected":""}>Terrón</option>
             ${area?`<option value="Panes cuadrados" ${presentation==="Panes cuadrados"?"selected":""}>Panes cuadrados</option>`:""}
             ${material?`<option value="Camión" ${presentation==="Camión"?"selected":""}>Camión</option><option value="Bolsa" ${presentation==="Bolsa"?"selected":""}>Bolsa</option><option value="Por dm³" ${presentation==="Por dm³"?"selected":""}>Por dm³</option>`:""}
