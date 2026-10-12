@@ -361,7 +361,10 @@
         <button class="checkout-remove" type="button" data-remove-id="${x.id}">Eliminar</button>
       </div>`).join(''):`<div class="cart-empty">El carrito está vacío. Podés volver al catálogo y agregar plantas.</div>`;
     $('checkoutTotal').textContent=money(window.ViveroCart.total());
-    $('confirmWhatsappBtn').disabled=!items.length;
+    const validMinimum=window.ViveroCart.meetsMinimum();
+    const notice=$('checkoutMinimumNotice');
+    if(notice){notice.textContent=window.ViveroCart.minimumMessage();notice.classList.toggle('reached',validMinimum);}
+    $('confirmWhatsappBtn').disabled=!items.length||!validMinimum;
   }
   function showCheckout(){$('checkoutSection').hidden=false;renderCheckout();setTimeout(()=>$('checkoutSection').scrollIntoView({behavior:'smooth',block:'start'}),80)}
 
@@ -461,6 +464,11 @@
   $('orderForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const cart=window.ViveroCart.get();if(!cart.length)return;
+    if(!window.ViveroCart.meetsMinimum()){
+      $('orderMessage').textContent=window.ViveroCart.minimumMessage();
+      $('checkoutMinimumNotice')?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
     const phoneNational=String($('customerPhone').value||'').replace(/\D/g,'');
     if(phoneNational.length!==10||phoneNational.startsWith('0')){
       $('orderMessage').textContent='Ingresá 10 dígitos: código de área sin 0 + número sin 15. Ejemplo: 11XXXXXXXX.';
