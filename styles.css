@@ -672,3 +672,20 @@ body.category-modal-open{overflow:hidden}
   .footer{padding-top:70px}
   .footer-socials{top:16px;right:18px}
 }
+
+/* Flechas de las galerías sólo para pantallas de escritorio.
+   En celular se conserva el deslizamiento y los puntos existentes. */
+.photo-nav{display:none}
+@media (min-width:901px){
+  .photo-nav{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:6;
+    display:flex;align-items:center;justify-content:center;
+    width:40px;height:48px;border:1px solid rgba(255,255,255,.7);
+    border-radius:12px;background:rgba(11,57,28,.78);color:#fff;
+    font-size:36px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.17);
+    transition:background .15s ease;
+  }
+  .photo-nav:hover,.photo-nav:focus-visible{background:#0f6735;outline:2px solid #fff;outline-offset:2px}
+  .photo-nav-prev{left:10px}
+  .photo-nav-next{right:10px}
+}
