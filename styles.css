@@ -742,3 +742,12 @@ body.category-modal-open{overflow:hidden}
   .photo-carousel .photo-nav-prev{left:12px}
   .photo-carousel .photo-nav-next{right:12px}
 }
+
+/* Ubicación debajo del logo en encabezados y copyright al cierre del pie. */
+.header-brand-location{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;flex-shrink:0}
+.header-location{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.8rem;line-height:1.2;white-space:nowrap}
+.header-location svg{flex:none;display:block}
+.site-header .header-location{color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.6)}
+.category-site-header .header-location,.order-page-header .header-location{color:var(--green-900)}
+.footer-copyright{grid-column:1/-1;text-align:center;border-top:1px solid rgba(255,255,255,.22);padding-top:20px;margin-top:8px;color:#c2d9c4;font-size:.82rem;font-weight:600;letter-spacing:.02em}
+@media(max-width:900px){.header-brand-location{gap:5px}.header-location{font-size:.72rem}.header-location svg{width:15px;height:15px}}
