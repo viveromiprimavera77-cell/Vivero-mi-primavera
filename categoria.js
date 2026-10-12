@@ -7,6 +7,9 @@
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let categories=[],products=[],assocs=[],variants=[],currentCategory=null;
+  // Opción virtual del selector, no requiere crear una categoría en Supabase.
+  const ALL_CATEGORIES={id:"__todas__",slug:"todas",name:"Todas las categorías",
+    description:"Recorré todas las plantas y productos en el orden de las categorías del vivero. Una planta puede aparecer en más de una categoría."};
 
   function waLink(number,message){
     const digits=String(number||"").replace(/\D/g,"");
@@ -269,7 +272,7 @@
     const available=pvars.filter(v=>v.availability==="in_stock");
     const initial=available[0]||pvars[0]||null;
     const image=firstProductImage(p);
-    return `<button type="button" class="category-product-card" data-open-product="${p.id}">
+    return `<button type="button" class="category-product-card" data-open-product="${p.id}" data-product-category="${categoryId}">
       <div class="category-product-image">
         ${image?`<img src="${esc(image)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="category-product-placeholder">Mi Primavera</div>`}
         <span>Ver planta</span>
@@ -286,11 +289,14 @@
     </button>`;
   }
 
-  function openPlant(productId,pushUrl=true){
+  function openPlant(productId,pushUrl=true,productCategoryId=null){
     const p=products.find(x=>x.id===productId);
-    if(!p||!currentCategory)return;
+    const categoryId=productCategoryId || (currentCategory?.slug==="todas"
+      ? categories.find(c=>assocs.some(a=>a.category_id===c.id&&a.product_id===productId))?.id
+      : currentCategory?.id);
+    if(!p||!categoryId)return;
     const modal=el("categoryPlantModal");
-    el("categoryPlantModalContent").innerHTML=fullPlantCard(p,currentCategory.id);
+    el("categoryPlantModalContent").innerHTML=fullPlantCard(p,categoryId);
     modal.hidden=false;
     document.body.classList.add("category-modal-open");
     const card=el("categoryPlantModalContent").querySelector(".plant-card");
@@ -332,27 +338,63 @@
         ${ps.map(p=>`<a class="plant-link" href="${categoryUrl}&planta=${encodeURIComponent(p.slug)}">↳ ${esc(p.name)}</a>`).join("")}`;
     }).join(""):`<span class="nav-loading">Sin categorías</span>`;
 
-    el("categoryPageSelect").innerHTML=categories.map(c=>`<option value="${esc(c.slug)}" ${currentCategory?.id===c.id?"selected":""}>${esc(c.name)}</option>`).join("");
-    el("categoryPageBottomSelect").innerHTML=`<option value="">Elegí una categoría...</option>${categories.filter(c=>c.id!==currentCategory?.id).map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
+    el("categoryPageSelect").innerHTML=`<option value="todas" ${currentCategory?.slug==="todas"?"selected":""}>Todas las categorías</option>${categories.map(c=>`<option value="${esc(c.slug)}" ${currentCategory?.id===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}`;
+    el("categoryPageBottomSelect").innerHTML=`<option value="">Elegí una categoría...</option><option value="todas">Todas las categorías</option>${categories.map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
   }
 
   function renderCategory(){
+    const allMode=currentCategory.slug===ALL_CATEGORIES.slug;
     document.title=`${currentCategory.name} | Mi Primavera`;
     el("categoryPageTitle").textContent=currentCategory.name;
     el("categoryPageDescription").textContent=currentCategory.description||"Explorá las plantas y presentaciones disponibles en esta categoría.";
-    el("categoryProductsTitle").textContent=`Plantas de ${currentCategory.name}`;
+    const grid=el("categoryProductGrid");
+    let visibleProducts=[];
 
-    const ids=assocs.filter(a=>a.category_id===currentCategory.id).map(a=>a.product_id);
-    const list=products.filter(p=>ids.includes(p.id));
-    el("categoryProductCount").textContent=`${list.length} ${list.length===1?"opción":"opciones"}`;
-    el("categoryProductGrid").innerHTML=list.length
-      ?list.map(p=>categoryCard(p,currentCategory.id)).join("")
-      :`<div class="empty-state category-grid-empty">Todavía no hay plantas cargadas en esta categoría.</div>`;
+    if(allMode){
+      // Se utiliza sort_order de categorías y, dentro de cada grupo, el orden del producto.
+      // Mostrar las asociaciones por categoría evita ocultar plantas que pertenecen a varios grupos.
+      const orderedCategories=[...categories].sort((a,b)=>
+        Number(a.sort_order||0)-Number(b.sort_order||0)||a.name.localeCompare(b.name,"es"));
+      const groups=orderedCategories.map(category=>{
+        const ids=new Set(assocs.filter(a=>a.category_id===category.id).map(a=>a.product_id));
+        const items=products.filter(p=>ids.has(p.id));
+        return {category,items};
+      }).filter(g=>g.items.length>0);
+      visibleProducts=groups.flatMap(g=>g.items);
+      const distinctCount=new Set(visibleProducts.map(p=>p.id)).size;
+      el("categoryProductsTitle").textContent="Todas las categorías";
+      el("categoryProductCount").textContent=`${distinctCount} ${distinctCount===1?"producto":"productos"} · ${groups.length} ${groups.length===1?"categoría":"categorías"}`;
+      grid.classList.add("all-categories-grid");
+      grid.innerHTML=groups.length?groups.map(({category,items})=>`
+        <section class="all-category-group" id="grupo-${esc(category.slug)}">
+          <div class="all-category-heading">
+            <div>
+              <span class="eyebrow">CATEGORÍA ${Number(category.sort_order)||"—"}</span>
+              <h3>${esc(category.name)}</h3>
+              ${category.description?`<p>${esc(category.description)}</p>`:""}
+            </div>
+            <a class="all-category-link" href="categoria.html?categoria=${encodeURIComponent(category.slug)}">Ver categoría →</a>
+          </div>
+          <div class="category-page-grid">${items.map(p=>categoryCard(p,category.id)).join("")}</div>
+        </section>`).join(""):`<div class="empty-state">Todavía no hay plantas disponibles.</div>`;
+    }else{
+      el("categoryProductsTitle").textContent=`Plantas de ${currentCategory.name}`;
+      const ids=new Set(assocs.filter(a=>a.category_id===currentCategory.id).map(a=>a.product_id));
+      visibleProducts=products.filter(p=>ids.has(p.id));
+      el("categoryProductCount").textContent=`${visibleProducts.length} ${visibleProducts.length===1?"opción":"opciones"}`;
+      grid.classList.remove("all-categories-grid");
+      grid.innerHTML=visibleProducts.length
+        ?visibleProducts.map(p=>categoryCard(p,currentCategory.id)).join("")
+        :`<div class="empty-state category-grid-empty">Todavía no hay plantas cargadas en esta categoría.</div>`;
+    }
 
     const requestedPlant=new URLSearchParams(location.search).get("planta");
     if(requestedPlant){
-      const p=list.find(x=>x.slug===requestedPlant||x.id===requestedPlant);
-      if(p)setTimeout(()=>openPlant(p.id,false),0);
+      const p=visibleProducts.find(x=>x.slug===requestedPlant||x.id===requestedPlant);
+      if(p){
+        const firstCard=[...grid.querySelectorAll("[data-open-product]")].find(card=>card.dataset.openProduct===p.id);
+        setTimeout(()=>openPlant(p.id,false,firstCard?.dataset.productCategory||null),0);
+      }
     }
   }
 
@@ -373,7 +415,9 @@
       const settings=sr.data||{};
 
       const requested=new URLSearchParams(location.search).get("categoria");
-      currentCategory=categories.find(c=>c.slug===requested||c.id===requested)||categories[0]||null;
+      currentCategory=requested===ALL_CATEGORIES.slug
+        ?ALL_CATEGORIES
+        :categories.find(c=>c.slug===requested||c.id===requested)||categories[0]||null;
       if(!currentCategory){
         el("categoryProductGrid").innerHTML='<div class="empty-state">Todavía no hay categorías disponibles.</div>';
         return;
@@ -416,7 +460,7 @@
 
   el("categoryProductGrid").addEventListener("click",e=>{
     const card=e.target.closest("[data-open-product]");
-    if(card)openPlant(card.dataset.openProduct);
+    if(card)openPlant(card.dataset.openProduct,true,card.dataset.productCategory||null);
   });
 
   el("categoryPlantModal").addEventListener("click",e=>{
