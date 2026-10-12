@@ -1,5 +1,6 @@
 (() => {
   const KEY = "mi_primavera_cart_v2";
+  const MINIMUM_PURCHASE = 99999; // ARS, subtotal de productos (sin envío).
   const money = n => new Intl.NumberFormat("es-AR", {
     style: "currency", currency: "ARS", maximumFractionDigits: 0
   }).format(Number(n || 0));
@@ -76,6 +77,15 @@
     return load().reduce((s, x) => s + Number(x.unit_price || 0) * Number(x.quantity || 0), 0);
   }
 
+  function meetsMinimum() { return total() >= MINIMUM_PURCHASE; }
+
+  function minimumMessage() {
+    const remaining = MINIMUM_PURCHASE - total();
+    return remaining > 0
+      ? `Monto mínimo de compra: ${money(MINIMUM_PURCHASE)}. Te faltan ${money(remaining)} en productos.`
+      : "Llegaste al monto mínimo de compra";
+  }
+
   function count() {
     // El indicador del carrito cuenta líneas/pedidos distintos, no unidades.
     // Ej.: 34 Oleos Verdes = 1; si agrega otro producto distinto = 2.
@@ -101,6 +111,7 @@
         <div class="cart-drawer-items" id="cartDrawerItems"></div>
         <div class="cart-drawer-bottom">
           <div class="cart-drawer-total"><span>Total estimado</span><strong id="cartDrawerTotal">$0</strong></div>
+          <p class="purchase-minimum-notice" id="cartMinimumNotice" role="status" aria-live="polite"></p>
           <button class="cart-primary" id="cartCheckout" type="button">Confirmar mi pedido</button>
           <button class="cart-secondary" id="cartContinue" type="button">Seguir comprando</button>
         </div>
@@ -158,9 +169,12 @@
     `).join("") : `<div class="cart-empty">Todavía no agregaste productos.</div>`;
 
     document.getElementById("cartDrawerTotal").textContent = money(total());
+    const minimumNotice = document.getElementById("cartMinimumNotice");
+    minimumNotice.textContent = minimumMessage();
+    minimumNotice.classList.toggle("reached", meetsMinimum());
     document.getElementById("cartCheckout").disabled = !items.length;
   }
 
-  window.ViveroCart = { get, add, updateQty, update, remove, clear, total, count, open, close, render };
+  window.ViveroCart = { get, add, updateQty, update, remove, clear, total, count, open, close, render, MINIMUM_PURCHASE, meetsMinimum, minimumMessage };
   document.addEventListener("DOMContentLoaded", render);
 })();
