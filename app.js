@@ -248,9 +248,9 @@
     if(!available.length)return `<div class="variant-selector empty-variants">Consultar disponibilidad de presentaciones.</div>`;
     const keyOf=v=>priority?String(v.height||"").trim().toLowerCase():String(v.liters??"none");
     const counts={};available.forEach(v=>{const k=keyOf(v);counts[k]=(counts[k]||0)+1});
-    const title=area?"Elegí las dimensiones":priority?"Elegí la altura":"Seleccioná los litros";
+    const title=area?"Elegí las dimensiones":priority?"Elegí la altura":available.some(v=>v.liters)?"Seleccioná los litros":"Elegí la presentación";
     const buttons=available.map((v,i)=>{
-      let main=priority?(v.height||(area?"Sin dimensiones":"Sin altura")):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única");
+      let main=priority?(v.height||(area?"Sin dimensiones":"Sin altura")):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:(v.label||"Única"));
       const duplicate=counts[keyOf(v)]>1;
       if(duplicate)main+=` · ${presentationText(v,categoryId)}`;
       return `<button type="button" class="option-chip liter-chip ${i===0?"active":""}" data-variant="${v.id}">${esc(main)}</button>`;
@@ -266,7 +266,7 @@
     const searchText=normalize([p.name,p.description,p.max_height,p.maturity_time,p.pruning_per_year].filter(Boolean).join(" "));
     return `<article class="plant-card" id="planta-${esc(p.slug)}" data-product-card="${p.id}" data-search="${esc(searchText)}">
       ${photoCarousel(p)}<div class="plant-body"><h3>${esc(p.name)}</h3><p>${esc(p.description||"")}</p>${highlights(p)}${selectorHtml(p,pvars,assoc.category_id)}
-      <div class="card-bottom"><span class="price dynamic-price">${initial?money(initial.price):"Consultar"}</span><span class="status ${initial?.availability==="in_stock"?"status-stock":""}">${initial?.availability==="in_stock"?"En stock":"Consultar disponibilidad"}</span></div></div>
+      <div class="card-bottom"><span class="price dynamic-price">${initial?money(initial.price):"Consultar"}</span><span class="status ${initial?.availability==="in_stock"&&p.availability!=="consult"?"status-stock":""}">${initial?.availability==="in_stock"&&p.availability!=="consult"?"En stock":"Consultar disponibilidad"}</span></div></div>
       <a class="calc-open-link" href="calculadora.html?category=${assoc.category_id}&product=${p.id}${initial?`&variant=${initial.id}`:""}"><span>Calculadora de cantidad y costos</span><span>›</span></a>
     </article>`;
   }
@@ -279,8 +279,10 @@
         box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));
         pres.textContent=presentationText(v,cid);
         price.textContent=money(v.price);
-        status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";
-        status.classList.toggle("status-stock",v.availability==="in_stock");
+        const product=catalogProducts.find(p=>p.id===pid);
+        const confirmed=v.availability==="in_stock"&&product?.availability!=="consult";
+        status.textContent=confirmed?"En stock":"Consultar disponibilidad";
+        status.classList.toggle("status-stock",confirmed);
         calc.href=`calculadora.html?category=${cid}&product=${pid}&variant=${v.id}`;
       });
     });
