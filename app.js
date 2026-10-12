@@ -20,6 +20,8 @@
     const track=carousel.querySelector(".photo-track");
     const originals=[...track.querySelectorAll(".photo-slide")];
     const dots=[...carousel.querySelectorAll(".photo-dots span")];
+    const prevButton=carousel.querySelector(".photo-nav-prev");
+    const nextButton=carousel.querySelector(".photo-nav-next");
     if(!originals.length)return;
 
     let index=0,settleTimer=null,wrapping=false;
@@ -59,6 +61,16 @@
     lastClone.setAttribute("aria-hidden","true");
     track.prepend(lastClone);
     track.append(firstClone);
+
+    const navigate=direction=>{
+      const width=carousel.clientWidth||1;
+      // Al cruzar los extremos, usamos los clones para mantener el bucle infinito.
+      const target=(direction>0&&index===count-1)?count+1
+        :(direction<0&&index===0)?0:index+1+direction;
+      track.scrollTo({left:target*width,behavior:"smooth"});
+    };
+    prevButton?.addEventListener("click",()=>navigate(-1));
+    nextButton?.addEventListener("click",()=>navigate(1));
 
     const jumpToRaw=raw=>{
       wrapping=true;
@@ -193,6 +205,7 @@
     if(!slides.length)return "";
     return `<div class="photo-carousel" data-photo-carousel>
       <div class="photo-track">${slides.join("")}</div>
+      ${slides.length>1?`<button type="button" class="photo-nav photo-nav-prev" aria-label="Foto anterior">‹</button><button type="button" class="photo-nav photo-nav-next" aria-label="Foto siguiente">›</button>`:""}
       ${slides.length>1?`<div class="photo-dots">${slides.map(()=>"<span></span>").join("")}</div>`:""}
     </div>`;
   }
