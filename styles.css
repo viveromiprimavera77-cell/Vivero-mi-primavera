@@ -720,3 +720,25 @@ body.category-modal-open{overflow:hidden}
   border-color:#b8dfc0;background:#eff9f0;color:#146b36;
 }
 .cart-drawer .purchase-minimum-notice{margin:2px 0 6px}
+
+/* Selector "Todas las categorías": secciones completas en el orden del panel. */
+.category-page-grid.all-categories-grid{display:block}
+.all-category-group{padding:22px 0 38px;margin:0 0 20px;border-bottom:1px solid var(--line);scroll-margin-top:95px}
+.all-category-group:last-child{border-bottom:0}
+.all-category-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:0 0 20px}
+.all-category-heading h3{font-size:clamp(1.9rem,3.4vw,3.1rem);color:var(--green-950);margin:6px 0}
+.all-category-heading p{color:var(--muted);margin:0;line-height:1.6;max-width:720px}
+.all-category-link{font-size:.88rem;font-weight:850;color:var(--green-800);white-space:nowrap;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:4px}
+.all-category-link:hover,.all-category-link:focus-visible{color:var(--green-950)}
+@media(max-width:650px){
+  .all-category-heading{display:block}
+  .all-category-link{display:inline-block;margin-top:12px}
+  .all-category-group{padding-top:16px}
+}
+/* En PC los controles de anterior/siguiente quedan abajo de la foto.
+   En móvil siguen ocultos y se mantiene el swipe. */
+@media(min-width:901px){
+  .photo-carousel .photo-nav{top:auto;bottom:12px;transform:none;width:40px;height:40px;border-radius:50%;font-size:31px}
+  .photo-carousel .photo-nav-prev{left:12px}
+  .photo-carousel .photo-nav-next{right:12px}
+}
