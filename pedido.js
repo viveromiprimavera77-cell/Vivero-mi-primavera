@@ -415,7 +415,10 @@
     }).join(""):'<div class="cart-empty">El carrito está vacío. Podés volver al catálogo y agregar plantas.</div>';
 
     $("checkoutTotal").textContent=money(window.ViveroCart.total());
-    $("confirmWhatsappBtn").disabled=!items.length;
+    const meetsMinimum=window.ViveroCart.meetsMinimum();
+    $("checkoutMinimumNotice").textContent=window.ViveroCart.minimumMessage();
+    $("checkoutMinimumNotice").classList.toggle("reached",meetsMinimum);
+    $("confirmWhatsappBtn").disabled=!items.length||!meetsMinimum;
     invalidateShippingQuote();
   }
 
@@ -542,6 +545,11 @@
     e.preventDefault();
     const cart=window.ViveroCart.get();
     if(!cart.length)return;
+    if(!window.ViveroCart.meetsMinimum()){
+      $("orderMessage").textContent=window.ViveroCart.minimumMessage();
+      $("checkoutMinimumNotice").scrollIntoView({behavior:"smooth",block:"center"});
+      return;
+    }
     const phoneNational=String($("customerPhone").value||"").replace(/\D/g,"");
     if(phoneNational.length!==10||phoneNational.startsWith("0")){
       $("orderMessage").textContent="Ingresá 10 dígitos: código de área sin 0 + número sin 15. Ejemplo: 11XXXXXXXX.";
