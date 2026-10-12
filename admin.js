@@ -996,7 +996,7 @@
             <div><span>Cliente</span><strong>${esc(o.customer_name)}</strong></div>
             <div><span>Dirección</span><strong>${esc(o.shipping_address||"Sin dirección")} ${o.postal_code?`<small class="inline-cp">· CP ${esc(o.postal_code)}</small>`:""}</strong></div>
             <div><span>Teléfono</span><strong>${esc(displayCustomerPhone(o.phone))}</strong>${customerWhatsappLink(o.phone)?`<a class="whatsapp-customer-link" href="${customerWhatsappLink(o.phone)}" target="_blank" rel="noopener">Ver en WhatsApp</a>`:""}</div>
-            ${o.shipping_locality?`<div><span>Envío</span><strong>${esc(o.shipping_locality)} · ${o.shipping_region==="amba"?"AMBA":"Buenos Aires"}</strong><small>${o.shipping_price!=null?`${money(o.shipping_price)} · `:""}${o.shipping_distance_km!=null?`${Number(o.shipping_distance_km).toLocaleString("es-AR")} km · `:""}${o.shipping_weight_kg!=null?`${Number(o.shipping_weight_kg).toLocaleString("es-AR")} kg · `:""}${esc(o.shipping_vehicle||"")}</small></div>`:""}
+            ${o.shipping_locality?`<div><span>Envío</span><strong>${esc(o.shipping_locality)} · ${o.shipping_region==="amba"?"AMBA":"Buenos Aires"}</strong><small>${o.shipping_quote?.pending_manual?"Flete a coordinar (no cobrado) · ":o.shipping_price!=null?`${money(o.shipping_price)} · `:""}${o.shipping_distance_km!=null?`${Number(o.shipping_distance_km).toLocaleString("es-AR")} km · `:""}${o.shipping_weight_kg!=null?`${Number(o.shipping_weight_kg).toLocaleString("es-AR")} kg · `:""}${esc(o.shipping_vehicle||"")}</small></div>`:""}
           </div>
           ${o.general_question?`<p class="item-meta"><strong>Consulta:</strong> ${esc(o.general_question)}</p>`:""}
           <div class="order-items">${itemRows}</div>
