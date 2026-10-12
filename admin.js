@@ -75,10 +75,16 @@
     $("statDispatched").textContent=orders.filter(o=>o.status==="dispatched").length;
     renderVisitStats().catch(console.error);
   }
-  function renderCategoryChoices(selected={}){
+  function renderCategoryChoices(selected=null){
+    // Conservamos lo marcado si loadAll refresca el catálogo mientras se edita.
+    const existing=[...document.querySelectorAll("#productCategoryChoices .pc-check")];
+    const preserved=existing.length
+      ?Object.fromEntries(existing.filter(ch=>ch.checked).map(ch=>[ch.value,true]))
+      :Object.fromEntries(assocs.filter(a=>a.product_id===$("productId").value).map(a=>[a.category_id,true]));
+    const choices=selected??preserved;
     $("productCategoryChoices").innerHTML=categories.length?categories.map(c=>`
       <label class="category-choice">
-        <input type="checkbox" class="pc-check" value="${c.id}" ${selected[c.id]?"checked":""}>
+        <input type="checkbox" class="pc-check" value="${c.id}" ${choices[c.id]?"checked":""}>
         <span>${esc(c.name)}${c.calculation_mode==="linear"?" · cálculo por metros lineales":c.calculation_mode==="area"?" · cálculo por m²":""}</span>
       </label>`).join(""):`<p class="form-message">Primero creá una categoría.</p>`;
   }
@@ -587,7 +593,7 @@
     ["productScientificName","productUseSummary","productFoliageType","productSunExposure","productClimateTolerance","productFloweringInfo","productGrowthRate","productWaterNeeds","productCareNote"].forEach(id=>$(id).value="");
     $("productSpacing1").value="";$("productSpacing2").value="";$("productSpacing3").value="";
     $("productFormTitle").textContent="Agregar planta";
-    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices();refreshVariantAreaMode();msg("productMessage","");
+    $("variantRows").innerHTML="";addVariantRow();renderCategoryChoices({});refreshVariantAreaMode();msg("productMessage","");
     showProductStep(0,false);renderProductActionStock();
   }
 
