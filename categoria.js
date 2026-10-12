@@ -211,9 +211,9 @@
 
     const keyOf=v=>priority?String(v.height||"").trim().toLowerCase():String(v.liters??"none");
     const counts={};available.forEach(v=>{const k=keyOf(v);counts[k]=(counts[k]||0)+1});
-    const title=area?"Elegí las dimensiones":priority?"Elegí la altura":"Seleccioná los litros";
+    const title=area?"Elegí las dimensiones":priority?"Elegí la altura":available.some(v=>v.liters)?"Seleccioná los litros":"Elegí la presentación";
     const buttons=available.map((v,i)=>{
-      let main=priority?(v.height||(area?"Sin dimensiones":"Sin altura")):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:"Única");
+      let main=priority?(v.height||(area?"Sin dimensiones":"Sin altura")):(v.liters?`${Number(v.liters).toLocaleString("es-AR")} L`:(v.label||"Única"));
       if(counts[keyOf(v)]>1)main+=` · ${presentationText(v,categoryId)}`;
       return `<button type="button" class="option-chip liter-chip ${i===0?"active":""}" data-variant="${v.id}">${esc(main)}</button>`;
     }).join("");
@@ -237,7 +237,7 @@
         ${selectorHtml(p,pvars,categoryId)}
         <div class="card-bottom">
           <span class="price dynamic-price">${initial?money(initial.price):"Consultar"}</span>
-          <span class="status ${initial?.availability==="in_stock"?"status-stock":""}">${initial?.availability==="in_stock"?"En stock":"Consultar disponibilidad"}</span>
+          <span class="status ${initial?.availability==="in_stock"&&p.availability!=="consult"?"status-stock":""}">${initial?.availability==="in_stock"&&p.availability!=="consult"?"En stock":"Consultar disponibilidad"}</span>
         </div>
       </div>
       <a class="calc-open-link" href="calculadora.html?category=${categoryId}&product=${p.id}${initial?`&variant=${initial.id}`:""}"><span>Calculadora de cantidad y costos</span><span>›</span></a>
@@ -256,8 +256,10 @@
       box.querySelectorAll(".liter-chip").forEach(x=>x.classList.toggle("active",x===b));
       pres.textContent=presentationText(v,cid);
       price.textContent=money(v.price);
-      status.textContent=v.availability==="in_stock"?"En stock":"Consultar disponibilidad";
-      status.classList.toggle("status-stock",v.availability==="in_stock");
+      const product=products.find(p=>p.id===pid);
+      const confirmed=v.availability==="in_stock"&&product?.availability!=="consult";
+      status.textContent=confirmed?"En stock":"Consultar disponibilidad";
+      status.classList.toggle("status-stock",confirmed);
       calc.href=`calculadora.html?category=${cid}&product=${pid}&variant=${v.id}`;
     });
   }
@@ -278,7 +280,7 @@
         <p>${esc(p.description||"")}</p>
         <div class="category-product-bottom">
           <strong>${initial?money(initial.price):"Consultar"}</strong>
-          <small>${initial?.availability==="in_stock"?"En stock":"Consultar disponibilidad"}</small>
+          <small>${initial?.availability==="in_stock"&&p.availability!=="consult"?"En stock":"Consultar disponibilidad"}</small>
         </div>
       </div>
     </button>`;
