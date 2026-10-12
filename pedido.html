@@ -7,7 +7,7 @@
   <meta name="description" content="Resumen y confirmación de pedido de Vivero Mi Primavera.">
   <title>Tu pedido | Mi Primavera</title>
   <link rel="icon" href="/logo-mi-primavera.jpg">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261012-minimo-fotos">
 </head>
 <body class="order-page">
   <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span><span></span></button>
@@ -55,6 +55,7 @@
         </div>
         <div id="checkoutItems" class="checkout-items"></div>
         <div class="checkout-total"><span>Total estimado</span><strong id="checkoutTotal">$0</strong></div>
+        <p id="checkoutMinimumNotice" class="purchase-minimum-notice" role="status" aria-live="polite"></p>
         <div class="checkout-actions"><a href="index.html#catalogo" class="public-secondary-btn">Seguir comprando</a></div>
 
         <form id="orderForm" class="public-order-form">
@@ -111,7 +112,7 @@
     <footer class="footer">
       <a class="footer-brand" href="index.html"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></a>
       <div><strong>Medios de pago</strong><div class="payment-list"><span>Efectivo</span><span>Transferencias</span><span>Mercado Pago</span></div></div>
-      <div><strong>Contacto</strong><p>Consultas, pedidos y coordinación de entregas por WhatsApp.</p></div>
+      <div><strong>Contacto</strong><p>Consultas, pedidos y coordinación de entregas por WhatsApp.</p><p class="footer-location"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Merlo, Bs. As.</span></p></div>
     </footer>
   </div>
 
@@ -126,7 +127,7 @@
   <script src="config.js"></script>
   <script src="social-links.js"></script>
   <script src="visitor.js"></script>
-  <script src="cart.js"></script>
-  <script src="pedido.js"></script>
+  <script src="cart.js?v=20261012-minimo-fotos"></script>
+  <script src="pedido.js?v=20261012-minimo-fotos"></script>
 </body>
 </html>
