@@ -689,3 +689,34 @@ body.category-modal-open{overflow:hidden}
   .photo-nav-prev{left:10px}
   .photo-nav-next{right:10px}
 }
+
+/* v30: En escritorio mostrar siempre la planta completa, sin recortes ni zoom.
+   En móvil conservamos exactamente los estilos anteriores. */
+@media (min-width:901px) {
+  .category-product-image img,
+  .featured-card img,
+  .photo-carousel .photo-image-slide img {
+    object-fit:contain;
+    object-position:center center;
+    background:#edf6ea;
+  }
+  .category-product-image,
+  .featured-card img,
+  .photo-carousel .photo-image-slide {
+    background:#edf6ea;
+  }
+}
+.footer-location{
+  display:flex;align-items:center;gap:8px;margin-top:13px!important;
+  font-weight:750;color:#d5ebd4!important;
+}
+.footer-location svg{flex:0 0 19px;display:block}
+.purchase-minimum-notice{
+  margin:7px 0 10px;padding:10px 12px;border-radius:10px;
+  border:1px solid #e8c1a8;background:#fff8f1;
+  color:#883e18;font-size:.89rem;font-weight:800;line-height:1.5;
+}
+.purchase-minimum-notice.reached{
+  border-color:#b8dfc0;background:#eff9f0;color:#146b36;
+}
+.cart-drawer .purchase-minimum-notice{margin:2px 0 6px}
