@@ -346,7 +346,14 @@
       if(seq!==shippingQuoteSeq)return;
       if(result.error||!result.data||!result.data.ready){
         console.warn(result.error||result.data);
-        showShippingFailure();
+        const missingFruit=result.data?.reason==="missing_weight"&&result.data?.missing_products?.every(name=>name==="Frutales injertados");
+        if(missingFruit){
+          shippingQuote=null;
+          $("shippingQuoteBox").hidden=true;
+          $("shippingQuoteMessage").textContent="El envío de Frutales injertados se cotiza por separado. Podés enviar tu solicitud y coordinaremos el flete por WhatsApp.";
+          $("shippingQuoteMessage").className="shipping-quote-message shipping-quote-success full";
+          $("shippingQuoteMessage").hidden=false;
+        } else showShippingFailure();
         return;
       }
       shippingQuote=result.data;
@@ -594,6 +601,7 @@
       if(result.error)throw result.error;
       if(!result.data||!result.data.ok){
         const reason=result.data&&result.data.reason;
+        if(reason==="minimum_purchase")throw new Error(window.ViveroCart.minimumMessage());
         if(reason==="missing_weight")throw new Error("No pudimos calcular el envío automáticamente para uno de los productos. Contactanos para cotizarlo.");
         if(reason==="destination_not_found")throw new Error("No pudimos ubicar esa dirección. Revisá calle, altura, localidad y código postal.");
         throw new Error("No pudimos calcular el envío o registrar la solicitud.");
@@ -601,6 +609,7 @@
 
       const code=result.data.order_code;
       const finalShipping=Number(result.data.shipping_price||0);
+      const shippingPending=Boolean(result.data.shipping_pending);
       const lines=[
         `Hola Mi Primavera. Quiero confirmar la solicitud ${code}.`,"",
         `Cliente: ${$("customerName").value.trim()}`,
@@ -610,13 +619,13 @@
         ...cart.map((x,i)=>`${i+1}. ${x.product_name} · ${x.variant_label}${x.material_mode&&x.liters?` · ${volumeTextDm3(x.liters)}`:!x.material_mode&&x.liters?` · ${x.liters} L`:""}${x.height?` · ${x.area_mode?"Dim.":"Alt."} ${x.height}`:""}${x.area_m2?` · ${x.area_m2} m²`:""}${x.material_mode==="terrain"?` · ${x.coverage_area_m2} m² a ${x.fill_depth_cm} cm`:""}${x.material_mode==="holes"?` · ${x.hole_count} pozos${x.hole_reference_liters?` (ref. ${x.hole_reference_liters} L)`:""} ${x.hole_width_cm}×${x.hole_width_cm}×${x.hole_depth_cm} cm`:""} · Cant.: ${x.quantity} · ${money(Number(x.unit_price)*Number(x.quantity))}`),
         "",
         `Total productos: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
-        `Envío estimado: ${money(finalShipping)}`,
+        shippingPending?"Envío: A coordinar (no incluido en el total de productos)":`Envío estimado: ${money(finalShipping)}`,
         $("customerQuestion").value.trim()?`Consulta: ${$("customerQuestion").value.trim()}`:null
       ].filter(x=>x!==null);
 
       const digits=String(settings.whatsapp||"").replace(/\D/g,"");
       window.ViveroCart.clear();
-      $("orderMessage").textContent=`Solicitud ${code} registrada. Abriendo WhatsApp...`;
+      $("orderMessage").textContent=shippingPending?`Solicitud ${code} registrada. Envío y disponibilidad a confirmar por WhatsApp.`:`Solicitud ${code} registrada. Abriendo WhatsApp...`;
       if(!digits)throw new Error(`La solicitud ${code} quedó registrada, pero falta configurar el WhatsApp del vivero en el panel.`);
       setTimeout(()=>{location.href=`https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`},400);
     }catch(err){
