@@ -54,6 +54,109 @@
   }
 
 
+
+  // Respaldo local de localidades: el checkout sigue siendo utilizable si GeoRef falla.
+  // Son localidades/partidos conocidos, no coordenadas aproximadas ni tarifas ficticias.
+  const BACKUP_LOCALITIES={
+    "Almirante Brown":"Adrogué|Burzaco|Claypole|Glew|Longchamps|José Mármol|Rafael Calzada|San José|Malvinas Argentinas|Ministro Rivadavia",
+    "Avellaneda":"Avellaneda|Wilde|Sarandí|Dock Sud|Villa Domínico|Piñeyro|Crucecita|Gerli",
+    "Berazategui":"Berazategui|Ranelagh|Hudson|Sourigues|Plátanos|Juan María Gutiérrez",
+    "Berisso":"Berisso",
+    "Brandsen":"Brandsen",
+    "Campana":"Campana",
+    "Cañuelas":"Cañuelas|Máximo Paz",
+    "Ensenada":"Ensenada|Punta Lara",
+    "Escobar":"Belén de Escobar|Garín|Ingeniero Maschwitz|Matheu",
+    "Esteban Echeverría":"Monte Grande|Luis Guillón|El Jagüel|9 de Abril|Canning",
+    "Exaltación de la Cruz":"Capilla del Señor",
+    "Ezeiza":"Ezeiza|Tristán Suárez|La Unión|Carlos Spegazzini|Canning",
+    "Florencio Varela":"Florencio Varela|Bosques|Ingeniero Allan|Villa Vatteone",
+    "General Las Heras":"General Las Heras",
+    "General Rodríguez":"General Rodríguez",
+    "General San Martín":"San Martín|Villa Ballester|San Andrés|Villa Lynch|José León Suárez|Billinghurst",
+    "Hurlingham":"Hurlingham|Villa Tesei|William C. Morris",
+    "Ituzaingó":"Ituzaingó|Villa Udaondo",
+    "José C. Paz":"José C. Paz",
+    "La Matanza":"San Justo|Ramos Mejía|Lomas del Mirador|La Tablada|Tapiales|Aldo Bonzi|Ciudad Evita|Isidro Casanova|Rafael Castillo|Gregorio de Laferrere|González Catán|Virrey del Pino|Villa Luzuriaga",
+    "La Plata":"La Plata|City Bell|Manuel B. Gonnet|Villa Elisa|Tolosa|Ringuelet|Los Hornos|Abasto|Lisandro Olmos",
+    "Lanús":"Lanús|Remedios de Escalada|Valentín Alsina|Monte Chingolo",
+    "Lomas de Zamora":"Lomas de Zamora|Banfield|Temperley|Turdera|Llavallol|Ingeniero Budge",
+    "Luján":"Luján",
+    "Malvinas Argentinas":"Los Polvorines|Grand Bourg|Tortuguitas|Villa de Mayo|Pablo Nogués",
+    "Marcos Paz":"Marcos Paz",
+    "Merlo":"Merlo|Libertad|San Antonio de Padua|Mariano Acosta|Parque San Martín|Pontevedra",
+    "Moreno":"Moreno|Paso del Rey|La Reja|Trujui|Francisco Álvarez|Cuartel V",
+    "Morón":"Morón|Castelar|Haedo|El Palomar|Villa Sarmiento",
+    "Pilar":"Pilar|Del Viso|Presidente Derqui|Villa Rosa|Manuel Alberti|La Lonja|Zelaya",
+    "Presidente Perón":"Guernica",
+    "Quilmes":"Quilmes|Bernal|Ezpeleta|Don Bosco|San Francisco Solano",
+    "San Fernando":"San Fernando|Victoria|Virreyes",
+    "San Isidro":"San Isidro|Boulogne|Beccar|Acassuso|Martínez|Villa Adelina",
+    "San Miguel":"San Miguel|Muñiz|Bella Vista",
+    "San Vicente":"San Vicente|Alejandro Korn",
+    "Tigre":"Tigre|General Pacheco|Don Torcuato|El Talar|Benavídez|Rincón de Milberg",
+    "Tres de Febrero":"Caseros|Ciudadela|Santos Lugares|Martín Coronado|Villa Bosch|Pablo Podestá|Loma Hermosa",
+    "Vicente López":"Vicente López|Olivos|Florida|La Lucila|Munro|Carapachay|Villa Martelli",
+    "Zárate":"Zárate|Lima",
+    "Bahía Blanca":"Bahía Blanca|Ingeniero White",
+    "Balcarce":"Balcarce",
+    "Baradero":"Baradero",
+    "Bolívar":"San Carlos de Bolívar",
+    "Bragado":"Bragado",
+    "Chacabuco":"Chacabuco",
+    "Chascomús":"Chascomús",
+    "Chivilcoy":"Chivilcoy",
+    "Dolores":"Dolores",
+    "General Alvarado":"Miramar",
+    "General Pueyrredón":"Mar del Plata|Batán",
+    "Junín":"Junín",
+    "Lincoln":"Lincoln",
+    "Lobos":"Lobos",
+    "Mercedes":"Mercedes",
+    "Necochea":"Necochea|Quequén",
+    "Olavarría":"Olavarría",
+    "Pergamino":"Pergamino",
+    "Ramallo":"Ramallo",
+    "Saladillo":"Saladillo",
+    "San Nicolás":"San Nicolás de los Arroyos",
+    "San Pedro":"San Pedro",
+    "Tandil":"Tandil",
+    "Tornquist":"Tornquist",
+    "Trenque Lauquen":"Trenque Lauquen",
+    "Tres Arroyos":"Tres Arroyos"
+  };
+  function fallbackShippingLocalities(){
+    const towns=Object.entries(BACKUP_LOCALITIES).flatMap(([department,names])=>
+      names.split("|").map(name=>({
+        id:"",name,department,departmentId:"",localityCensalId:"",
+        lat:null,lon:null,isCaba:false,provinceCode:"06"
+      }))
+    );
+    towns.push({
+      id:"02",name:"Ciudad Autónoma de Buenos Aires",department:"CABA",
+      departmentId:"",localityCensalId:"",lat:-34.6037,lon:-58.3816,isCaba:true,provinceCode:"02"
+    });
+    return towns;
+  }
+  function mergeShippingLocalities(official,backup=fallbackShippingLocalities()){
+    const merged=new Map();
+    // Los datos oficiales prevalecen y el respaldo cubre barrios/localidades no presentes.
+    for(const l of [...official,...backup]){
+      const key=shippingNormalize(l.name)+"|"+shippingNormalize(l.department)+"|"+(l.isCaba?"caba":"");
+      if(!merged.has(key))merged.set(key,l);
+    }
+    return [...merged.values()];
+  }
+  async function georefFetch(url,timeoutMs=9000){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
+      const res=await fetch(url,{signal:controller.signal});
+      if(!res.ok)throw new Error("GeoRef respondió "+res.status);
+      return await res.json();
+    }finally{clearTimeout(timer)}
+  }
+
   function shippingNormalize(v){
     return String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
   }
@@ -95,34 +198,28 @@
     return !!(l&&l.isCaba)||AMBA_PARTIDOS.has(shippingNormalize(l&&l.department));
   }
   async function fetchGeorefLocalities(){
-    const cacheKey="miPrimaveraShippingLocalitiesV3";
+    const cacheKey="miPrimaveraShippingLocalitiesV4";
     try{
       const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
-      if(Array.isArray(cached)&&cached.length)return cached;
+      if(Array.isArray(cached)&&cached.length>20)return mergeShippingLocalities(cached);
     }catch{}
-    const res=await fetch("https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=06&max=5000");
-    if(!res.ok)throw new Error("No se pudieron cargar las localidades");
-    const data=await res.json();
-    const list=(data.localidades||[]).map(localityFromGeoref).filter(Boolean);
-    list.push({
-      id:"02",
-      name:"Ciudad Autónoma de Buenos Aires",
-      department:"CABA",
-      departmentId:"",
-      localityCensalId:"",
-      lat:-34.6037,
-      lon:-58.3816,
-      isCaba:true,
-      provinceCode:"02"
-    });
-    const dedup=new Map();
-    list.forEach(function(l){
-      const key=shippingNormalize(l.name)+"|"+shippingNormalize(l.department)+"|"+(l.isCaba?"caba":"");
-      if(!dedup.has(key))dedup.set(key,l);
-    });
-    const values=Array.from(dedup.values());
-    try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
-    return values;
+    // API estable primero; si está caída probamos la versión 2.
+    const urls=[
+      "https://apis.datos.gob.ar/georef/api/localidades?provincia=06&max=5000",
+      "https://apis.datos.gob.ar/georef/api/v2.0/localidades?provincia=06&max=5000"
+    ];
+    for(const url of urls){
+      try{
+        const data=await georefFetch(url);
+        const list=(Array.isArray(data.localidades)?data.localidades:[])
+          .map(localityFromGeoref).filter(Boolean);
+        if(list.length<20)throw new Error("GeoRef devolvió localidades insuficientes");
+        const values=mergeShippingLocalities(list);
+        try{sessionStorage.setItem(cacheKey,JSON.stringify(values))}catch{}
+        return values;
+      }catch(err){console.warn("Localidades GeoRef sin respuesta:",err)}
+    }
+    return fallbackShippingLocalities();
   }
   function localityLabel(l){
     return l.department&&shippingNormalize(l.department)!==shippingNormalize(l.name)
@@ -199,14 +296,16 @@
     }
   }
   async function loadShippingLocalities(){
+    // Las opciones aparecen inmediatamente, incluso si falla la red.
+    shippingLocalities=fallbackShippingLocalities();
+    renderLocalityOptions();
+    const input=$("shippingLocalitySearch");
+    if($("shippingRegion").value)input.placeholder="Escribí o elegí una localidad";
     try{
       shippingLocalities=await fetchGeorefLocalities();
-      renderLocalityOptions();
+      if(document.activeElement===input&&!input.value)renderLocalitySuggestions();
     }catch(err){
-      console.warn(err);
-      shippingLocalities=[];
-      $("shippingLocalitySearch").disabled=false;
-      $("shippingLocalitySearch").placeholder="No se pudo cargar la lista";
+      console.warn("Se mantienen las localidades de respaldo:",err);
     }
   }
   function selectedDestination(){
@@ -234,9 +333,18 @@
     }
     url.searchParams.set("nombre",term.trim());
     url.searchParams.set("max","15");
-    const res=await fetch(url.toString());
-    if(!res.ok)throw new Error("No se pudieron buscar calles");
-    const data=await res.json();
+    let data=null;
+    const urls=[
+      url.toString().replace("/georef/api/v2.0/","/georef/api/"),
+      url.toString()
+    ];
+    for(const candidate of urls){
+      try{
+        const response=await georefFetch(candidate,6500);
+        if(Array.isArray(response.calles)){data=response;break}
+      }catch(err){console.warn("GeoRef calles:",err)}
+    }
+    if(!data)throw new Error("No se pudieron buscar calles");
     const dedup=new Map();
     (data.calles||[]).forEach(function(x){
       const name=String(x&&x.nombre||"").trim();
@@ -264,13 +372,17 @@
         ?matches.map(function(s,i){
           return '<button type="button" data-street-index="'+i+'">'+esc(s.name)+'</button>';
         }).join("")
-        :'<span>No encontramos esa calle en la localidad elegida.</span>';
+        :'<span>No apareció en GeoRef; podés escribirla y validar la dirección al calcular.</span>';
+      // Ante caídas del nomenclador, se permite continuar. El servidor valida
+      // calle, altura, código postal y partido antes de registrar el pedido.
+      box.innerHTML+='<button type="button" data-street-manual>Usar "'+esc(term)+'" y validar al calcular</button>';
       box._matches=matches;
       box.hidden=false;
     }catch(err){
       console.warn(err);
       if(seq!==streetSearchSeq)return;
-      box.innerHTML='<span>No se pudo buscar la calle. Intentá nuevamente.</span>';
+      box.innerHTML='<span>No pudimos consultar las calles. Verificaremos tu dirección al calcular el envío.</span>'+
+        '<button type="button" data-street-manual>Usar "'+esc(term)+'" y validar al calcular</button>';
       box._matches=[];
       box.hidden=false;
     }
@@ -500,11 +612,12 @@
     if(e.key==="Escape")closeStreetSuggestions();
   });
   $("shippingStreetSuggestions").addEventListener("click",e=>{
+    const manual=e.target.closest("button[data-street-manual]");
     const btn=e.target.closest("button[data-street-index]");
-    if(!btn)return;
+    if(!btn&&!manual)return;
     const matches=$("shippingStreetSuggestions")._matches||[];
-    const street=matches[Number(btn.dataset.streetIndex)];
-    if(!street)return;
+    const street=manual?{id:"",name:$("shippingStreetSearch").value.trim()}:matches[Number(btn.dataset.streetIndex)];
+    if(!street||street.name.length<2)return;
     selectedShippingStreet=street;
     $("shippingStreetSearch").value=street.name;
     closeStreetSuggestions();
