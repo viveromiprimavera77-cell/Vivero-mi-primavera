@@ -495,7 +495,7 @@
         '',`Total estimado: ${money(cart.reduce((s,x)=>s+Number(x.unit_price)*Number(x.quantity),0))}`,
         $('customerQuestion').value.trim()?`Consulta: ${$('customerQuestion').value.trim()}`:null
       ].filter(x=>x!==null);
-      const digits=String(window.VIVERO_STORE==='miguel'?'5491162340769':settings.whatsapp||'').replace(/\D/g,'');
+      const digits=String(window.VIVERO_STORE==='miguel'?(settings.whatsapp_miguel||'5491162340769'):settings.whatsapp||'').replace(/\D/g,'');
       window.ViveroCart.clear();$('orderMessage').textContent=`Solicitud ${code} registrada. Abriendo WhatsApp...`;
       if(!digits)throw new Error(`La solicitud ${code} quedó registrada, pero falta configurar el WhatsApp del vivero en el panel.`);
       setTimeout(()=>{location.href=`https://wa.me/${digits}?text=${encodeURIComponent(lines.join('\n'))}`},400);
