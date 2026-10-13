@@ -240,6 +240,7 @@
     const photo = $("designPhoto").files?.[0];
 
     const body = new FormData();
+    body.append("storefront", window.VIVERO_STORE==="miguel"?"miguel":"nahuel");
     body.append("customer_name", $("designName").value.trim());
     body.append("phone", phone);
     body.append("photo", photo);
