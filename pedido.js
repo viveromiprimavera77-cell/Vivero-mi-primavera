@@ -328,6 +328,7 @@
       const result=await db.functions.invoke("shipping-route",{
         body:{
           action:"quote",
+          storefront:window.VIVERO_STORE==="miguel"?"miguel":"nahuel",
           items:items,
           shipping_region:region,
           shipping_locality:dest.name,
@@ -443,7 +444,7 @@
     renderCheckout();
     await loadShippingLocalities();
 
-    const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");
+    const wa=waLink(window.VIVERO_STORE==="miguel"?"5491162340769":settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");
     if(wa){$("whatsappFloat").href=wa;$("whatsappFloat").hidden=false}
   }
 
@@ -580,6 +581,7 @@
       const result=await db.functions.invoke("shipping-route",{
         body:{
           action:"submit_order",
+          storefront:window.VIVERO_STORE==="miguel"?"miguel":"nahuel",
           customer_name:$("customerName").value.trim(),
           phone:phoneNational,
           shipping_address:selectedShippingAddress(),
@@ -623,7 +625,7 @@
         $("customerQuestion").value.trim()?`Consulta: ${$("customerQuestion").value.trim()}`:null
       ].filter(x=>x!==null);
 
-      const digits=String(settings.whatsapp||"").replace(/\D/g,"");
+      const digits=String(window.VIVERO_STORE==="miguel"?"5491162340769":settings.whatsapp||"").replace(/\D/g,"");
       window.ViveroCart.clear();
       $("orderMessage").textContent=shippingPending?`Solicitud ${code} registrada. Envío y disponibilidad a confirmar por WhatsApp.`:`Solicitud ${code} registrada. Abriendo WhatsApp...`;
       if(!digits)throw new Error(`La solicitud ${code} quedó registrada, pero falta configurar el WhatsApp del vivero en el panel.`);
