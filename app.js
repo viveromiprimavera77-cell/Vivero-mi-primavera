@@ -246,6 +246,14 @@
     const priority=area||!!p.prioritize_height||autoHeight;
     const available=sortedVariants(rawAvailable,priority);
     if(!available.length)return `<div class="variant-selector empty-variants">Consultar disponibilidad de presentaciones.</div>`;
+    // Corteza y Tierra abonada tienen una sola presentación en dm³.
+    // Mostrarla directamente sin un selector redundante de litros.
+    if((p.slug==="corteza"||p.slug==="tierra-abonada")&&available.length===1&&Number(available[0].liters)>0){
+      const dm3=Number(available[0].liters).toLocaleString("es-AR");
+      return `<div class="variant-selector" data-product="${p.id}" data-category="${categoryId}">
+        <div class="selected-presentation-line"><span>Presentación</span><strong class="selected-presentation">${esc(dm3)} dm³</strong></div>
+      </div>`;
+    }
     const keyOf=v=>priority?String(v.height||"").trim().toLowerCase():String(v.liters??"none");
     const counts={};available.forEach(v=>{const k=keyOf(v);counts[k]=(counts[k]||0)+1});
     const title=area?"Elegí las dimensiones":priority?"Elegí la altura":available.some(v=>v.liters)?"Seleccioná los litros":"Elegí la presentación";
