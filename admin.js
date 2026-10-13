@@ -1124,7 +1124,7 @@
   });
 
   function fillSettings(){
-    $("settingName").value=settings.nursery_name||"Mi Primavera";$("settingTagline").value=settings.tagline||"";$("settingWhatsapp").value=settings.whatsapp||"";$("settingShippingTitle").value=settings.shipping_title||"Envíos";$("settingShippingText").value=settings.shipping_text||"";$("settingInstagram").value=settings.instagram_url||"";$("settingFacebook").value=settings.facebook_url||"";$("settingAboutTitle").value=settings.about_title||"Acerca de nosotros";$("settingAboutText").value=settings.about_text||"";
+    $("settingName").value=settings.nursery_name||"Mi Primavera";$("settingTagline").value=settings.tagline||"";$("settingWhatsapp").value=settings.whatsapp||"";$("settingWhatsappMiguel").value=settings.whatsapp_miguel||"5491162340769";$("settingShippingTitle").value=settings.shipping_title||"Envíos";$("settingShippingText").value=settings.shipping_text||"";$("settingInstagram").value=settings.instagram_url||"";$("settingFacebook").value=settings.facebook_url||"";$("settingAboutTitle").value=settings.about_title||"Acerca de nosotros";$("settingAboutText").value=settings.about_text||"";
     $("currentVideoWrap").hidden=!settings.hero_video_url;if(settings.hero_video_url)$("currentVideoLink").href=settings.hero_video_url;removingVideo=false;
   }
   async function uploadVideo(file){
@@ -1135,7 +1135,7 @@
     e.preventDefault();msg("settingsMessage","Guardando...");
     try{
       let hero=removingVideo?"":settings.hero_video_url||"";if($("heroVideoFile").files[0])hero=await uploadVideo($("heroVideoFile").files[0]);
-      const payload={nursery_name:$("settingName").value.trim()||"Mi Primavera",tagline:$("settingTagline").value.trim(),whatsapp:$("settingWhatsapp").value.trim(),hero_video_url:hero,shipping_title:$("settingShippingTitle").value.trim(),shipping_text:$("settingShippingText").value.trim(),about_title:$("settingAboutTitle").value.trim(),about_text:$("settingAboutText").value.trim(),instagram_url:$("settingInstagram").value.trim(),facebook_url:$("settingFacebook").value.trim(),updated_at:new Date().toISOString()};
+      const payload={nursery_name:$("settingName").value.trim()||"Mi Primavera",tagline:$("settingTagline").value.trim(),whatsapp:$("settingWhatsapp").value.trim(),whatsapp_miguel:$("settingWhatsappMiguel").value.trim().replace(/\D/g,"")||"5491162340769",hero_video_url:hero,shipping_title:$("settingShippingTitle").value.trim(),shipping_text:$("settingShippingText").value.trim(),about_title:$("settingAboutTitle").value.trim(),about_text:$("settingAboutText").value.trim(),instagram_url:$("settingInstagram").value.trim(),facebook_url:$("settingFacebook").value.trim(),updated_at:new Date().toISOString()};
       const {error}=await db.from("site_settings").update(payload).eq("id",1);if(error)throw error;settings={...settings,...payload};fillSettings();msg("settingsMessage","Configuración guardada.","success");toast("Sitio actualizado");
     }catch(err){msg("settingsMessage",err.message,"error")}
   });
