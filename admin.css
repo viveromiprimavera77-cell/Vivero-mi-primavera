@@ -267,3 +267,14 @@ label{display:block;font-weight:750;font-size:.9rem}input,select,textarea{width:
   .shipping-threshold-grid{grid-template-columns:1fr}
   .shipping-admin-section{padding:14px}
 }
+
+/* Dos vitrinas con un único catálogo, control de stock y panel. */
+.storefront-tabs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px;margin:15px 0 20px;width:max-content;max-width:100%;border:1px solid #d0e4d0;border-radius:14px;background:#f4f8f2}
+.storefront-choice{border:0;border-radius:10px;background:transparent;color:#3b6847;font-weight:850;padding:11px 25px;cursor:pointer;transition:background .17s,box-shadow .17s,color .17s}
+.storefront-choice.active{background:#fff;color:#075e2a;box-shadow:0 2px 10px rgba(15,60,25,.13)}
+.storefront-choice[data-storefront="miguel"].active{color:#654392;background:#f5efff;box-shadow:0 2px 11px rgba(92,50,135,.14)}
+.storefront-choice:focus-visible{outline:2px solid #7c5bb3;outline-offset:2px}
+.order-card.miguel-entry,.design-admin-card.miguel-entry{background:#fcfaff;border-color:#d5c1ea;box-shadow:0 1px 14px rgba(111,73,151,.08)}
+.order-card.miguel-entry .order-head,.design-admin-card.miguel-entry .design-admin-summary{background:#f4ebfc}
+.storefront-badge{display:inline-block;vertical-align:middle;padding:3px 9px;border-radius:999px;background:#e9dbfa;border:1px solid #cdb3ef;color:#654392;font-size:.73rem;font-weight:900;letter-spacing:.01em}
+@media(max-width:540px){.storefront-choice{flex:1;padding:11px 17px}.storefront-tabs{width:100%}}
