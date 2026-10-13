@@ -1,5 +1,5 @@
 (() => {
-  const KEY = "mi_primavera_cart_v2";
+  const KEY = window.VIVERO_STORE === "miguel" ? "mi_primavera_miguel_cart_v2" : "mi_primavera_cart_v2";
   const MINIMUM_PURCHASE = 99999; // ARS, subtotal de productos (sin envío).
   const money = n => new Intl.NumberFormat("es-AR", {
     style: "currency", currency: "ARS", maximumFractionDigits: 0
