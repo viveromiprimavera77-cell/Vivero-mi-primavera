@@ -56,7 +56,8 @@
   async function render(){
     const root=el("designRequestList"); if(!root)return;
     const filter=el("designStatusFilter")?.value||"";
-    const list=requests.filter(r=>!filter||r.status===filter);
+    const currentStore=window.VIVERO_ADMIN_DESIGN_STORE||"nahuel";
+    const list=requests.filter(r=>(r.storefront||"nahuel")===currentStore&&(!filter||r.status===filter));
     const urls={};
     for(const r of list){
       if(r.photo_path)urls[r.photo_path]=await sign(r.photo_path);
@@ -68,8 +69,8 @@
       const rows=items.filter(x=>x.request_id===r.id);
       const original=urls[r.photo_path]||"";
       const result=r.result_image_path?(urls[r.result_image_path]||""):"";
-      html+='<details class="design-admin-card" data-design-id="'+r.id+'">';
-      html+='<summary class="design-admin-summary"><div><strong>'+esc(r.request_code)+'</strong><span>'+esc(r.customer_name)+' · '+new Date(r.created_at).toLocaleString("es-AR")+'</span></div>';
+      html+='<details class="design-admin-card '+((r.storefront||"nahuel")==="miguel"?"miguel-entry":"")+'" data-design-id="'+r.id+'">';
+      html+='<summary class="design-admin-summary"><div><strong>'+esc(r.request_code)+'</strong>'+((r.storefront||"nahuel")==="miguel"?'<span class="storefront-badge">Miguel</span>':'')+'<span>'+esc(r.customer_name)+' · '+new Date(r.created_at).toLocaleString("es-AR")+'</span></div>';
       html+='<div><span class="design-status '+esc(r.status)+'">'+esc(statusText[r.status]||r.status)+'</span><strong>'+money(total(r.id))+'</strong></div></summary>';
       html+='<div class="design-admin-body">';
       html+='<div class="design-admin-media"><div><span>Foto del cliente</span>';
@@ -194,6 +195,7 @@
   }
 
   el("designStatusFilter")?.addEventListener("change",render);
+  window.addEventListener("vivero:design-store-changed",()=>render().catch(console.error));
   el("designRequestList")?.addEventListener("change",async e=>{
     if(!e.target.classList.contains("design-result-file"))return;
     const card=e.target.closest(".design-admin-card"),r=requests.find(x=>x.id===card.dataset.designId);
