@@ -426,7 +426,7 @@
       renderNavigation();
       renderCategory();
 
-      const wa=waLink(settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");
+      const wa=waLink(window.VIVERO_STORE==="miguel"?"5491162340769":settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");
       if(wa){el("whatsappFloat").href=wa;el("whatsappFloat").hidden=false}
     }catch(err){
       console.error(err);
