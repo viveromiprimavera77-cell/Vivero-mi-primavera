@@ -24,6 +24,13 @@
     const store=String(user?.email||"").toLowerCase()==="emergenciamiguel@gmail.com"?"miguel":"nahuel";
     window.VIVERO_ADMIN_ORDER_STORE=store;
     window.VIVERO_ADMIN_DESIGN_STORE=store;
+    const webLink=$("viewStorefrontLink");
+    if(webLink){
+      // El enlace depende de la cuenta, no de la pestaña de pedidos seleccionada.
+      webLink.href=store==="miguel"?"./miguel/":"./";
+      webLink.title=store==="miguel"?"Abrir la web de Miguel":"Abrir la web de Nahuel";
+      webLink.hidden=false;
+    }
     syncStorefrontTabs();
     window.dispatchEvent(new CustomEvent("vivero:design-store-changed"));
   }
@@ -51,8 +58,8 @@
   }
   async function refreshAuth(){
     const {data:{session}}=await db.auth.getSession();currentUser=session?.user||null;
-    if(!currentUser){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=true;return}
-    if(!await isAdmin(currentUser.id)){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=false;msg("loginMessage","Este usuario no está autorizado como administrador.","error");return}
+    if(!currentUser){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=true;$("viewStorefrontLink").hidden=true;storefrontOwnerUserId=null;return}
+    if(!await isAdmin(currentUser.id)){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=false;$("viewStorefrontLink").hidden=true;msg("loginMessage","Este usuario no está autorizado como administrador.","error");return}
     $("loginView").hidden=true;$("dashboard").hidden=false;$("logoutBtn").hidden=false;msg("loginMessage","");
     if(storefrontOwnerUserId!==currentUser.id){
       storefrontOwnerUserId=currentUser.id;
