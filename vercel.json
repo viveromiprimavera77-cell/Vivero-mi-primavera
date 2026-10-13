@@ -20,5 +20,12 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/miguel",
+      "destination": "/miguel/",
+      "permanent": false
+    }
   ]
 }
