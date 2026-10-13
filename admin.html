@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0f8f3c">
   <title>Administración | Mi Primavera</title>
   <link rel="icon" href="/logo-mi-primavera.jpg">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=20261012-dos-tiendas">
 </head>
 <body>
   <div class="admin-shell">
@@ -210,6 +210,10 @@
             <button id="toggleManualOrderBtn" class="secondary-btn" type="button">+ Agregar pedido extra</button>
           </div>
 
+          <div class="storefront-tabs" data-scope="orders" aria-label="Pedidos por versión del vivero">
+            <button class="storefront-choice active" type="button" data-storefront="nahuel" aria-pressed="true">Nahuel</button>
+            <button class="storefront-choice" type="button" data-storefront="miguel" aria-pressed="false">Miguel</button>
+          </div>
           <form id="manualOrderForm" class="manual-order-box" hidden>
             <div class="manual-order-head">
               <div><span class="eyebrow">VENTA FUERA DE LA WEB</span><h3>Nuevo pedido extra</h3><p>Cargalo para que quede registrado y descuente stock cuando lo marques como despachado / finalizado.</p></div>
@@ -272,6 +276,10 @@
               <option value="converted">Convertidos</option>
               <option value="cancelled">Cancelados</option>
             </select>
+          </div>
+          <div class="storefront-tabs" data-scope="designs" aria-label="Diseños por versión del vivero">
+            <button class="storefront-choice active" type="button" data-storefront="nahuel" aria-pressed="true">Nahuel</button>
+            <button class="storefront-choice" type="button" data-storefront="miguel" aria-pressed="false">Miguel</button>
           </div>
           <div id="designRequestList"></div>
         </div>
@@ -398,7 +406,7 @@
   <div id="adminToast" class="toast"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="admin.js?v=20261012-envios-pendientes"></script>
-  <script src="admin-designs.js"></script>
+  <script src="admin.js?v=20261012-dos-tiendas"></script>
+  <script src="admin-designs.js?v=20261012-dos-tiendas"></script>
 </body>
 </html>
