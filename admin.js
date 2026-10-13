@@ -7,6 +7,7 @@
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let products=[],categories=[],assocs=[],variants=[],inventory=[],holeRecommendations=[],settings={},shippingSettings={},orders=[],orderItems=[],currentUser=null,removingVideo=false,manualDraftItems=[];
 
+  let storefrontOwnerUserId=null;
   window.VIVERO_ADMIN_ORDER_STORE="nahuel";
   window.VIVERO_ADMIN_DESIGN_STORE="nahuel";
   function syncStorefrontTabs(){
@@ -53,7 +54,10 @@
     if(!currentUser){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=true;return}
     if(!await isAdmin(currentUser.id)){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=false;msg("loginMessage","Este usuario no está autorizado como administrador.","error");return}
     $("loginView").hidden=true;$("dashboard").hidden=false;$("logoutBtn").hidden=false;msg("loginMessage","");
-    selectDefaultStorefront(currentUser);
+    if(storefrontOwnerUserId!==currentUser.id){
+      storefrontOwnerUserId=currentUser.id;
+      selectDefaultStorefront(currentUser);
+    }
     await loadAll();
   }
   function resolveAdminLogin(value){
