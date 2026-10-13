@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diseñá tu jardín | Mi Primavera</title>
+  <meta name="description" content="Subí una foto de tu espacio y pedí una propuesta de jardín personalizada de Mi Primavera.">
+  <link rel="stylesheet" href="../styles.css?v=20261012-doble">
+</head>
+<body class="design-page">
+  <main class="design-shell">
+    <header class="design-header">
+      <a href="./" class="design-brand"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera"><span>Mi Primavera</span></a>
+      <a href="./#catalogo" class="text-link">Volver al catálogo →</a>
+    </header>
+
+    <section class="design-intro">
+      <span class="eyebrow">PROPUESTA SIN CARGO</span>
+      <h1>Diseñá tu jardín en 4 pasos</h1>
+      <p>Subí una foto, elegí cómo querés el diseño y completá tus datos. Antes de enviarlo vas a poder revisar toda la solicitud.</p>
+    </section>
+
+    <form id="gardenDesignForm" class="design-form" novalidate>
+      <nav class="design-wizard-progress" aria-label="Progreso de la solicitud">
+        <div class="design-progress-item active" data-progress-step="0"><b>1</b><span>Foto</span></div>
+        <div class="design-progress-line"></div>
+        <div class="design-progress-item" data-progress-step="1"><b>2</b><span>Diseño</span></div>
+        <div class="design-progress-line"></div>
+        <div class="design-progress-item" data-progress-step="2"><b>3</b><span>Tus datos</span></div>
+        <div class="design-progress-line"></div>
+        <div class="design-progress-item" data-progress-step="3"><b>4</b><span>Resumen</span></div>
+      </nav>
+
+      <section class="design-card design-wizard-step" data-design-step="0">
+        <div class="design-card-title"><span>01</span><div><h2>Subí una foto</h2><p>Usá una imagen clara del jardín, patio o terreno que querés transformar.</p></div></div>
+        <label class="design-photo-drop" id="designPhotoDrop">
+          <input id="designPhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/avif" required>
+          <strong id="designPhotoTitle">Subí una foto del espacio</strong>
+          <span>JPG, PNG, WebP o AVIF · máximo 8 MB</span>
+          <img id="designPhotoPreview" alt="Vista previa del espacio" hidden>
+        </label>
+        <p class="design-step-tip">Consejo: cuanto más completo se vea el espacio, mejor podremos respetar paredes, caminos, césped y zonas existentes.</p>
+      </section>
+
+      <section class="design-card design-wizard-step" data-design-step="1" hidden>
+        <div class="design-card-title"><span>02</span><div><h2>Elegí el diseño</h2><p>Contanos las medidas y qué querés lograr. También podés elegir las plantas del catálogo.</p></div></div>
+
+        <div class="design-grid design-grid-topless">
+          <label>Ancho aproximado (m)<input id="designWidth" type="number" min="0.1" step="0.1" placeholder="Ej.: 8"></label>
+          <label>Largo aproximado (m)<input id="designLength" type="number" min="0.1" step="0.1" placeholder="Ej.: 12"></label>
+          <label>Exposición
+            <select id="designSunlight">
+              <option value="unknown">No estoy seguro/a</option>
+              <option value="full_sun">Mucho sol</option>
+              <option value="partial_shade">Sol y media sombra</option>
+              <option value="shade">Mayormente sombra</option>
+            </select>
+          </label>
+          <label>Presupuesto orientativo<input id="designBudget" type="number" min="0" step="1000" placeholder="Opcional"></label>
+          <label class="wide">¿Qué querés lograr?
+            <select id="designGoal">
+              <option value="general">Renovar / mejorar el jardín</option>
+              <option value="privacy">Privacidad / cerco</option>
+              <option value="ornamental">Jardín ornamental</option>
+              <option value="low_maintenance">Bajo mantenimiento</option>
+              <option value="border">Borduras y canteros</option>
+              <option value="tropical">Aspecto tropical</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="design-choice-block">
+          <strong class="design-choice-title">¿Cómo querés elegir las plantas?</strong>
+          <div class="design-mode-grid">
+            <label class="design-mode active"><input type="radio" name="designMode" value="recommend" checked><strong>Quiero una sugerencia</strong><span>Mi Primavera elige una combinación adecuada según tu espacio.</span></label>
+            <label class="design-mode"><input type="radio" name="designMode" value="selected"><strong>Quiero elegir las plantas</strong><span>Seleccioná especies reales de nuestro catálogo.</span></label>
+          </div>
+        </div>
+
+        <div id="designPlantPicker" class="design-plant-picker" hidden>
+          <div class="design-picker-head"><strong>Plantas disponibles</strong><input id="designPlantSearch" type="search" placeholder="Buscar planta..."></div>
+          <div id="designPlantList" class="design-plant-list"><p>Cargando plantas...</p></div>
+        </div>
+
+        <label class="wide design-notes-label">Comentarios o ideas
+          <textarea id="designNotes" maxlength="1500" rows="4" placeholder="Ej.: quiero tapar la medianera, dejar libre el paso hacia el fondo, prefiero plantas de poco mantenimiento..."></textarea>
+        </label>
+      </section>
+
+      <section class="design-card design-wizard-step" data-design-step="2" hidden>
+        <div class="design-card-title"><span>03</span><div><h2>Completá tus datos</h2><p>Los usamos para identificar tu solicitud y enviarte la propuesta terminada.</p></div></div>
+        <div class="design-grid design-grid-topless">
+          <label>Nombre<input id="designName" maxlength="80" required placeholder="Tu nombre"></label>
+          <label>WhatsApp
+            <div class="phone-input"><span>+54 9</span><input id="designPhone" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required placeholder="11XXXXXXXX"></div>
+            <small>Sin 0 ni 15. Ej.: 11XXXXXXXX.</small>
+          </label>
+        </div>
+      </section>
+
+      <section class="design-card design-wizard-step" data-design-step="3" hidden>
+        <div class="design-card-title"><span>04</span><div><h2>Revisá y autorizá</h2><p>Confirmá que esté todo bien antes de enviar la solicitud.</p></div></div>
+
+        <div id="designSummary" class="design-summary"></div>
+
+        <div class="design-consent-box">
+          <label class="check-label"><input id="designConsent" type="checkbox" required> Autorizo a Mi Primavera a usar esta foto únicamente para preparar la propuesta que solicito.</label>
+          <p>La simulación es orientativa. Las cantidades, especies, presentaciones disponibles y el presupuesto final se revisan antes de enviarte la propuesta.</p>
+        </div>
+      </section>
+
+      <div class="design-wizard-actions">
+        <button id="designBackBtn" class="design-back-btn" type="button" hidden>← Anterior</button>
+        <span id="designStepCounter" class="design-step-counter">Paso 1 de 4</span>
+        <button id="designNextBtn" class="btn design-next-btn" type="button">Siguiente →</button>
+        <button id="designSubmit" class="btn design-submit" type="submit" hidden>Enviar solicitud de diseño</button>
+      </div>
+
+      <p id="designMessage" class="design-message" aria-live="polite"></p>
+    </form>
+
+    <section id="designSuccess" class="design-success" hidden>
+      <span class="eyebrow">SOLICITUD RECIBIDA</span>
+      <h2>Ya tenemos tu proyecto 🌿</h2>
+      <p>Tu código es <strong id="designSuccessCode"></strong>. Vamos a preparar la propuesta y te contactaremos por WhatsApp cuando esté lista.</p>
+      <a href="./#catalogo" class="btn">Seguir viendo plantas</a>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.VIVERO_STORE="miguel";</script>
+  <script src="../config.js?v=20261012-doble"></script>
+  <script src="../visitor.js?v=20261012-doble"></script>
+  <script src="../design.js?v=20261012-doble"></script>
+</body>
+</html>
