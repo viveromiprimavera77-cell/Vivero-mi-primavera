@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f8f3c">
+  <title>Calculadora y pedido | Mi Primavera</title>
+  <link rel="icon" href="/logo-mi-primavera.jpg">
+  <link rel="stylesheet" href="../styles.css?v=20261012-doble">
+</head>
+<body class="calculator-page">
+  <header class="calc-header">
+    <a href="./" class="calc-logo"><img src="/logo-mi-primavera.jpg" alt="Mi Primavera Vivero"></a>
+    <a href="./#catalogo" class="back-link">← Volver al catálogo</a>
+  </header>
+
+  <main class="calc-main">
+    <section class="calc-intro">
+      <span class="eyebrow">MI PRIMAVERA</span>
+      <h1>Calculadora de cantidad y costos</h1>
+      <p>Elegí la planta y una de sus opciones disponibles. Para cercos y borduras podés calcular por metros lineales, y para grama por m².</p>
+    </section>
+
+    <section class="public-calc-card" id="calculatorCard">
+      <div class="public-form-grid">
+        <label>Categoría<select id="calcCategory"></select></label>
+        <label>Producto<select id="calcProduct"></select></label>
+        <label><span id="calcVariantLabel">Litros / opción disponible</span><select id="calcVariant"></select></label>
+        <div class="selected-option-card">
+          <span>Presentación seleccionada</span>
+          <strong id="selectedPresentation">—</strong>
+          <small id="selectedOptionPrice">—</small>
+        </div>
+        <div class="calc-product-preview full" id="calcProductPreview"></div>
+      </div>
+
+      <div id="linearFields" class="linear-box" hidden>
+        <label class="linear-length-field"><span class="linear-length-label">Metros lineales a cubrir</span>
+          <div class="number-stepper">
+            <input id="calcLength" type="number" min="1" step="1" value="10">
+            <div class="number-stepper-buttons" aria-hidden="false">
+              <button id="calcLengthUp" type="button" aria-label="Aumentar metros">▲</button>
+              <button id="calcLengthDown" type="button" aria-label="Disminuir metros">▼</button>
+            </div>
+          </div>
+        </label>
+
+        <div class="spacing-block">
+          <span class="spacing-title">Distancia entre plantas</span>
+          <div id="spacingOptions" class="spacing-options"></div>
+          <div id="customSpacingWrap" class="custom-spacing-wrap" hidden>
+            <label>Otra distancia (cm)<input id="customSpacing" type="number" min="1" step="1"></label>
+          </div>
+          <div id="customSpacingWarning" class="spacing-warning" hidden>
+            <strong>Atención</strong>
+            <p>Las opciones fuera de las recomendadas pueden no ser ideales para el desarrollo de la planta elegida. ¿De todas maneras querés continuar?</p>
+            <div>
+              <button id="approveCustomSpacing" class="public-primary-btn" type="button">Sí, continuar</button>
+              <button id="backToRecommended" class="public-secondary-btn" type="button">Volver a recomendadas</button>
+            </div>
+          </div>
+          <div id="closureEstimate" class="closure-estimate"></div>
+        </div>
+      </div>
+
+      <div id="areaFields" class="linear-box" hidden>
+        <label class="linear-length-field"><span class="linear-length-label">m² a cubrir</span>
+          <div class="number-stepper">
+            <input id="calcArea" type="number" min="0.1" step="0.1" value="10">
+            <div class="number-stepper-buttons" aria-hidden="false">
+              <button id="calcAreaUp" type="button" aria-label="Aumentar metros cuadrados">▲</button>
+              <button id="calcAreaDown" type="button" aria-label="Disminuir metros cuadrados">▼</button>
+            </div>
+          </div>
+        </label>
+        <div id="areaCoverageInfo" class="closure-estimate"></div>
+      </div>
+
+      <div id="materialFields" class="material-calculator" hidden>
+        <div class="material-use-heading">
+          <strong>¿Cómo vas a utilizar este producto?</strong>
+          <small>Elegí una opción y completá las medidas. La calculadora convierte todo automáticamente.</small>
+        </div>
+        <div class="material-use-options" role="radiogroup" aria-label="Uso del producto">
+          <label><input type="radio" name="materialUse" value="terrain" checked> <span>Rellenar o nivelar un terreno</span></label>
+          <label><input type="radio" name="materialUse" value="holes"> <span>Rellenar pozos para plantas</span></label>
+        </div>
+
+        <div id="materialTerrainFields" class="public-form-grid material-fields-grid">
+          <label>m² a cubrir<input id="materialArea" type="number" min="0.1" step="0.1" value="10"></label>
+          <label>Profundidad de relleno (cm)<input id="materialDepth" type="number" min="1" step="1" value="10"></label>
+        </div>
+
+        <div id="materialHoleFields" class="public-form-grid material-fields-grid" hidden>
+          <label>Cantidad de pozos<input id="materialHoleCount" type="number" min="1" step="1" value="1"></label>
+          <label>Tamaño de maceta / presentación (litros)
+            <select id="materialHoleLiters"></select>
+            <small>La recomendación del pozo depende solamente de los litros.</small>
+          </label>
+          <label>Ancho aproximado de cada pozo (cm)<input id="materialHoleWidth" type="number" min="1" step="1" value="40"></label>
+          <label>Profundidad del pozo (cm)<input id="materialHoleDepth" type="number" min="1" step="1" value="40"></label>
+          <div id="materialHoleRecommendation" class="selected-option-card">
+            <span>Recomendación general por litros</span>
+            <strong>Elegí los litros</strong>
+            <small>Podés modificar manualmente el ancho o la profundidad si tu caso lo requiere.</small>
+          </div>
+        </div>
+        <div id="materialCoverageInfo" class="closure-estimate"></div>
+      </div>
+
+      <div id="unitFields" class="public-form-grid" hidden>
+        <label>Cantidad<input id="calcQuantityInput" type="number" min="1" step="1" value="1"></label>
+      </div>
+
+      <div class="customer-result">
+        <article><span>Cantidad estimada</span><strong id="resultQty">0</strong></article>
+        <article><span>Precio por unidad</span><strong id="resultUnitPrice">$0</strong></article>
+        <article class="highlight"><span>Total estimado</span><strong id="resultTotal">$0</strong></article>
+      </div>
+
+      <button id="addToCartBtn" class="public-primary-btn" type="button">Agregar al carrito</button>
+
+      <div class="added-choice" id="addedChoice" hidden>
+        <strong>Su pedido fue agregado. ¿Desea agregar más artículos?</strong>
+        <div id="addonMaterialPrompt" class="addon-material-prompt" hidden>
+          <label>¿Deseás agregar tierra, abono, corteza o algún otro complemento a tu pedido?
+            <select id="addonProductSelect"></select>
+          </label>
+          <button id="addonProductBtn" class="public-primary-btn" type="button">Sí, agregar</button>
+        </div>
+        <div>
+          <button id="keepShoppingBtn" class="public-secondary-btn" type="button">Seguir comprando</button>
+          <button id="continueOrderBtn" class="public-primary-btn" type="button">Continuar con el pedido</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="checkoutSection" class="order-form-section" hidden>
+      <div class="checkout-heading">
+        <div><span class="eyebrow">TU PEDIDO</span><h2>Resumen antes de confirmar</h2></div>
+        <button id="clearCartBtn" class="danger-outline" type="button">Eliminar todo</button>
+      </div>
+      <div id="checkoutItems" class="checkout-items"></div>
+      <div class="checkout-total"><span>Total estimado</span><strong id="checkoutTotal">$0</strong></div>
+      <p id="checkoutMinimumNotice" class="purchase-minimum-notice" role="status" aria-live="polite"></p>
+      <div class="checkout-actions"><a href="index.html#catalogo" class="public-secondary-btn">Seguir comprando</a></div>
+
+      <form id="orderForm" class="public-order-form">
+        <h3>Datos para confirmar el pedido</h3>
+        <div class="public-form-grid">
+          <label>Nombre y apellido<input id="customerName" required></label>
+          <label>Teléfono / WhatsApp
+            <input id="customerPhone" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required placeholder="Ej.: 11XXXXXXXX">
+            <small>Ingresá 10 dígitos: código de área sin 0 + número sin 15. No escribas +54 9: lo agregamos automáticamente.</small>
+          </label>
+          <label>Dirección de envío<input id="customerAddress" required></label>
+          <label>Código postal<input id="customerPostal" required></label>
+          <label class="full">Duda o aclaración general<textarea id="customerQuestion" rows="4" placeholder="Opcional"></textarea></label>
+        </div>
+        <button id="confirmWhatsappBtn" class="whatsapp-order-btn" type="submit">Confirmar pedido por WhatsApp</button>
+        <p class="privacy-note">Tus datos serán enviados por WhatsApp para confirmar el pedido. La solicitud quedará como “pedido a confirmar” hasta que el vivero la confirme manualmente.</p>
+        <p id="orderMessage" class="order-message"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.VIVERO_STORE="miguel";</script>
+  <script src="../config.js?v=20261012-doble"></script>
+  <script src="../visitor.js?v=20261012-doble"></script>
+  <script src="../cart.js?v=20261012-doble"></script>
+  <script src="../calculator.js?v=20261012-doble"></script>
+</body>
+</html>
