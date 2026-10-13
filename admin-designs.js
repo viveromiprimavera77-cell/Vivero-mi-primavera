@@ -123,6 +123,7 @@
     const picks=pickedNames(r.id);
     const txt=[
       "Solicitud "+r.request_code+" — Mi Primavera",
+      "Versión: "+((r.storefront||"nahuel")==="miguel"?"Miguel":"Nahuel"),
       "Cliente: "+r.customer_name,
       "Medidas: "+(r.width_m||"no indicó")+" × "+(r.length_m||"no indicó")+" m",
       "Luz: "+(sunText[r.sunlight]||r.sunlight),
