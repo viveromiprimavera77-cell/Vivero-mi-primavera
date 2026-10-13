@@ -7,6 +7,41 @@
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
   let products=[],categories=[],assocs=[],variants=[],inventory=[],holeRecommendations=[],settings={},shippingSettings={},orders=[],orderItems=[],currentUser=null,removingVideo=false,manualDraftItems=[];
 
+  window.VIVERO_ADMIN_ORDER_STORE="nahuel";
+  window.VIVERO_ADMIN_DESIGN_STORE="nahuel";
+  function syncStorefrontTabs(){
+    document.querySelectorAll(".storefront-tabs").forEach(group=>{
+      const store=group.dataset.scope==="designs"?window.VIVERO_ADMIN_DESIGN_STORE:window.VIVERO_ADMIN_ORDER_STORE;
+      group.querySelectorAll("[data-storefront]").forEach(button=>{
+        const active=button.dataset.storefront===store;
+        button.classList.toggle("active",active);
+        button.setAttribute("aria-pressed",String(active));
+      });
+    });
+  }
+  function selectDefaultStorefront(user){
+    const store=String(user?.email||"").toLowerCase()==="emergenciamiguel@gmail.com"?"miguel":"nahuel";
+    window.VIVERO_ADMIN_ORDER_STORE=store;
+    window.VIVERO_ADMIN_DESIGN_STORE=store;
+    syncStorefrontTabs();
+    window.dispatchEvent(new CustomEvent("vivero:design-store-changed"));
+  }
+  document.querySelectorAll(".storefront-tabs").forEach(group=>{
+    group.addEventListener("click",event=>{
+      const button=event.target.closest("button[data-storefront]");
+      if(!button)return;
+      if(group.dataset.scope==="designs"){
+        window.VIVERO_ADMIN_DESIGN_STORE=button.dataset.storefront;
+        syncStorefrontTabs();
+        window.dispatchEvent(new CustomEvent("vivero:design-store-changed"));
+      }else{
+        window.VIVERO_ADMIN_ORDER_STORE=button.dataset.storefront;
+        syncStorefrontTabs();
+        renderOrders();
+      }
+    });
+  });
+
   function toast(m){$("adminToast").textContent=m;$("adminToast").classList.add("show");setTimeout(()=>$("adminToast").classList.remove("show"),2300)}
   function msg(id,m="",type=""){$(id).textContent=m;$(id).className=`form-message ${type}`.trim()}
   async function isAdmin(uid){
@@ -18,6 +53,7 @@
     if(!currentUser){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=true;return}
     if(!await isAdmin(currentUser.id)){$("loginView").hidden=false;$("dashboard").hidden=true;$("logoutBtn").hidden=false;msg("loginMessage","Este usuario no está autorizado como administrador.","error");return}
     $("loginView").hidden=true;$("dashboard").hidden=false;$("logoutBtn").hidden=false;msg("loginMessage","");
+    selectDefaultStorefront(currentUser);
     await loadAll();
   }
   function resolveAdminLogin(value){
@@ -959,6 +995,11 @@
         p_extra_cost:Number($("manualExtraCost").value||0)
       });
       if(error)throw error;
+      // Los pedidos manuales también quedan asociados a la pestaña elegida.
+      if(data?.id&&window.VIVERO_ADMIN_ORDER_STORE==="miguel"){
+        const tagged=await db.from("orders").update({storefront:"miguel"}).eq("id",data.id);
+        if(tagged.error)throw tagged.error;
+      }
       resetManualOrderForm();
       $("manualOrderForm").hidden=true;
       await loadAll();
@@ -970,7 +1011,8 @@
   });
 
   function renderOrders(){
-    $("orderList").innerHTML=orders.length?orders.map(o=>{
+    const visibleOrders=orders.filter(o=>(o.storefront||"nahuel")===(window.VIVERO_ADMIN_ORDER_STORE||"nahuel"));
+    $("orderList").innerHTML=visibleOrders.length?visibleOrders.map(o=>{
       const items=orderItems.filter(i=>i.order_id===o.id),t=orderTotals(o.id);
       const locked=o.status==="dispatched"||o.status==="cancelled";
       const lockAttr=locked?" disabled":"";
@@ -986,9 +1028,9 @@
           ${locked?"":`<button class="small-btn danger" data-delete-item="${i.id}">Quitar</button>`}
         </div>`;
       }).join("");
-      return `<details class="order-card collapsible-order" data-order="${o.id}">
+      return `<details class="order-card collapsible-order ${(o.storefront||"nahuel")==="miguel"?"miguel-entry":""}" data-order="${o.id}">
         <summary class="order-head">
-          <div><div class="order-code">${esc(o.order_code)} ${sourceBadge}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s) · ${money(t.sales)}</div></div>
+          <div><div class="order-code">${esc(o.order_code)} ${sourceBadge} ${(o.storefront||"nahuel")==="miguel"?'<span class="storefront-badge">Miguel</span>':""}</div><div class="order-meta">${new Date(o.created_at).toLocaleString("es-AR")} · ${items.length} ítem(s) · ${money(t.sales)}</div></div>
           <div class="order-summary-right"><span class="badge ${statusClass(o.status)}">${statusLabel(o.status)}</span><span class="order-chevron">⌄</span></div>
         </summary>
         <div class="order-body">
@@ -1017,7 +1059,7 @@
       card.querySelector(".custom-name-wrap").hidden=!!v;
       if(!v)card.querySelector(".add-custom-name").value="";
     }));
-    const dispatched=orders.filter(o=>o.status==="dispatched"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
+    const dispatched=visibleOrders.filter(o=>o.status==="dispatched"),tot=dispatched.reduce((a,o)=>{const t=orderTotals(o.id);a.sales+=t.sales;a.cost+=t.cost;a.profit+=t.profit;return a},{sales:0,cost:0,profit:0});
     $("summaryDispatched").textContent=dispatched.length;$("summarySales").textContent=money(tot.sales);$("summaryCosts").textContent=money(tot.cost);$("summaryProfit").textContent=money(tot.profit);
   }
 
