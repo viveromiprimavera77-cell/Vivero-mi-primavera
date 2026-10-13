@@ -751,3 +751,31 @@ body.category-modal-open{overflow:hidden}
 .category-site-header .header-location,.order-page-header .header-location{color:var(--green-900)}
 .footer-copyright{grid-column:1/-1;text-align:center;border-top:1px solid rgba(255,255,255,.22);padding-top:20px;margin-top:8px;color:#c2d9c4;font-size:.82rem;font-weight:600;letter-spacing:.02em}
 @media(max-width:900px){.header-brand-location{gap:5px}.header-location{font-size:.72rem}.header-location svg{width:15px;height:15px}}
+
+/* Accesos rápidos de Instagram/Facebook junto al carrito (ambas tiendas). */
+.header-socials{
+  position:fixed;top:26px;right:94px;z-index:95;
+  display:flex;align-items:center;gap:8px;
+}
+.header-social-link{
+  width:40px;height:40px;display:grid;place-items:center;
+  border-radius:50%;background:#fff;color:var(--green-900);
+  text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.2);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.header-social-link svg{width:21px;height:21px;display:block}
+.header-social-link:hover,.header-social-link:focus-visible{
+  transform:translateY(-2px);
+  box-shadow:0 12px 28px rgba(0,0,0,.25);
+  outline:2px solid var(--green-600);outline-offset:2px;
+}
+@media(max-width:700px){
+  .header-socials{top:21px;right:74px;gap:6px}
+  .header-social-link{width:36px;height:36px}
+  .header-social-link svg{width:20px;height:20px}
+}
+@media(max-width:380px){
+  .header-socials{gap:5px}
+  .header-social-link{width:33px;height:33px}
+  .site-header .site-logo img{width:100px}
+}
