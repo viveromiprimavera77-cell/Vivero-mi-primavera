@@ -4,6 +4,26 @@
   const el=id=>document.getElementById(id);
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  // Las vistas usan versiones pequeñas servidas por la caché de Vercel.
+  // Si el optimizador falla, el navegador recupera la imagen original.
+  function optimizedImage(url,width=640){
+    const original=String(url||"");
+    try{
+      const parsed=new URL(original,window.location.href);
+      if(parsed.hostname!=="pltmuvdousgyifljwzsb.supabase.co" || !parsed.pathname.startsWith("/storage/v1/object/public/product-images/"))return original;
+      return "/_vercel/image?url="+encodeURIComponent(parsed.href)+"&w="+width+"&q=75";
+    }catch{return original}
+  }
+  document.addEventListener("error",event=>{
+    const img=event.target;
+    if(!(img instanceof HTMLImageElement)||!img.src.includes("/_vercel/image?"))return;
+    try{
+      const original=new URL(img.src).searchParams.get("url");
+      if(original&&original!==img.src)img.src=original;
+    }catch{}
+  },true);
+
   const normalize=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   let catalogProducts=[],catalogCategories=[],catalogAssocs=[],catalogVariants=[];
 
@@ -199,7 +219,7 @@
       p.integrated_image_url?{url:p.integrated_image_url,label:"En jardín"}:null
     ].filter(Boolean);
     const slides=[
-      ...imageSlides.map(x=>`<div class="photo-slide photo-image-slide"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}" loading="lazy"><span class="slide-label">${x.label}</span></div>`),
+      ...imageSlides.map(x=>`<div class="photo-slide photo-image-slide"><img src="${esc(optimizedImage(x.url,640))}" alt="${esc(p.name)} - ${x.label}" loading="lazy" decoding="async"><span class="slide-label">${x.label}</span></div>`),
       plantInfoSlide(p)
     ].filter(Boolean);
     if(!slides.length)return "";
@@ -336,6 +356,35 @@
     return matches;
   }
 
+
+  // El video se inicia solo al estar visible; se detiene fuera de pantalla,
+  // en pestañas ocultas y al terminar para evitar descargas repetidas.
+  function setupHeroVideo(src){
+    const video=el("heroVideo"),fallback=el("heroFallback");
+    if(!src||!video||!fallback)return;
+    if(navigator.connection?.saveData||/^(slow-2g|2g)$/.test(navigator.connection?.effectiveType||""))return;
+    video.autoplay=false;
+    video.loop=false;
+    video.preload="none";
+    video.src=src;
+    video.style.display="block";
+    video.addEventListener("playing",()=>{fallback.style.display="none"},{once:true});
+    video.addEventListener("error",()=>{
+      video.pause();video.style.display="none";fallback.style.display="grid";
+    },{once:true});
+    const playIfVisible=()=>{
+      const rect=video.getBoundingClientRect();
+      if(!document.hidden&&!video.ended&&rect.bottom>0&&rect.top<window.innerHeight){
+        video.play().catch(()=>{});
+      }else{video.pause()}
+    };
+    if("IntersectionObserver" in window){
+      const observer=new IntersectionObserver(()=>playIfVisible(),{threshold:[0,0.15]});
+      observer.observe(video);
+    }else{playIfVisible()}
+    document.addEventListener("visibilitychange",playIfVisible);
+  }
+
   async function load(){
     try{
       const [cr,pr,ar,vr,sr]=await Promise.all([db.from("categories").select("*").eq("active",true).order("sort_order").order("name"),db.from("products").select("*").eq("active",true).order("sort_order").order("name"),db.from("product_categories").select("*").order("sort_order"),db.from("product_variants").select("*").eq("active",true).order("sort_order"),db.from("site_settings").select("*").eq("id",1).maybeSingle()]);
@@ -343,9 +392,9 @@
       const cats=cr.data||[],products=pr.data||[],assocs=ar.data||[],variants=vr.data||[],settings=sr.data||{};
       catalogCategories=cats;catalogProducts=products;catalogAssocs=assocs;catalogVariants=variants;
       if(settings.tagline)el("heroTitle").textContent=settings.tagline;el("shippingTitle").textContent=settings.shipping_title||"Envíos";el("shippingText").textContent=settings.shipping_text||"Realizamos entregas coordinadas. Consultanos por cobertura, costo y tiempos.";el("aboutTitle").textContent=settings.about_title||"Acerca de nosotros";el("aboutText").textContent=settings.about_text||"En Mi Primavera seleccionamos plantas para cercos, jardines y espacios verdes.";openWelcome(settings.tagline);
-      if(settings.hero_video_url){el("heroVideo").src=settings.hero_video_url;el("heroVideo").style.display="block";el("heroFallback").style.display="none";el("heroVideo").addEventListener("error",()=>{el("heroVideo").style.display="none";el("heroFallback").style.display="grid"},{once:true})}
+      if(settings.hero_video_url)setupHeroVideo(settings.hero_video_url);
       const wa=waLink(window.VIVERO_STORE==="miguel"?(settings.whatsapp_miguel||"5491162340769"):settings.whatsapp,"Hola Mi Primavera, quisiera hacer una consulta.");["shippingWhatsapp","whatsappFloat"].forEach(id=>{if(wa){el(id).href=wa;el(id).hidden=false}});
-      const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id),cat=a?cats.find(c=>c.id===a.category_id):null;const href=cat?`categoria.html?categoria=${encodeURIComponent(cat.slug)}&planta=${encodeURIComponent(p.slug)}`:"#catalogo";return `<a class="featured-card" href="${href}">${firstProductImage(p)?`<img src="${esc(firstProductImage(p))}" alt="${esc(p.name)}">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
+      const featured=products.filter(p=>p.featured);el("featured").innerHTML=featured.length?featured.map(p=>{const a=assocs.find(x=>x.product_id===p.id),cat=a?cats.find(c=>c.id===a.category_id):null;const href=cat?`categoria.html?categoria=${encodeURIComponent(cat.slug)}&planta=${encodeURIComponent(p.slug)}`:"#catalogo";return `<a class="featured-card" href="${href}">${firstProductImage(p)?`<img src="${esc(optimizedImage(firstProductImage(p),480))}" alt="${esc(p.name)}" loading="lazy" decoding="async">`:`<div class="featured-placeholder">Mi Primavera</div>`}<div class="featured-body"><strong>${esc(p.name)}</strong><span>Ver presentaciones y precios</span></div></a>`}).join(""):`<div class="empty-state">Todavía no hay plantas destacadas.</div>`;
       el("categoryNav").innerHTML=cats.length?cats.map(c=>{const ids=assocs.filter(a=>a.category_id===c.id).map(a=>a.product_id),ps=products.filter(p=>ids.includes(p.id));const categoryUrl=`categoria.html?categoria=${encodeURIComponent(c.slug)}`;return `<a class="category-link" href="${categoryUrl}">${esc(c.name)}</a>${ps.map(p=>`<a class="plant-link" href="${categoryUrl}&planta=${encodeURIComponent(p.slug)}">↳ ${esc(p.name)}</a>`).join("")}`}).join(""):`<span class="nav-loading">Sin categorías</span>`;
       el("categoryTopJump").innerHTML=`<option value="">Elegí una categoría...</option><option value="todas">Todas las categorías</option>${cats.map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
       el("categoryJump").innerHTML=`<option value="">Elegí una categoría...</option><option value="todas">Todas las categorías</option>${cats.map(c=>`<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("")}`;
