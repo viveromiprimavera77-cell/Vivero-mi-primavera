@@ -366,13 +366,18 @@
     video.autoplay=false;
     video.loop=false;
     video.preload="none";
-    video.src=src;
     video.style.display="block";
     video.addEventListener("playing",()=>{fallback.style.display="none"},{once:true});
     video.addEventListener("error",()=>{
+      if(video.currentSrc.includes("/media/hero-optimized.mp4")){
+        video.src=src;
+        playIfVisible();
+        return;
+      }
       video.pause();video.style.display="none";fallback.style.display="grid";
-    },{once:true});
+    });
     const playIfVisible=()=>{
+      if(!video.getAttribute("src"))return;
       const rect=video.getBoundingClientRect();
       if(!document.hidden&&!video.ended&&rect.bottom>0&&rect.top<window.innerHeight){
         video.play().catch(()=>{});
@@ -383,6 +388,17 @@
       observer.observe(video);
     }else{playIfVisible()}
     document.addEventListener("visibilitychange",playIfVisible);
+    // La copia liviana, cuando exista en Vercel, reemplaza al original de 29 MB.
+    // Siempre conservamos el original de Supabase como respaldo.
+    if(/\\/site-media\\/hero\\/1790459886179\\.mp4(?:\\?|$)/.test(src)){
+      fetch("/media/hero-optimized.mp4",{method:"HEAD"})
+        .then(response=>{
+          const isVideo=(response.headers.get("content-type")||"").includes("video/");
+          video.src=response.ok&&isVideo?"/media/hero-optimized.mp4":src;
+          playIfVisible();
+        })
+        .catch(()=>{video.src=src;playIfVisible()});
+    }else{video.src=src;playIfVisible()}
   }
 
   async function load(){
