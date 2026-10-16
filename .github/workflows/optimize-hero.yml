@@ -1,0 +1,33 @@
+name: Optimizar video de portada
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/optimize-hero.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  comprimir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtener video publico y comprimir para la web
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p media
+          curl --fail --location --retry 3 "https://pltmuvdousgyifljwzsb.supabase.co/storage/v1/object/public/site-media/hero/1790459886179.mp4" -o /tmp/original-hero.mp4
+          ffmpeg -hide_banner -nostdin -y -i /tmp/original-hero.mp4 -an -vf "scale='min(960,iw)':-2" -r 24 -c:v libx264 -preset medium -crf 31 -pix_fmt yuv420p -movflags +faststart media/hero-optimized.mp4
+          test -s media/hero-optimized.mp4
+          ls -lh media/hero-optimized.mp4
+      - name: Guardar version liviana en GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add media/hero-optimized.mp4
+          git diff --cached --quiet && exit 0
+          git commit -m "Agregar video optimizado para portada del vivero"
+          git push
