@@ -27,5 +27,26 @@
       "destination": "/miguel/",
       "permanent": false
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      480,
+      640,
+      960
+    ],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "pltmuvdousgyifljwzsb.supabase.co",
+        "pathname": "^/storage/v1/object/public/product-images/.*$"
+      }
+    ],
+    "minimumCacheTTL": 86400,
+    "qualities": [
+      75
+    ],
+    "formats": [
+      "image/webp"
+    ]
+  }
 }
