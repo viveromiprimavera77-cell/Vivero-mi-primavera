@@ -6,6 +6,26 @@
   const el=id=>document.getElementById(id);
   const money=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(Number(n||0));
   const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  // Las vistas usan versiones pequeñas servidas por la caché de Vercel.
+  // Si el optimizador falla, el navegador recupera la imagen original.
+  function optimizedImage(url,width=640){
+    const original=String(url||"");
+    try{
+      const parsed=new URL(original,window.location.href);
+      if(parsed.hostname!=="pltmuvdousgyifljwzsb.supabase.co" || !parsed.pathname.startsWith("/storage/v1/object/public/product-images/"))return original;
+      return "/_vercel/image?url="+encodeURIComponent(parsed.href)+"&w="+width+"&q=75";
+    }catch{return original}
+  }
+  document.addEventListener("error",event=>{
+    const img=event.target;
+    if(!(img instanceof HTMLImageElement)||!img.src.includes("/_vercel/image?"))return;
+    try{
+      const original=new URL(img.src).searchParams.get("url");
+      if(original&&original!==img.src)img.src=original;
+    }catch{}
+  },true);
+
   let categories=[],products=[],assocs=[],variants=[],currentCategory=null;
   // Opción virtual del selector, no requiere crear una categoría en Supabase.
   const ALL_CATEGORIES={id:"__todas__",slug:"todas",name:"Todas las categorías",
@@ -154,7 +174,7 @@
       p.integrated_image_url?{url:p.integrated_image_url,label:"En jardín"}:null
     ].filter(Boolean);
     const slides=[
-      ...imageSlides.map(x=>`<div class="photo-slide photo-image-slide"><img src="${esc(x.url)}" alt="${esc(p.name)} - ${x.label}"><span class="slide-label">${x.label}</span></div>`),
+      ...imageSlides.map(x=>`<div class="photo-slide photo-image-slide"><img src="${esc(optimizedImage(x.url,960))}" alt="${esc(p.name)} - ${x.label}" loading="lazy" decoding="async"><span class="slide-label">${x.label}</span></div>`),
       plantInfoSlide(p)
     ].filter(Boolean);
     if(!slides.length)return `<div class="category-modal-placeholder">Mi Primavera</div>`;
@@ -282,7 +302,7 @@
     const image=firstProductImage(p);
     return `<button type="button" class="category-product-card" data-open-product="${p.id}" data-product-category="${categoryId}">
       <div class="category-product-image">
-        ${image?`<img src="${esc(image)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="category-product-placeholder">Mi Primavera</div>`}
+        ${image?`<img src="${esc(optimizedImage(image,480))}" alt="${esc(p.name)}" loading="lazy" decoding="async">`:`<div class="category-product-placeholder">Mi Primavera</div>`}
         <span>Ver planta</span>
       </div>
       <div class="category-product-copy">
