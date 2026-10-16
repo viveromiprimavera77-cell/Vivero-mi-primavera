@@ -390,7 +390,7 @@
     document.addEventListener("visibilitychange",playIfVisible);
     // La copia liviana, cuando exista en Vercel, reemplaza al original de 29 MB.
     // Siempre conservamos el original de Supabase como respaldo.
-    if(/\\/site-media\\/hero\\/1790459886179\\.mp4(?:\\?|$)/.test(src)){
+    if(src.includes("/site-media/hero/1790459886179.mp4")){
       fetch("/media/hero-optimized.mp4",{method:"HEAD"})
         .then(response=>{
           const isVideo=(response.headers.get("content-type")||"").includes("video/");
